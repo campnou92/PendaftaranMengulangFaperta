@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "Course": {
+      "title": "Course",
+      "description": "Master catalogue course item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "sks": { "type": "number" },
+        "prodi": { "type": "string" },
+        "semester": { "type": "number" },
+        "availableClasses": { "type": "array" }
+      },
+      "required": ["id", "name", "sks", "prodi", "semester"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "Student repeat course registration document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string" },
+        "nama": { "type": "string" },
+        "nim": { "type": "string" },
+        "noWa": { "type": "string" },
+        "angkatan": { "type": "string" },
+        "kelasAsal": { "type": "string" },
+        "selectedCourses": { "type": "array" },
+        "totalSks": { "type": "number" },
+        "registrationDate": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "targetSemester": { "type": "string" },
+        "rejectionReason": { "type": "string" },
+        "paymentNote": { "type": "string" }
+      },
+      "required": ["id", "nama", "nim", "email", "noWa", "angkatan", "kelasAsal", "selectedCourses", "totalSks", "status"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Global academic and fee settings for the repeat portal",
+      "type": "object",
+      "properties": {
+        "classOptions": { "type": "array" },
+        "classNote": { "type": "string" },
+        "feePerSksEnabled": { "type": "boolean" },
+        "costPerSks": { "type": "number" },
+        "paidBatches": { "type": "array" },
+        "paymentInstructions": { "type": "string" },
+        "paymentAccountInfo": { "type": "string" },
+        "maxSksPerBatch": { "type": "object" },
+        "semesterSchedules": { "type": "object" }
+      }
+    },
+    "SystemUser": {
+      "title": "SystemUser",
+      "description": "Staff and administrator user accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "title": { "type": "string" }
+      },
+      "required": ["id", "username", "password", "name", "role", "title"]
+    }
+  },
+  "firestore": {
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Master courses collection readable by students and manageable by staff"
+    },
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Student repeat course registration documents"
+    },
+    "/settings/global": {
+      "schema": "AdminSettings",
+      "description": "Academic portal configuration and fee settings"
+    },
+    "/system_users/{userId}": {
+      "schema": "SystemUser",
+      "description": "Superadmin managed credentialed user accounts"
+    }
+  }
+}

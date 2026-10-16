@@ -1,0 +1,113 @@
+import { CourseItem, AdminSettings } from '../types';
+
+export const INITIAL_COURSES: CourseItem[] = [
+  // ==========================================
+  // PRODI AGROTEKNOLOGI - SEMESTER 3
+  // ==========================================
+  { id: 'agro-1', name: 'Matematika', sks: 1, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-2', name: 'Prinsip Dasar Pertanian dan Perkebunan', sks: 1, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-3', name: 'Pengetahuan Perkebunan dan Kehutanan Berkelanjutan', sks: 2, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-4', name: 'Penilaian Kesesuaian Lahan dan Pemetaan', sks: 3, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-5', name: 'Teknik Persiapan Lahan', sks: 2, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-6', name: 'Budaya Dasar dan Etika', sks: 1, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-7', name: 'Dasar dasar Agroteknologi', sks: 2, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-3a', name: 'Fisiologi Tumbuhan Pertanian', sks: 3, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-3b', name: 'Mikrobiologi Pertanian Terapan', sks: 2, prodi: 'agroteknologi', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+
+  // ==========================================
+  // PRODI AGROTEKNOLOGI - SEMESTER 5
+  // ==========================================
+  { id: 'agro-8', name: 'Iklim dan Pengelolaan Sumber Daya Tanah dan Air', sks: 4, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-9', name: 'Prkt Blok Persiapan Lahan', sks: 4, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-5a', name: 'Pengendalian Hama & Penyakit Terpadu', sks: 3, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-5b', name: 'Manajemen Produksi Tanaman Perkebunan', sks: 3, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-5c', name: 'Bioteknologi Pertanian Terapan', sks: 2, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-5d', name: 'Konservasi Tanah dan Air', sks: 3, prodi: 'agroteknologi', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+
+  // ==========================================
+  // PRODI AGRIBISNIS - SEMESTER 3
+  // ==========================================
+  { id: 'agri-10', name: 'Ekonomi Matematika', sks: 1, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-11', name: 'PU Manajemen Data', sks: 2, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-12', name: 'Agama Kontekstual Kristen', sks: 2, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-13', name: 'PU Manajemen Agribisnis', sks: 2, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-14', name: 'Agama Kontekstual Islam', sks: 2, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-15', name: 'Bhs Indonesia', sks: 2, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-3a', name: 'Ekonomi Mikro Pertanian', sks: 3, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-3b', name: 'Akuntansi Usaha Tani & Perkebunan', sks: 3, prodi: 'agribisnis', semester: 3, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+
+  // ==========================================
+  // PRODI AGRIBISNIS - SEMESTER 5
+  // ==========================================
+  { id: 'agri-16', name: 'PU Budidaya Pertanian', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-17', name: 'PU Bisnis Pertanian', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-18', name: 'PU perkebunan dan kehutanan berkelanjutan', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5a', name: 'Analisis Kelayakan Usaha Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5b', name: 'Manajemen Pemasaran Hasil Pertanian', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+];
+
+export const ANGKATAN_OPTIONS = [
+  '2020',
+  '2021',
+  '2022',
+  '2023',
+  '2024',
+  '2025',
+  '2026'
+];
+
+export const SEMESTER_OPTIONS = [
+  { id: 'all', label: 'Semua Semester (Gabungan)', num: null },
+  { id: '3', label: 'Semester 3', num: 3 },
+  { id: '5', label: 'Semester 5', num: 5 }
+];
+
+export const DEFAULT_CLASSES = ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'];
+
+export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
+  classOptions: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'],
+  classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 3 atau Semester 5 sesuai kebutuhan.
+2. Admin BAAK dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel BAAK).
+3. NIM yang sudah dipakai untuk melakukan pendaftaran tidak bisa dipakai lagi (ada notifikasi peringatan).
+4. Setelah berhasil mendaftar, pendaftar dapat mencetak hasil matakuliah yang dipilih. Batas maksimal pengambilan adalah 24 SKS.
+5. Perhatian: Kelas berstatus "Kelas Beasiswa" tidak dapat dipilih untuk kelas mengulang.`,
+  feePerSksEnabled: true,
+  costPerSks: 50000,
+  paidBatches: ['2020', '2021', '2022'], // Mahasiswa angkatan lama dikenakan biaya per SKS
+  paymentInstructions: `Pemberitahuan: Mahasiswa angkatan yang terdaftar dikenakan kewajiban pembayaran biaya mengulang mata kuliah sebesar Rp 50.000 per SKS. Harap segera melunasi pembayaran sebelum batas akhir validasi KRS dan mengirimkan bukti transfer ke Bagian Keuangan / BAAK Fakultas Pertanian.`,
+  paymentAccountInfo: `Bank Mandiri / BNI No. Rek: 137-00-1928374-1 a.n. Bendahara Fakultas Pertanian (Konfirmasi WA Keuangan: 0812-8877-6655)`,
+  defaultMaxSks: 24,
+  batchMaxSks: {
+    '2020': 20, // Angkatan 2020 batas maksimal 20 SKS
+    '2021': 22  // Angkatan 2021 batas maksimal 22 SKS
+  },
+  semesterSchedules: {
+    '3': {
+      semester: 3,
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-30T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 3 saat ini telah ditutup oleh pihak BAAK / Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
+    },
+    '5': {
+      semester: 5,
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-30T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak BAAK / Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
+    }
+  },
+  // Konfigurasi Kelas Beasiswa yang TIDAK Boleh Dipilih untuk Mengulang Per Semester
+  restrictedRepeatClasses: {
+    '3': ['Kelas Beasiswa'],
+    '5': ['Kelas Beasiswa', 'Kelas D']
+  },
+  restrictedRepeatClassReason: {
+    '3': 'Kelas Beasiswa pada Semester 3 dikhususkan bagi mahasiswa penerima beasiswa penuh dan tidak dibuka untuk kelas mengulang.',
+    '5': 'Kelas Beasiswa dan Kelas D pada Semester 5 diperuntukkan bagi mahasiswa jalur beasiswa prestasi/kemitraan dan tidak dapat diambil untuk mengulang.'
+  }
+};

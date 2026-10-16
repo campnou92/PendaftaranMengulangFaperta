@@ -1,0 +1,264 @@
+export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
+export type PaymentStatus = 'pending' | 'paid' | 'verified';
+
+export type UserRole = 'baak' | 'finance' | 'superadmin' | 'kaprodi';
+
+export interface AuthUser {
+  username: string;
+  name: string;
+  role: UserRole;
+  title: string;
+}
+
+export interface ManagedUser {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  role: UserRole;
+  title: string;
+  email?: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export interface CourseItem {
+  id: string;
+  name: string;
+  sks: number;
+  prodi: 'agroteknologi' | 'agribisnis' | string;
+  semester: number; // e.g. 3, 5
+  availableClasses?: string[];
+}
+
+export interface SelectedCourseItem {
+  courseId: string;
+  name: string;
+  sks: number;
+  prodi: string;
+  semester?: number;
+  selectedClass: string;
+}
+
+export interface UploadedFileItem {
+  name: string;
+  size: number;
+  type: string;
+  dataUrl?: string;
+  uploadedAt: string;
+}
+
+export interface SimpleRegistration {
+  id: string;
+  registrationDate: string; // Auto generate
+  status: RegistrationStatus;
+  targetSemester: string; // e.g. 'Semester 3', 'Semester 5', or 'Semua Semester'
+  
+  // Data Mahasiswa sesuai gambar
+  email: string;
+  angkatan: string;
+  nama: string;
+  nim: string;
+  noWa: string;
+  kelasAsal: string;
+  
+  // Matakuliah yang dipilih
+  selectedCourses: SelectedCourseItem[];
+  totalSks: number;
+  
+  // Berkas yang diunggah mahasiswa (KHS / Bukti Bayar / Formulir)
+  uploadedFile?: UploadedFileItem;
+
+  // Status Pembayaran Khusus Admin Keuangan
+  paymentStatus?: PaymentStatus;
+  paymentDate?: string;
+  paymentNote?: string;
+  
+  // Catatan admin jika ada & alasan penolakan
+  adminNotes?: string;
+  rejectionReason?: string;
+}
+
+export interface AdminSettings {
+  classOptions: string[];
+  classNote: string;
+  
+  // Pengaturan Biaya Mengulang Per SKS untuk Angkatan Tertentu (Superadmin)
+  feePerSksEnabled: boolean;
+  costPerSks: number; // Biaya per SKS dalam Rupiah, misal 50000
+  paidBatches: string[]; // Daftar angkatan yang dikenakan biaya, contoh: ['2020', '2021', '2022']
+  paymentInstructions: string; // Teks note instruksi pembayaran yang muncul pada hasil pendaftaran
+  paymentAccountInfo: string; // Nomor rekening, loket atau kontak bagian keuangan
+  
+  // Pengaturan Batas Maksimal Pengambilan SKS (Default 24 SKS & Konfigurasi Khusus Per Angkatan)
+  defaultMaxSks: number; // Default 24 SKS
+  batchMaxSks?: Record<string, number>; // Batas SKS khusus per angkatan, misal { "2020": 20, "2021": 22 }
+
+  // Pengaturan Buka / Tutup Pendaftaran Berdasarkan Semester & Jadwal Periode (Superadmin)
+  semesterSchedules?: Record<string, SemesterSchedule>;
+
+  // Pengaturan Kelas Beasiswa (Tidak Boleh untuk Kelas Mengulang) Per Semester (Superadmin)
+  restrictedRepeatClasses?: Record<string, string[]>; // Mapping per semester: misal { '3': ['Kelas Beasiswa'], '5': ['Kelas Beasiswa', 'Kelas D'] }
+  restrictedRepeatClassReason?: Record<string, string>; // Keterangan / alasan per semester
+}
+
+export interface SemesterSchedule {
+  semester: number; // 3, 5, etc.
+  isOpen: boolean; // Master toggle: true (buka) / false (tutup manual)
+  useSchedule: boolean; // Gunakan jadwal otomatis tanggal & jam
+  startDate: string; // ISO datetime string, misal "2026-10-01T08:00"
+  endDate: string; // ISO datetime string, misal "2026-11-30T23:59"
+  closedMessage?: string; // Pesan notifikasi khusus ketika pendaftaran ditutup
+}
+
+export interface SemesterStatusResult {
+  isOpen: boolean;
+  state: 'open' | 'manual_closed' | 'upcoming' | 'expired';
+  label: string;
+  badgeClass: string;
+  message: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export function formatDateTimeId(dateStr?: string): string {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) + ' WIB';
+  } catch {
+    return dateStr;
+  }
+}
+
+export function getSemesterStatus(semesterNum: number | string, settings?: AdminSettings): SemesterStatusResult {
+  const semKey = String(semesterNum);
+  const schedule = settings?.semesterSchedules?.[semKey];
+
+  // Default jika belum disetel: Pendaftaran terbuka
+  if (!schedule) {
+    return {
+      isOpen: true,
+      state: 'open',
+      label: 'DIBUKA',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      message: `Pendaftaran Semester ${semKey} saat ini dibuka.`
+    };
+  }
+
+  // Jika ditutup secara manual oleh Superadmin
+  if (schedule.isOpen === false) {
+    return {
+      isOpen: false,
+      state: 'manual_closed',
+      label: 'DITUTUP MANUAL',
+      badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+      message: schedule.closedMessage || `Pendaftaran Semester ${semKey} ditutup oleh pihak Fakultas Pertanian.`
+    };
+  }
+
+  // Jika menggunakan jadwal otomatis berbasis rentang waktu
+  if (schedule.useSchedule) {
+    const now = new Date();
+    const hasStart = Boolean(schedule.startDate);
+    const hasEnd = Boolean(schedule.endDate);
+    const start = hasStart ? new Date(schedule.startDate) : null;
+    const end = hasEnd ? new Date(schedule.endDate) : null;
+
+    if (start && !isNaN(start.getTime()) && now < start) {
+      return {
+        isOpen: false,
+        state: 'upcoming',
+        label: 'BELUM DIBUKA',
+        badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+        message: `Pendaftaran Semester ${semKey} belum dibuka. Pendaftaran akan dibuka mulai ${formatDateTimeId(schedule.startDate)}.`,
+        startDate: schedule.startDate,
+        endDate: schedule.endDate
+      };
+    }
+
+    if (end && !isNaN(end.getTime()) && now > end) {
+      return {
+        isOpen: false,
+        state: 'expired',
+        label: 'SUDAH DITUTUP',
+        badgeClass: 'bg-slate-200 text-slate-800 border-slate-400',
+        message: schedule.closedMessage || `Pendaftaran Semester ${semKey} telah berakhir pada ${formatDateTimeId(schedule.endDate)}.`,
+        startDate: schedule.startDate,
+        endDate: schedule.endDate
+      };
+    }
+
+    // Sedang dalam rentang aktif jadwal
+    return {
+      isOpen: true,
+      state: 'open',
+      label: 'DIBUKA (JADWAL)',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      message: end ? `Pendaftaran Semester ${semKey} dibuka s/d ${formatDateTimeId(schedule.endDate)}.` : `Pendaftaran Semester ${semKey} sedang dibuka.`,
+      startDate: schedule.startDate,
+      endDate: schedule.endDate
+    };
+  }
+
+  // Pendaftaran dibuka manual
+  return {
+    isOpen: true,
+    state: 'open',
+    label: 'DIBUKA',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    message: `Pendaftaran Semester ${semKey} saat ini aktif dan dibuka.`
+  };
+}
+
+export function getMaxSksForBatch(angkatan?: string, settings?: AdminSettings): number {
+  if (!settings) return 24;
+  if (angkatan && settings.batchMaxSks && settings.batchMaxSks[angkatan] !== undefined && Number(settings.batchMaxSks[angkatan]) > 0) {
+    return Number(settings.batchMaxSks[angkatan]);
+  }
+  return typeof settings.defaultMaxSks === 'number' && settings.defaultMaxSks > 0 ? settings.defaultMaxSks : 24;
+}
+
+export function getRestrictedClassesForSemester(
+  semesterNum: number | string | undefined | null,
+  settings?: AdminSettings
+): string[] {
+  if (!settings || !settings.restrictedRepeatClasses || !semesterNum) {
+    return [];
+  }
+  const semKey = String(semesterNum);
+  const list = settings.restrictedRepeatClasses[semKey];
+  return Array.isArray(list) ? list : [];
+}
+
+export function isClassRestrictedForRepeat(
+  className: string,
+  semesterNum: number | string | undefined | null,
+  settings?: AdminSettings
+): boolean {
+  if (!className || !semesterNum || !settings) return false;
+  const restrictedList = getRestrictedClassesForSemester(semesterNum, settings);
+  return restrictedList.includes(className);
+}
+
+export function getRestrictedClassReason(
+  semesterNum: number | string | undefined | null,
+  settings?: AdminSettings
+): string {
+  const semKey = semesterNum ? String(semesterNum) : '3';
+  return (
+    settings?.restrictedRepeatClassReason?.[semKey] ||
+    `Kelas ini merupakan Kelas Beasiswa pada Semester ${semKey} dan tidak diperkenankan untuk diambil sebagai kelas mengulang.`
+  );
+}
+
+

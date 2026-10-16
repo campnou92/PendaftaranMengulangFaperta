@@ -1,0 +1,8 @@
+{
+  "name": "Portal Pendaftaran Mengulang Mata Kuliah Faperta INSTIPER",
+  "description": "Sistem Informasi Pendaftaran Mengulang Mata Kuliah & Semester Antara Online, lengkap dengan pemilihan mata kuliah, kalkulasi SKS & biaya, unggah berkas, cetak KRS pengulangan, serta manajemen verifikasi akademik.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

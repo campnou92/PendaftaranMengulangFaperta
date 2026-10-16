@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal Pendaftaran Mengulang Mata Kuliah Faperta INSTIPER Yogyakarta</title>
+    <meta name="description" content="Sistem Informasi Pendaftaran Mengulang Mata Kuliah & Semester Antara Online Fakultas Pertanian INSTIPER Yogyakarta, lengkap dengan pemilihan mata kuliah, kalkulasi SKS & biaya, unggah berkas, cetak KRS pengulangan, serta manajemen verifikasi akademik." />
+    <meta property="og:title" content="Portal Pendaftaran Mengulang Mata Kuliah Faperta INSTIPER Yogyakarta" />
+    <meta property="og:description" content="Sistem Informasi Pendaftaran Mengulang Mata Kuliah & Semester Antara Online Fakultas Pertanian INSTIPER Yogyakarta." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="/logo_instiper.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#166534" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#08120C" media="(prefers-color-scheme: dark)" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('instiper_theme');
+          var isDark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

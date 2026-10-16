@@ -1,0 +1,249 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, :is(.dark *)));
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Official INSTIPER Yogyakarta Palette */
+    --instiper-green: #166534;        /* Hijau Perkebunan (Ijo Royo-royo) */
+    --instiper-green-dark: #14532D;   /* Hijau Tua Daun */
+    --instiper-green-light: #15803D;  /* Hijau Segar Interaktif */
+    --instiper-yellow: #EAB308;       /* Janur Kuning Yogyakarta */
+    --instiper-yellow-dark: #CA8A04;  /* Janur Emas Hangat */
+    --instiper-danger: #DC2626;       /* Merah Semangat Perjuangan */
+    --instiper-surface-soft: #F1F5F9; /* Permukaan Halus */
+    --instiper-text: #0F172A;         /* Teks Slate Tegas */
+    --instiper-border: #E2E8F0;       /* Garis Tepi Halus */
+  }
+
+  html.dark {
+    color-scheme: dark;
+    --instiper-green: #22C55E;
+    --instiper-green-dark: #166534;
+    --instiper-green-light: #4ADE80;
+    --instiper-yellow: #FACC15;
+    --instiper-yellow-dark: #EAB308;
+    --instiper-danger: #EF4444;
+    --instiper-surface-soft: #112217;
+    --instiper-text: #F8FAFC;
+    --instiper-border: #1E3A28;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.dark, html.dark body {
+    background-color: #08120C;
+    color: #F8FAFC;
+  }
+
+  html:not(.dark), html:not(.dark) body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+  }
+
+  body {
+    color: var(--instiper-text);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* Form controls color-scheme sync in dark mode */
+  html.dark input,
+  html.dark select,
+  html.dark textarea,
+  html.dark option {
+    color-scheme: dark;
+  }
+
+  /* Mobile touch ergonomics */
+  button, a, input, select, textarea, label {
+    touch-action: manipulation;
+  }
+}
+
+/* Motif ornamen sangat halus untuk Login dan Hero (SVG ringan, 0 KB network) */
+.instiper-academic-pattern {
+  background-color: #F8FAFC;
+  background-image: radial-gradient(#166534 0.75px, transparent 0.75px), radial-gradient(#EAB308 0.5px, #F8FAFC 0.5px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+html.dark .instiper-academic-pattern {
+  background-color: #08120C;
+  background-image: radial-gradient(#22C55E 0.75px, transparent 0.75px), radial-gradient(#EAB308 0.5px, #08120C 0.5px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* Hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Transisi halus */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* @media print untuk Cetak KRS Bersih A4 */
+@media print {
+  @page {
+    margin: 10mm 12mm 10mm 12mm;
+    size: A4 portrait;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html, body, #root, main {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  header, footer, nav, button, .print\:hidden, [role="navigation"], .no-print {
+    display: none !important;
+  }
+
+  /* Prevent page breaks inside critical blocks */
+  .print-kop, .print-table, .print-signatures, .print-card, tr, .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print\:border-black {
+    border-color: #000000 !important;
+  }
+
+  .print\:text-black {
+    color: #000000 !important;
+  }
+
+  .print\:bg-white {
+    background-color: #ffffff !important;
+  }
+}
+
+/* Scoped Dark Mode Cascade Rules for Admin & Finance Panel Containers */
+html.dark .admin-panel-container,
+html.dark .finance-panel-container {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-color: #1e293b;
+}
+
+html.dark .admin-panel-container .bg-white,
+html.dark .finance-panel-container .bg-white {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+html.dark .admin-panel-container .bg-slate-50,
+html.dark .admin-panel-container .bg-slate-100,
+html.dark .finance-panel-container .bg-slate-50,
+html.dark .finance-panel-container .bg-slate-100 {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+html.dark .admin-panel-container input:not([type="checkbox"]):not([type="radio"]),
+html.dark .admin-panel-container select,
+html.dark .admin-panel-container textarea,
+html.dark .finance-panel-container input:not([type="checkbox"]):not([type="radio"]),
+html.dark .finance-panel-container select,
+html.dark .finance-panel-container textarea {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+html.dark .admin-panel-container .border-slate-200,
+html.dark .admin-panel-container .border-slate-300,
+html.dark .finance-panel-container .border-slate-200,
+html.dark .finance-panel-container .border-slate-300 {
+  border-color: #334155;
+}
+
+html.dark .admin-panel-container .text-slate-900,
+html.dark .admin-panel-container .text-slate-800,
+html.dark .finance-panel-container .text-slate-900,
+html.dark .finance-panel-container .text-slate-800 {
+  color: #f8fafc;
+}
+
+html.dark .admin-panel-container .text-slate-700,
+html.dark .finance-panel-container .text-slate-700 {
+  color: #e2e8f0;
+}
+
+html.dark .admin-panel-container .text-slate-600,
+html.dark .admin-panel-container .text-slate-500,
+html.dark .finance-panel-container .text-slate-600,
+html.dark .finance-panel-container .text-slate-500 {
+  color: #94a3b8;
+}
+
+html.dark .admin-panel-container table thead,
+html.dark .finance-panel-container table thead {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark .admin-panel-container table tbody tr:hover,
+html.dark .finance-panel-container table tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.6);
+}
+
+html.dark .admin-panel-container table td,
+html.dark .admin-panel-container table th,
+html.dark .finance-panel-container table td,
+html.dark .finance-panel-container table th {
+  border-color: #334155;
+}
+
+html.dark .admin-panel-container .divide-slate-200,
+html.dark .admin-panel-container .divide-slate-300,
+html.dark .finance-panel-container .divide-slate-200,
+html.dark .finance-panel-container .divide-slate-300 {
+  border-color: #334155;
+}
+
+/* Modal overlays in dark mode */
+html.dark .admin-panel-container .fixed .bg-white,
+html.dark .finance-panel-container .fixed .bg-white {
+  background-color: #0f172a;
+  border-color: #334155;
+}

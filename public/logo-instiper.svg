@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 520" width="100%" height="100%" aria-label="Logo INSTIPER">
+  <defs>
+    <!-- Path for circular text INSTITUT PERTANIAN STIPER YOGYAKARTA -->
+    <path id="textPathUpper" d="M 105,240 A 145,145 0 1,1 395,240" />
+    <filter id="subtleGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Outer Black Border Outline -->
+  <path d="M 250,6 L 478,168 L 398,506 L 250,474 L 102,506 L 22,168 Z" 
+        fill="#231F20" stroke="#231F20" stroke-width="4" stroke-linejoin="round" />
+
+  <!-- White Interlayer Contour -->
+  <path d="M 250,14 L 466,168 L 390,496 L 250,466 L 110,496 L 34,168 Z" 
+        fill="#FFFFFF" />
+
+  <!-- Main Pentagon Green Body (#009A44) -->
+  <path d="M 250,22 L 454,168 L 382,486 L 250,458 L 118,486 L 46,168 Z" 
+        fill="#009A44" />
+
+  <!-- Decorative Inner Yellow Accent Ring (#FFE600) -->
+  <circle cx="250" cy="235" r="172" fill="none" stroke="#FFE600" stroke-width="4" opacity="0.95" />
+
+  <!-- Inner Black Wreath Ring -->
+  <circle cx="250" cy="235" r="162" fill="#231F20" />
+
+  <!-- Golden Ring for Text Background -->
+  <circle cx="250" cy="235" r="156" fill="#1C1917" stroke="#FFE600" stroke-width="2" />
+
+  <!-- Center Red Circle (#E4202A) -->
+  <circle cx="250" cy="235" r="118" fill="#E4202A" stroke="#231F20" stroke-width="3" />
+
+  <!-- Traditional Wheat / Padi Ear Ornaments Left and Right -->
+  <g fill="#FFE600" opacity="0.9">
+    <!-- Left Wreath Dots / Leaves -->
+    <circle cx="106" cy="220" r="4.5" />
+    <circle cx="103" cy="238" r="4.5" />
+    <circle cx="105" cy="256" r="4.5" />
+    <circle cx="111" cy="274" r="4.5" />
+    <circle cx="121" cy="292" r="4.5" />
+    <circle cx="134" cy="308" r="4.5" />
+    <circle cx="150" cy="322" r="4.5" />
+    
+    <!-- Right Wreath Dots / Leaves -->
+    <circle cx="394" cy="220" r="4.5" />
+    <circle cx="397" cy="238" r="4.5" />
+    <circle cx="395" cy="256" r="4.5" />
+    <circle cx="389" cy="274" r="4.5" />
+    <circle cx="379" cy="292" r="4.5" />
+    <circle cx="366" cy="308" r="4.5" />
+    <circle cx="350" cy="322" r="4.5" />
+  </g>
+
+  <!-- Circular Text: INSTITUT PERTANIAN STIPER YOGYAKARTA -->
+  <text font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" fill="#FFE600" letter-spacing="2.2">
+    <textPath href="#textPathUpper" startOffset="50%" text-anchor="middle">
+      INSTITUT PERTANIAN STIPER YOGYAKARTA
+    </textPath>
+  </text>
+
+  <!-- Yellow Bottom Ribbon Base (#FFE600) -->
+  <path d="M 152,328 C 190,362 310,362 348,328 C 330,344 290,354 250,354 C 210,354 170,344 152,328 Z" 
+        fill="#FFE600" stroke="#231F20" stroke-width="3" />
+  <path d="M 180,344 L 250,352 L 320,344" stroke="#231F20" stroke-width="2" fill="none" />
+
+  <!-- Center Yogyakarta Keraton Gunungan / Tugu Icon (Crisp White Silhouette with Details) -->
+  <g fill="#FFFFFF" stroke="#231F20" stroke-width="2.5" stroke-linejoin="round">
+    <!-- Base Wings / Foliage -->
+    <path d="M 186,326 C 192,298 206,280 216,268 C 212,278 214,295 218,312 C 228,300 236,290 250,285 C 264,290 272,300 282,312 C 286,295 288,278 284,268 C 294,280 308,298 314,326 C 294,332 206,332 186,326 Z" />
+    
+    <!-- Middle Tier -->
+    <path d="M 218,274 C 222,252 232,238 238,224 C 235,234 238,246 242,256 C 246,248 248,240 250,230 C 252,240 254,248 258,256 C 262,246 265,234 262,224 C 268,238 278,252 282,274 C 268,278 232,278 218,274 Z" />
+
+    <!-- Top Crown Spire / Stupa -->
+    <path d="M 238,222 C 242,204 246,188 250,165 C 254,188 258,204 262,222 C 256,225 244,225 238,222 Z" />
+    
+    <!-- Central Stupa Pinnacle -->
+    <polygon points="250,154 247,166 253,166" fill="#FFFFFF" stroke="#231F20" stroke-width="2" />
+
+    <!-- Fine Internal Engravings of the Gunungan -->
+    <line x1="250" y1="170" x2="250" y2="328" stroke="#231F20" stroke-width="2" />
+    <path d="M 242,200 Q 250,195 258,200" fill="none" stroke="#231F20" stroke-width="1.8" />
+    <path d="M 236,236 Q 250,228 264,236" fill="none" stroke="#231F20" stroke-width="1.8" />
+    <path d="M 226,270 Q 250,260 274,270" fill="none" stroke="#231F20" stroke-width="1.8" />
+    <path d="M 205,304 Q 250,292 295,304" fill="none" stroke="#231F20" stroke-width="1.8" />
+  </g>
+
+  <!-- Big Bold Text: INSTIPER at the base of the shield -->
+  <text x="250" y="440" 
+        text-anchor="middle" 
+        font-family="'Arial Black', 'Inter', 'Impact', sans-serif" 
+        font-weight="900" 
+        font-size="46" 
+        letter-spacing="2.5" 
+        fill="#231F20"
+        stroke="#FFFFFF"
+        stroke-width="1.2">
+    INSTIPER
+  </text>
+</svg>
