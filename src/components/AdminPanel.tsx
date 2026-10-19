@@ -57,7 +57,8 @@ import {
   Eye,
   EyeOff,
   ChevronRight,
-  Database
+  Database,
+  Copy
 } from 'lucide-react';
 import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
@@ -4540,6 +4541,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">Tahun Ajaran Kurikulum</label>
+                <select
+                  value={editAcademicYear}
+                  onChange={(e) => setEditAcademicYear(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#009A44] bg-white"
+                >
+                  {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
+                    <option key={yr} value={yr}>
+                      T.A. {yr} {yr === currentActiveAcademicYear ? '(Aktif)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">Program Studi</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -5039,6 +5055,128 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: SALIN MATA KULIAH DARI TAHUN LALU (DUPLIKASI CEPAT) */}
+      {/* ============================================================== */}
+      {isCopyCoursesModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            {/* Header */}
+            <div className="bg-amber-500 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
+                  <Copy className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white">Salin Mata Kuliah Antar Tahun Ajaran</h3>
+                  <p className="text-[11px] text-white/90">Duplikasi cepat katalog kurikulum ke periode baru</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCopyCoursesModalOpen(false)}
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-slate-800 dark:text-slate-100">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Fitur ini akan menyalin seluruh mata kuliah dari Tahun Ajaran Asal ke Tahun Ajaran Tujuan. Sangat praktis saat membuka tahun ajaran baru sehingga Anda tidak perlu menginput ulang secara manual.
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    1. Tahun Ajaran Asal (Sumber Data)
+                  </label>
+                  <select
+                    value={copySourceYear}
+                    onChange={(e) => setCopySourceYear(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => {
+                      const count = courses.filter(c => (c.academicYear || '2025/2026') === yr).length;
+                      return (
+                        <option key={yr} value={yr}>
+                          T.A. {yr} ({count} Mata Kuliah Tersedia)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    2. Tahun Ajaran Tujuan (Penerima Duplikasi)
+                  </label>
+                  <select
+                    value={copyTargetYear}
+                    onChange={(e) => setCopyTargetYear(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => {
+                      const count = courses.filter(c => (c.academicYear || '2025/2026') === yr).length;
+                      return (
+                        <option key={yr} value={yr}>
+                          T.A. {yr} {yr === currentActiveAcademicYear ? '(Aktif)' : ''} ({count} Mata Kuliah Sekarang)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Ringkasan */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                  <div className="flex justify-between font-medium text-slate-600 dark:text-slate-400">
+                    <span>Mata kuliah yang akan disalin:</span>
+                    <strong className="text-amber-600 dark:text-amber-400">
+                      {courses.filter(c => (c.academicYear || '2025/2026') === copySourceYear).length} Mata Kuliah
+                    </strong>
+                  </div>
+                  <div className="flex justify-between font-medium text-slate-600 dark:text-slate-400">
+                    <span>Arah penyalinan:</span>
+                    <strong className="text-slate-900 dark:text-white">
+                      T.A. {copySourceYear} &rarr; T.A. {copyTargetYear}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCopyCoursesModalOpen(false)}
+                className="px-4 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyCourses}
+                disabled={courses.filter(c => (c.academicYear || '2025/2026') === copySourceYear).length === 0 || copySourceYear === copyTargetYear}
+                className={`px-5 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition-all ${
+                  courses.filter(c => (c.academicYear || '2025/2026') === copySourceYear).length === 0 || copySourceYear === copyTargetYear
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shadow-amber-500/25 active:scale-95'
+                }`}
+              >
+                <Copy className="w-4 h-4" />
+                <span>Salin Mata Kuliah Sekarang</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

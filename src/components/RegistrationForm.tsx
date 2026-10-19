@@ -29,7 +29,8 @@ import {
   Building2,
   HelpCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from 'lucide-react';
 
 interface RegistrationFormProps {
