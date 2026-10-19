@@ -178,9 +178,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCourseSks, setNewCourseSks] = useState(2);
   const [newCourseProdi, setNewCourseProdi] = useState<'agroteknologi' | 'agribisnis'>('agroteknologi');
   const [newCourseSemester, setNewCourseSemester] = useState<number>(3);
+  // Academic Year State & Management
+  const currentActiveAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
+  const [selectedCourseYear, setSelectedCourseYear] = useState<string>(currentActiveAcademicYear);
+  const [newCourseAcademicYear, setNewCourseAcademicYear] = useState<string>(currentActiveAcademicYear);
+  const [editAcademicYear, setEditAcademicYear] = useState<string>(currentActiveAcademicYear);
+
+  // Copy Courses modal state
+  const [isCopyCoursesModalOpen, setIsCopyCoursesModalOpen] = useState(false);
+  const [copySourceYear, setCopySourceYear] = useState<string>('2024/2025');
+  const [copyTargetYear, setCopyTargetYear] = useState<string>(currentActiveAcademicYear);
+
+  // Academic Year Settings draft (Superadmin / BAAK)
+  const [activeAcademicYearDraft, setActiveAcademicYearDraft] = useState<string>(
+    adminSettings.activeAcademicYear ?? DEFAULT_ADMIN_SETTINGS.activeAcademicYear ?? '2025/2026'
+  );
+  const [activeTermDraft, setActiveTermDraft] = useState<string>(
+    adminSettings.activeTerm ?? DEFAULT_ADMIN_SETTINGS.activeTerm ?? 'Ganjil'
+  );
+  const [availableYearsDraft, setAvailableYearsDraft] = useState<string[]>(
+    adminSettings.availableAcademicYears ?? DEFAULT_ADMIN_SETTINGS.availableAcademicYears ?? ['2023/2024', '2024/2025', '2025/2026', '2026/2027']
+  );
+  const [newAcademicYearInput, setNewAcademicYearInput] = useState<string>('');
+  const [academicYearSavedFeedback, setAcademicYearSavedFeedback] = useState<boolean>(false);
+
+  // Filter registrations by Academic Year
+  const [filterRegAcademicYear, setFilterRegAcademicYear] = useState<string>('all');
 
   // Filter courses in table by semester
-  const [filterCourseSemester, setFilterCourseSemester] = useState<'all' | '3' | '5'>('all');
+  const [filterCourseSemester, setFilterCourseSemester] = useState<string>('all');
 
   // Filter registrations by semester and class
   const [filterRegSemester, setFilterRegSemester] = useState<'all' | 'Semester 3' | 'Semester 5' | 'gabungan'>('all');
@@ -278,9 +304,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setSemesterSchedulesDraft(adminSettings.semesterSchedules ?? (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}));
     setRestrictedRepeatClassesDraft(adminSettings.restrictedRepeatClasses ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses || {}));
     setRestrictedRepeatClassReasonDraft(adminSettings.restrictedRepeatClassReason ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason || {}));
+    setActiveAcademicYearDraft(adminSettings.activeAcademicYear ?? '2025/2026');
+    setActiveTermDraft(adminSettings.activeTerm ?? 'Ganjil');
+    setAvailableYearsDraft(adminSettings.availableAcademicYears ?? ['2023/2024', '2024/2025', '2025/2026', '2026/2027']);
   }, [adminSettings]);
 
-  // Add course handler (FITUR 1 dengan Semester & Feedback In-App)
+  // Add course handler (FITUR 1 dengan Semester & Feedback In-App & Tahun Ajaran)
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName.trim()) {
@@ -288,12 +317,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
+    const targetYear = newCourseAcademicYear || (selectedCourseYear === 'all' ? currentActiveAcademicYear : selectedCourseYear);
     const newCourse: CourseItem = {
       id: `custom-${Date.now()}`,
       name: newCourseName.trim(),
       sks: Number(newCourseSks) || 1,
       prodi: newCourseProdi,
       semester: Number(newCourseSemester) || 3,
+      academicYear: targetYear,
       availableClasses: adminSettings.classOptions
     };
 
@@ -302,7 +333,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewCourseSks(2);
     setCourseFeedback({
       type: 'success',
-      message: `Mata kuliah "${newCourse.name}" (${newCourse.sks} SKS, Semester ${newCourse.semester}) berhasil ditambahkan!`
+      message: `Mata kuliah "${newCourse.name}" (${newCourse.sks} SKS, Semester ${newCourse.semester}, T.A. ${newCourse.academicYear}) berhasil ditambahkan!`
     });
     setTimeout(() => setCourseFeedback(null), 3500);
   };
@@ -314,6 +345,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditSks(course.sks);
     setEditProdi(course.prodi as any);
     setEditSemester(course.semester || 3);
+    setEditAcademicYear(course.academicYear || currentActiveAcademicYear);
     setEditClasses(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions);
     setCourseFeedback(null);
     setIsEditCourseModalOpen(true);
@@ -335,6 +367,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           sks: Number(editSks) || 1,
           prodi: editProdi,
           semester: Number(editSemester) || 3,
+          academicYear: editAcademicYear || c.academicYear || currentActiveAcademicYear,
           availableClasses: editClasses.length > 0 ? editClasses : adminSettings.classOptions
         };
       }
@@ -349,6 +382,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       message: `Mata kuliah "${editName.trim()}" (${editSks} SKS, Semester ${editSemester}) berhasil diperbarui!`
     });
     setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
+  // Salin Semua Matkul dari Satu Tahun Ajaran ke Tahun Ajaran Lain (Fitur Duplikasi Cepat)
+  const handleCopyCourses = () => {
+    if (!copySourceYear || !copyTargetYear) return;
+    if (copySourceYear === copyTargetYear) {
+      alert('Tahun ajaran asal dan tujuan tidak boleh sama.');
+      return;
+    }
+    const sourceCourses = courses.filter(c => (c.academicYear || '2025/2026') === copySourceYear);
+    if (sourceCourses.length === 0) {
+      alert(`Tidak ada mata kuliah pada Tahun Ajaran ${copySourceYear} untuk disalin.`);
+      return;
+    }
+
+    const cloned: CourseItem[] = sourceCourses.map(c => ({
+      ...c,
+      id: `clone-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      academicYear: copyTargetYear
+    }));
+
+    onUpdateCourses([...courses, ...cloned]);
+    setIsCopyCoursesModalOpen(false);
+    setSelectedCourseYear(copyTargetYear);
+    setCourseFeedback({
+      type: 'success',
+      message: `Berhasil menduplikasi ${cloned.length} mata kuliah dari T.A. ${copySourceYear} ke T.A. ${copyTargetYear}!`
+    });
+    setTimeout(() => setCourseFeedback(null), 4000);
+  };
+
+  // Simpan Pengaturan Tahun Ajaran Aktif (Superadmin / BAAK)
+  const handleSaveAcademicYearSettings = () => {
+    onUpdateSettings({
+      ...adminSettings,
+      activeAcademicYear: activeAcademicYearDraft,
+      activeTerm: activeTermDraft,
+      availableAcademicYears: availableYearsDraft
+    });
+    setAcademicYearSavedFeedback(true);
+    setTimeout(() => setAcademicYearSavedFeedback(false), 2500);
+  };
+
+  // Tambah Tahun Ajaran Baru ke Daftar
+  const handleAddNewAcademicYearOption = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = newAcademicYearInput.trim();
+    if (!clean) return;
+    if (availableYearsDraft.includes(clean)) {
+      alert(`Tahun ajaran "${clean}" sudah ada dalam daftar.`);
+      return;
+    }
+    const updated = [...availableYearsDraft, clean];
+    setAvailableYearsDraft(updated);
+    onUpdateSettings({
+      ...adminSettings,
+      availableAcademicYears: updated
+    });
+    setNewAcademicYearInput('');
   };
 
   // Confirm delete course (from Modal)
@@ -831,6 +923,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return {
         'No': index + 1,
         'ID Registrasi': r.id,
+        'Tahun Akademik': r.academicYear || adminSettings.activeAcademicYear || '2025/2026',
+        'Periode': r.academicTerm || adminSettings.activeTerm || 'Ganjil',
         'Tanggal Daftar': r.registrationDate,
         'Portal Semester': portalLabel,
         'NIM': r.nim,
@@ -851,6 +945,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     wsPendaftar['!cols'] = [
       { wch: 5 },   // No
       { wch: 18 },  // ID
+      { wch: 16 },  // Tahun Akademik
+      { wch: 12 },  // Periode
       { wch: 18 },  // Tanggal
       { wch: 22 },  // Portal Semester
       { wch: 16 },  // NIM
@@ -874,6 +970,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       r.selectedCourses.forEach(c => {
         rincianPesertaRows.push({
           'No': rincianCounter++,
+          'Tahun Akademik': r.academicYear || adminSettings.activeAcademicYear || '2025/2026',
           'Semester MK': c.semester ? `Semester ${c.semester}` : '-',
           'Nama Mata Kuliah': c.name,
           'SKS': c.sks,
@@ -892,6 +989,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const wsRincian = XLSX.utils.json_to_sheet(rincianPesertaRows);
     wsRincian['!cols'] = [
       { wch: 5 },
+      { wch: 16 }, // Tahun Akademik
       { wch: 14 },
       { wch: 32 },
       { wch: 8 },
@@ -916,6 +1014,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         'Nama Mata Kuliah': course.name,
         'SKS': course.sks,
         'Program Studi': course.prodi === 'agroteknologi' ? 'Agroteknologi' : 'Agribisnis',
+        'Tahun Ajaran': course.academicYear || adminSettings.activeAcademicYear || '2025/2026',
         'Jumlah Pendaftar': pendaftarMK.length,
         'Total Beban SKS': totalSksAkumulasi,
         'Daftar Mahasiswa (NIM - Nama - Kelas)': pendaftarMK.map(r => {
@@ -932,6 +1031,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       { wch: 32 },
       { wch: 8 },
       { wch: 16 },
+      { wch: 14 },
       { wch: 16 },
       { wch: 15 },
       { wch: 60 }
@@ -945,7 +1045,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     // Generate filename with date
     const today = new Date().toISOString().slice(0, 10);
-    const filterSuffix = filterRegSemester !== 'all' ? `_${filterRegSemester.replace(/\s+/g, '_')}` : '';
+    const filterSuffix = (filterRegSemester !== 'all' ? `_${filterRegSemester.replace(/\s+/g, '_')}` : '') +
+      (filterRegAcademicYear !== 'all' ? `_TA_${filterRegAcademicYear.replace('/', '-')}` : '');
     const filename = `Data_Pendaftaran_Mengulang_Pertanian${filterSuffix}_${today}.xlsx`;
 
     // Download Excel file
@@ -954,10 +1055,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Export registrations to CSV (fallback)
   const handleExportCSV = () => {
-    const headers = ['ID Registrasi', 'Tanggal Daftar', 'Email', 'Angkatan', 'Nama', 'NIM', 'No WA', 'Kelas Asal', 'Total SKS', 'Matakuliah Terpilih'];
+    const headers = ['ID Registrasi', 'Tahun Akademik', 'Tanggal Daftar', 'Portal Semester', 'Email', 'Angkatan', 'Nama', 'NIM', 'No WA', 'Kelas Asal', 'Total SKS', 'Matakuliah Terpilih'];
     const rows = filteredRegistrations.map(r => [
       r.id,
+      `"${r.academicYear || adminSettings.activeAcademicYear || '2025/2026'}"`,
       `"${r.registrationDate}"`,
+      `"${r.targetSemester || '-'}"`,
       `"${r.email}"`,
       r.angkatan,
       `"${r.nama}"`,
@@ -985,6 +1088,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       r.email.toLowerCase().includes(searchReg.toLowerCase());
 
     if (!matchesSearch) return false;
+
+    if (filterRegAcademicYear !== 'all') {
+      const regYear = r.academicYear || adminSettings.activeAcademicYear || '2025/2026';
+      if (regYear !== filterRegAcademicYear) return false;
+    }
 
     if (filterRegSemester === 'Semester 3') {
       return r.targetSemester === 'Semester 3';
@@ -1325,6 +1433,64 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             )}
 
+            {/* Toolbar Pemilih Tahun Ajaran & Tombol Duplikasi/Salin Matkul */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-[#166534] dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      Katalog Mata Kuliah per Tahun Ajaran
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
+                      Aktif: T.A. {adminSettings.activeAcademicYear || '2025/2026'} ({adminSettings.activeTerm || 'Ganjil'})
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Kelola mata kuliah secara independen untuk tiap tahun ajaran tanpa risiko merusak data tahun lalu.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <label htmlFor="course-year-select" className="text-xs font-bold text-slate-600 dark:text-slate-400 shrink-0">
+                    Pilih TA:
+                  </label>
+                  <select
+                    id="course-year-select"
+                    value={selectedCourseYear}
+                    onChange={(e) => {
+                      setSelectedCourseYear(e.target.value);
+                      if (e.target.value !== 'all') {
+                        setNewCourseAcademicYear(e.target.value);
+                      }
+                    }}
+                    className="h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-extrabold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166534] shadow-2xs cursor-pointer"
+                  >
+                    <option value="all">Semua Tahun Ajaran ({courses.length} MK)</option>
+                    {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
+                      <option key={yr} value={yr}>
+                        T.A. {yr} {yr === (adminSettings.activeAcademicYear || '2025/2026') ? '(Aktif)' : ''} ({courses.filter(c => (c.academicYear || '2025/2026') === yr).length} MK)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCopyCoursesModalOpen(true)}
+                  className="h-10 px-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+                  title="Salin/Duplikasi seluruh mata kuliah dari tahun ajaran sebelumnya ke tahun ajaran baru"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Salin dari Tahun Lalu</span>
+                </button>
+              </div>
+            </div>
+
             {/* Form Tambah Mata Kuliah Baru */}
             <div className="bg-gradient-to-br from-emerald-50/50 via-white to-slate-50 dark:from-emerald-950/20 dark:via-slate-800/60 dark:to-slate-800/60 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-5 sm:p-6 mb-8 shadow-xs">
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-emerald-200/50 dark:border-emerald-800/50">
@@ -1337,7 +1503,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       Tambah Mata Kuliah Baru (Katalog Kurikulum)
                     </h2>
                     <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                      Tentukan nama mata kuliah, semester tawar, beban SKS, dan prodi yang ditawarkan.
+                      Tentukan nama mata kuliah, tahun ajaran, semester tawar, beban SKS, dan prodi yang ditawarkan.
                     </p>
                   </div>
                 </div>
@@ -1347,7 +1513,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <form onSubmit={handleAddCourse} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                <div className="sm:col-span-5">
+                <div className="sm:col-span-4">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Nama Mata Kuliah
                   </label>
@@ -1359,6 +1525,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs"
                     required
                   />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Tahun Ajaran
+                  </label>
+                  <select
+                    value={newCourseAcademicYear}
+                    onChange={(e) => setNewCourseAcademicYear(e.target.value)}
+                    className="w-full h-10 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs cursor-pointer"
+                  >
+                    {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr} {yr === (adminSettings.activeAcademicYear || '2025/2026') ? '(Aktif)' : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -1377,6 +1560,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <option value={4}>Semester 4</option>
                     <option value={6}>Semester 6</option>
                     <option value={7}>Semester 7</option>
+                    <option value={8}>Semester 8</option>
                   </select>
                 </div>
 
@@ -1409,13 +1593,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </select>
                 </div>
 
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-1">
                   <button
                     type="submit"
-                    className="w-full h-10 px-4 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                    className="w-full h-10 px-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-98"
+                    title="Tambah Mata Kuliah"
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>Tambah MK</span>
+                    <span>Tambah</span>
                   </button>
                 </div>
               </form>
@@ -1516,8 +1701,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {courses
                     .filter(c => {
-                      if (filterCourseSemester === '3') return c.semester === 3;
-                      if (filterCourseSemester === '5') return c.semester === 5;
+                      if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
+                        return false;
+                      }
+                      if (filterCourseSemester !== 'all' && String(c.semester) !== filterCourseSemester) {
+                        return false;
+                      }
                       return true;
                     })
                     .map((course, idx) => {
@@ -1704,8 +1893,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="md:hidden divide-y divide-slate-200 border-t border-slate-200 bg-white">
                 {courses
                   .filter(c => {
-                    if (filterCourseSemester === '3') return c.semester === 3;
-                    if (filterCourseSemester === '5') return c.semester === 5;
+                    if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
+                      return false;
+                    }
+                    if (filterCourseSemester !== 'all' && String(c.semester) !== filterCourseSemester) {
+                      return false;
+                    }
                     return true;
                   })
                   .map((course, idx) => (
@@ -1777,6 +1970,125 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 2: SUPERADMIN - KELOLA OPSI KELAS & EDIT NOTE */}
         {activeTab === 'superadmin' && (
           <div className="space-y-8">
+
+            {/* ============================================================== */}
+            {/* FITUR 0: PENGATURAN TAHUN AJARAN & SEMESTER BERJALAN (MASTER PERIODE) */}
+            {/* ============================================================== */}
+            <div className="bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-[#166534] dark:border-emerald-600 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-emerald-200 dark:border-emerald-800/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#166534] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+                    <Calendar className="w-5 h-5 text-yellow-300" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                      Master Periode Tahun Ajaran &amp; Semester Berjalan
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#166534] border border-emerald-300">
+                        BAAK / Superadmin
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Tentukan Tahun Ajaran dan Semester yang sedang dibuka untuk pendaftaran mahasiswa mengulang.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {academicYearSavedFeedback && (
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 animate-fade-in flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      Periode Tersimpan!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveAcademicYearSettings}
+                    className="h-10 px-5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Periode Aktif</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                {/* Kolom 1: Pemilihan Tahun Ajaran Aktif */}
+                <div className="md:col-span-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Tahun Ajaran Aktif (Pendaftaran Dibuka):
+                  </label>
+                  <select
+                    value={activeAcademicYearDraft}
+                    onChange={(e) => setActiveAcademicYearDraft(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-black text-[#166534] dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-[#166534] cursor-pointer"
+                  >
+                    {availableYearsDraft.map((yr) => (
+                      <option key={yr} value={yr}>
+                        Tahun Akademik {yr}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-500">
+                    Portal mahasiswa otomatis hanya menampilkan matkul terdaftar pada T.A. ini.
+                  </p>
+                </div>
+
+                {/* Kolom 2: Pemilihan Semester Berjalan */}
+                <div className="md:col-span-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Semester Periode:
+                  </label>
+                  <select
+                    value={activeTermDraft}
+                    onChange={(e) => setActiveTermDraft(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166534] cursor-pointer"
+                  >
+                    <option value="Ganjil">Semester Ganjil</option>
+                    <option value="Genap">Semester Genap</option>
+                    <option value="Antara">Semester Antara / SP</option>
+                  </select>
+                  <p className="text-[11px] text-slate-500">
+                    Dicantumkan resmi pada lembar cetak hasil KRS pendaftar.
+                  </p>
+                </div>
+
+                {/* Kolom 3: Tambah Pilihan Tahun Ajaran Baru */}
+                <div className="md:col-span-5 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Tambah Tahun Ajaran Baru ke Daftar:
+                  </label>
+                  <form onSubmit={handleAddNewAcademicYearOption} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newAcademicYearInput}
+                      onChange={(e) => setNewAcademicYearInput(e.target.value)}
+                      placeholder="Contoh: 2026/2027"
+                      className="flex-1 h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#166534]"
+                    />
+                    <button
+                      type="submit"
+                      className="h-10 px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer"
+                    >
+                      + Tambah TA
+                    </button>
+                  </form>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {availableYearsDraft.map((yr) => (
+                      <span
+                        key={yr}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                          yr === activeAcademicYearDraft
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        {yr} {yr === activeAcademicYearDraft ? '(Aktif)' : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* ============================================================== */}
             {/* FITUR BUKA / TUTUP PENDAFTARAN BERDASARKAN SEMESTER & JADWAL PERIODE */}
@@ -3308,6 +3620,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <option value="all">Semua Kelas</option>
                       {adminSettings.classOptions.map((cls) => (
                         <option key={cls} value={cls}>{cls}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filter Tahun Ajaran */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 ml-1">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">T.A.:</span>
+                    <select
+                      value={filterRegAcademicYear}
+                      onChange={(e) => setFilterRegAcademicYear(e.target.value)}
+                      className="text-xs font-bold text-[#008744] dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">Semua Tahun</option>
+                      {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
+                        <option key={yr} value={yr}>{yr}</option>
                       ))}
                     </select>
                   </div>

@@ -28,8 +28,9 @@ export interface CourseItem {
   name: string;
   sks: number;
   prodi: 'agroteknologi' | 'agribisnis' | string;
-  semester: number; // e.g. 3, 5
+  semester: number; // e.g. 1, 3, 5
   availableClasses?: string[];
+  academicYear?: string; // e.g. '2024/2025', '2025/2026'
 }
 
 export interface SelectedCourseItem {
@@ -39,6 +40,7 @@ export interface SelectedCourseItem {
   prodi: string;
   semester?: number;
   selectedClass: string;
+  academicYear?: string;
 }
 
 export interface UploadedFileItem {
@@ -54,6 +56,8 @@ export interface SimpleRegistration {
   registrationDate: string; // Auto generate
   status: RegistrationStatus;
   targetSemester: string; // e.g. 'Semester 3', 'Semester 5', or 'Semua Semester'
+  academicYear?: string; // e.g. '2025/2026' (tercatat dari activeAcademicYear saat daftar)
+  academicTerm?: string; // e.g. 'Ganjil' / 'Genap'
   
   // Data Mahasiswa sesuai gambar
   email: string;
@@ -84,6 +88,11 @@ export interface AdminSettings {
   classOptions: string[];
   classNote: string;
   
+  // Pengaturan Tahun Ajaran Aktif & Daftar Periode (Superadmin / BAAK)
+  activeAcademicYear?: string; // Default: '2025/2026'
+  activeTerm?: string; // Default: 'Ganjil'
+  availableAcademicYears?: string[]; // Contoh: ['2023/2024', '2024/2025', '2025/2026', '2026/2027']
+
   // Pengaturan Biaya Mengulang Per SKS untuk Angkatan Tertentu (Superadmin)
   feePerSksEnabled: boolean;
   costPerSks: number; // Biaya per SKS dalam Rupiah, misal 50000

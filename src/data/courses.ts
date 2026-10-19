@@ -44,9 +44,15 @@ export const INITIAL_COURSES: CourseItem[] = [
   { id: 'agri-18', name: 'PU perkebunan dan kehutanan berkelanjutan', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   { id: 'agri-5a', name: 'Analisis Kelayakan Usaha Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   { id: 'agri-5b', name: 'Manajemen Pemasaran Hasil Pertanian', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
-  { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
-  { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
+  { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
 ];
+
+// Pastikan semua INITIAL_COURSES default memiliki academicYear: '2025/2026'
+export const INITIAL_COURSES_WITH_YEAR: CourseItem[] = INITIAL_COURSES.map(c => ({
+  ...c,
+  academicYear: c.academicYear || '2025/2026'
+}));
 
 export const ANGKATAN_OPTIONS = [
   '2020',
@@ -60,6 +66,7 @@ export const ANGKATAN_OPTIONS = [
 
 export const SEMESTER_OPTIONS = [
   { id: 'all', label: 'Semua Semester (Gabungan)', num: null },
+  { id: '1', label: 'Semester 1', num: 1 },
   { id: '3', label: 'Semester 3', num: 3 },
   { id: '5', label: 'Semester 5', num: 5 }
 ];
@@ -67,6 +74,9 @@ export const SEMESTER_OPTIONS = [
 export const DEFAULT_CLASSES = ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'];
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
+  activeAcademicYear: '2025/2026',
+  activeTerm: 'Ganjil',
+  availableAcademicYears: ['2023/2024', '2024/2025', '2025/2026', '2026/2027'],
   classOptions: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'],
   classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 3 atau Semester 5 sesuai kebutuhan.
 2. Admin BAAK dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel BAAK).

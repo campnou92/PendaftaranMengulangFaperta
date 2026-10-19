@@ -114,12 +114,20 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_COURSES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((c: CourseItem) => ({
+            ...c,
+            academicYear: c.academicYear || '2025/2026'
+          }));
+        }
       }
     } catch (e) {
       console.error('Failed to load courses', e);
     }
-    return INITIAL_COURSES;
+    return INITIAL_COURSES.map(c => ({
+      ...c,
+      academicYear: c.academicYear || '2025/2026'
+    }));
   });
 
   // Admin Settings: Class options & editable Note for Superadmin
@@ -132,6 +140,11 @@ export default function App() {
           return {
             ...DEFAULT_ADMIN_SETTINGS,
             ...parsed,
+            activeAcademicYear: parsed.activeAcademicYear || DEFAULT_ADMIN_SETTINGS.activeAcademicYear || '2025/2026',
+            activeTerm: parsed.activeTerm || DEFAULT_ADMIN_SETTINGS.activeTerm || 'Ganjil',
+            availableAcademicYears: Array.isArray(parsed.availableAcademicYears) && parsed.availableAcademicYears.length > 0 
+              ? parsed.availableAcademicYears 
+              : (DEFAULT_ADMIN_SETTINGS.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']),
             feePerSksEnabled: typeof parsed.feePerSksEnabled === 'boolean' ? parsed.feePerSksEnabled : DEFAULT_ADMIN_SETTINGS.feePerSksEnabled,
             costPerSks: typeof parsed.costPerSks === 'number' ? parsed.costPerSks : DEFAULT_ADMIN_SETTINGS.costPerSks,
             paidBatches: Array.isArray(parsed.paidBatches) ? parsed.paidBatches : DEFAULT_ADMIN_SETTINGS.paidBatches,

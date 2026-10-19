@@ -127,7 +127,8 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
 
   <div class="doc-title">
     <h2>KRS PENGULANGAN MATAKULIAH (${(registration.targetSemester || 'SEMESTER TERPILIH').toUpperCase()})</h2>
-    <div style="font-size: 9pt; color: #166534; font-weight: bold; margin-top: 3px;">Dokumen Resmi Registrasi Akademik Mahasiswa</div>
+    <div style="font-size: 10pt; font-weight: bold; margin-top: 2px; color: #166534;">TAHUN AKADEMIK ${registration.academicYear || adminSettings?.activeAcademicYear || '2025/2026'} (${(registration.academicTerm || adminSettings?.activeTerm || 'GANJIL').toUpperCase()})</div>
+    <div style="font-size: 9pt; color: #555; font-weight: 500; margin-top: 2px;">Dokumen Resmi Registrasi Akademik Mahasiswa</div>
   </div>
 
   <table class="identity-table">
@@ -136,6 +137,12 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
       <td style="font-weight: bold; text-transform: uppercase;">${registration.nama}</td>
       <td class="lbl">NIM</td>
       <td style="font-family: monospace; font-weight: bold;">${registration.nim}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Tahun Akademik</td>
+      <td style="font-weight: bold; color: #166534;">${registration.academicYear || adminSettings?.activeAcademicYear || '2025/2026'} (${registration.academicTerm || adminSettings?.activeTerm || 'Ganjil'})</td>
+      <td class="lbl">Portal Semester</td>
+      <td style="font-weight: bold;">${registration.targetSemester || 'Semester Terpilih'}</td>
     </tr>
     <tr>
       <td class="lbl">Email</td>
@@ -387,7 +394,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
             KARTU RENCANA STUDI (KRS) PENGULANGAN MATAKULIAH
           </h3>
           <p className="text-xs font-bold text-[#166534] print:text-black mt-0.5 uppercase">
-            Portal Semester: {registration.targetSemester || 'Semester Terpilih'}
+            Tahun Akademik {registration.academicYear || adminSettings?.activeAcademicYear || '2025/2026'} ({registration.academicTerm || adminSettings?.activeTerm || 'Ganjil'}) • {registration.targetSemester || 'Semester Terpilih'}
           </p>
         </div>
 
@@ -407,6 +414,20 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
                 </td>
                 <td className="p-2 font-mono font-bold text-slate-900 print:text-black">
                   {registration.nim}
+                </td>
+              </tr>
+              <tr className="border-b border-slate-300 print:border-black">
+                <td className="bg-slate-100 print:bg-transparent font-bold p-2 text-slate-700 print:text-black border-r border-slate-300 print:border-black">
+                  Tahun Akademik
+                </td>
+                <td className="p-2 font-bold text-[#166534] print:text-black">
+                  {registration.academicYear || adminSettings?.activeAcademicYear || '2025/2026'} ({registration.academicTerm || adminSettings?.activeTerm || 'Ganjil'})
+                </td>
+                <td className="bg-slate-100 print:bg-transparent font-bold p-2 text-slate-700 print:text-black border-l border-r border-slate-300 print:border-black">
+                  Portal Semester
+                </td>
+                <td className="p-2 text-slate-900 print:text-black font-semibold">
+                  {registration.targetSemester || 'Semester Terpilih'}
                 </td>
               </tr>
               <tr className="border-b border-slate-300 print:border-black">

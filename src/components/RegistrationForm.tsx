@@ -46,8 +46,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   adminSettings,
   onSubmitSuccess,
 }) => {
-  // 1. Semester Portal Selection: '3' | '5' | 'all'
-  const [selectedSemester, setSelectedSemester] = useState<'3' | '5' | 'all'>('3');
+  // 1. Tahun Ajaran & Semester Aktif (Solusi 3: Hanya Menampilkan Tahun Ajaran yang Aktif)
+  const activeAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
+  const activeTerm = adminSettings.activeTerm || 'Ganjil';
+
+  // HANYA ambil mata kuliah yang terdaftar pada Tahun Ajaran Aktif (atau tanpa academicYear sebagai fallback aman)
+  const activeYearCourses = useMemo(() => {
+    return courses.filter((c) => !c.academicYear || c.academicYear === activeAcademicYear);
+  }, [courses, activeAcademicYear]);
+
+  // Ekstrak secara dinamis semester apa saja yang memang memiliki mata kuliah di TA aktif (misal [1, 3, 5])
+  const activeSemesters = useMemo(() => {
+    const semSet = new Set<number>();
+    activeYearCourses.forEach((c) => {
+      if (typeof c.semester === 'number') semSet.add(c.semester);
+    });
+    return Array.from(semSet).sort((a, b) => a - b);
+  }, [activeYearCourses]);
+
+  // Semester Portal Selection: 'all' atau nomor semester tertentu (misal '1', '3', '5')
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
 
   // 2. Student Identity Form Fields
   const [email, setEmail] = useState('');
@@ -217,37 +235,36 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const costPerSks = adminSettings.costPerSks ?? 50000;
   const isPaidBatch = isFeeSystemActive && paidBatches.includes(angkatan);
 
-  // Filter courses based on portal semester & prodi tab & search query
+  // Filter courses based on activeYearCourses, dynamic semester, prodi tab & smart similar search
   const filteredCourses = useMemo(() => {
-    return courses.filter((c) => {
+    return activeYearCourses.filter((c) => {
       // 1. Filter Semester
-      if (selectedSemester === '3' && c.semester !== 3) return false;
-      if (selectedSemester === '5' && c.semester !== 5) return false;
+      if (selectedSemester !== 'all' && String(c.semester) !== selectedSemester) {
+        return false;
+      }
 
       // 2. Filter Prodi Tab
       if (activeProdiTab !== 'all' && c.prodi !== activeProdiTab) return false;
 
-      // 3. Search Query
+      // 3. Smart Similar / Flexible Live Search
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchName = c.name.toLowerCase().includes(query);
-        const matchCode = c.id.toLowerCase().includes(query);
-        const matchProdi = c.prodi.toLowerCase().includes(query);
-        if (!matchName && !matchCode && !matchProdi) return false;
+        const cleanQuery = searchQuery.toLowerCase().trim();
+        const queryWords = cleanQuery.split(/\s+/).filter(Boolean);
+        const targetText = `${c.name} ${c.id} ${c.prodi} ${c.semester ? `semester ${c.semester}` : ''}`.toLowerCase();
+        const isMatch = queryWords.every((word) => targetText.includes(word));
+        if (!isMatch) return false;
       }
 
       return true;
     });
-  }, [courses, selectedSemester, activeProdiTab, searchQuery]);
+  }, [activeYearCourses, selectedSemester, activeProdiTab, searchQuery]);
 
-  // Courses counts per tab
+  // Courses counts per tab based on activeYearCourses and selectedSemester
   const tabCounts = useMemo(() => {
-    const semFilter = (c: CourseItem) => {
-      if (selectedSemester === '3') return c.semester === 3;
-      if (selectedSemester === '5') return c.semester === 5;
-      return true;
-    };
-    const semCourses = courses.filter(semFilter);
+    const semCourses = activeYearCourses.filter((c) => {
+      if (selectedSemester === 'all') return true;
+      return String(c.semester) === selectedSemester;
+    });
     const agro = semCourses.filter(c => c.prodi === 'agroteknologi');
     const agri = semCourses.filter(c => c.prodi === 'agribisnis');
 
@@ -263,18 +280,18 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       allTotal: semCourses.length,
       allSelected: selectedTotal
     };
-  }, [courses, selectedSemester, courseSelections]);
+  }, [activeYearCourses, selectedSemester, courseSelections]);
 
   // Selected courses list
   const selectedList = useMemo(() => {
     const list: CourseItem[] = [];
-    courses.forEach((c) => {
+    activeYearCourses.forEach((c) => {
       if (courseSelections[c.id]?.checked) {
         list.push(c);
       }
     });
     return list;
-  }, [courses, courseSelections]);
+  }, [activeYearCourses, courseSelections]);
 
   const totalSks = useMemo(() => {
     return selectedList.reduce((acc, curr) => acc + curr.sks, 0);
@@ -318,7 +335,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const handleApplyBatchClass = (cls: string) => {
     setCourseSelections((prev) => {
       const next = { ...prev };
-      courses.forEach((c) => {
+      activeYearCourses.forEach((c) => {
         if (next[c.id]?.checked) {
           const available = getAvailableClasses(c);
           if (available.includes(cls) && !isClassRestrictedForRepeat(cls, c.semester, adminSettings)) {
@@ -353,20 +370,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     });
   };
 
-  // Status portal info
-  const getPortalInfo = (sem: '3' | '5' | 'all') => {
-    const semNumber = sem === '3' ? 3 : sem === '5' ? 5 : undefined;
-    const status = semNumber 
+  // Status portal info dinamis
+  const getPortalInfo = (sem: string) => {
+    if (sem === 'all') {
+      const activeSemestersText = activeSemesters.map(s => `Sem ${s}`).join(' & ');
+      return {
+        title: `Gabungan (${activeSemestersText || 'Semua'})`,
+        courseCount: `${activeYearCourses.length} Mata Kuliah Tersedia`,
+        isOpen: true,
+        scheduleText: 'Sesuai Jadwal Akademik'
+      };
+    }
+    const semNumber = Number(sem);
+    const status = !isNaN(semNumber) 
       ? getSemesterStatus(semNumber, adminSettings) 
       : { isOpen: true, message: 'Sesuai Jadwal Akademik' };
-    const count = courses.filter((c) => sem === 'all' || (sem === '3' && c.semester === 3) || (sem === '5' && c.semester === 5)).length;
-
-    let title = sem === '3' ? 'Semester 3' : sem === '5' ? 'Semester 5' : 'Gabungan Semester 3 & 5';
-    let countLabel = `${count} Mata Kuliah Tersedia`;
+    const count = activeYearCourses.filter((c) => c.semester === semNumber).length;
 
     return {
-      title,
-      courseCount: countLabel,
+      title: `Semester ${semNumber}`,
+      courseCount: `${count} Mata Kuliah Tersedia`,
       isOpen: status.isOpen,
       scheduleText: status.message
     };
@@ -468,21 +491,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         prodi: c.prodi,
         semester: c.semester,
         selectedClass: getSelectedClass(c),
+        academicYear: c.academicYear || activeAcademicYear,
       };
     });
 
     // Deteksi semester dinamis berdasarkan matakuliah aktual yang dipilih
-    const hasSem3 = selectedList.some(c => c.semester === 3);
-    const hasSem5 = selectedList.some(c => c.semester === 5);
-    let targetSemesterLabel = 'Semester 3';
-    if (hasSem3 && hasSem5) {
-      targetSemesterLabel = 'Semester 3 & 5 (Gabungan)';
-    } else if (hasSem5) {
-      targetSemesterLabel = 'Semester 5';
-    } else if (hasSem3) {
-      targetSemesterLabel = 'Semester 3';
+    const uniqueChosenSemesters = Array.from(new Set(selectedList.map(c => c.semester))).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+    let targetSemesterLabel = 'Semua Semester';
+    if (uniqueChosenSemesters.length === 1) {
+      targetSemesterLabel = `Semester ${uniqueChosenSemesters[0]}`;
+    } else if (uniqueChosenSemesters.length > 1) {
+      targetSemesterLabel = `Semester ${uniqueChosenSemesters.join(' & ')} (Gabungan)`;
     } else {
-      targetSemesterLabel = selectedSemester === 'all' ? 'Semester 3 & 5' : `Semester ${selectedSemester}`;
+      targetSemesterLabel = selectedSemester === 'all' ? 'Semua Semester' : `Semester ${selectedSemester}`;
     }
 
     // Generator ID unik dengan proteksi bentrok (Timestamp + 5 Digit Acak Aman)
@@ -498,6 +519,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       selectedCourses: finalSelectedCourses,
       totalSks,
       registrationDate: autoDate,
+      academicYear: activeAcademicYear,
+      academicTerm: activeTerm,
       status: 'pending',
       paymentStatus: 'pending',
       targetSemester: targetSemesterLabel
@@ -746,21 +769,84 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             
             {/* ============================================================
                 2. LANGKAH 1: PILIH PORTAL SEMESTER (Section 2)
-                3 radio-cards: Sem 3, Sem 5, Gabungan.
+                Dinamis sesuai semester yang memiliki mata kuliah di TA Aktif
                ============================================================ */}
             <section className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="mb-4">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#166534] text-white flex items-center justify-center text-xs font-bold">1</span>
-                  <span>Pilih Portal Semester</span>
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-8">
-                  Tentukan semester mata kuliah yang ingin Anda daftarkan untuk diulang.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#166534] text-white flex items-center justify-center text-xs font-bold">1</span>
+                    <span>Pilih Portal Semester (T.A. {activeAcademicYear})</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-8">
+                    Tentukan semester mata kuliah yang ingin Anda daftarkan untuk diulang pada periode {activeTerm}.
+                  </p>
+                </div>
+
+                {/* Dropdown Semester Dinamis */}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <label htmlFor="semester-dropdown" className="text-xs font-bold text-slate-600 dark:text-slate-400 shrink-0">
+                    Filter Semester:
+                  </label>
+                  <select
+                    id="semester-dropdown"
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    className="h-10 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166534] shadow-2xs cursor-pointer"
+                  >
+                    <option value="all">Semua Semester ({activeYearCourses.length} Matkul)</option>
+                    {activeSemesters.map((sem) => {
+                      const count = activeYearCourses.filter(c => c.semester === sem).length;
+                      return (
+                        <option key={sem} value={String(sem)}>
+                          Semester {sem} ({count} Matkul)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                {(['3', '5', 'all'] as const).map((semKey) => {
+              {/* Grid Kartu Semester Dinamis */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* Kartu: Semua Semester */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedSemester('all')}
+                  className={`text-left p-4 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between ${
+                    selectedSemester === 'all'
+                      ? 'border-2 border-[#166534] bg-emerald-50/50 dark:bg-emerald-950/20 shadow-xs ring-1 ring-[#166534]/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                      Semua Semester
+                    </h3>
+                    {selectedSemester === 'all' ? (
+                      <CheckCircle2 className="w-5 h-5 text-[#166534] dark:text-emerald-400 shrink-0" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 shrink-0 mt-0.5" />
+                    )}
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                    {activeYearCourses.length} Mata Kuliah Tersedia
+                  </p>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className="font-semibold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/50 text-[#166534] dark:text-emerald-300">
+                      Gabungan
+                    </span>
+                    <span className="text-slate-400 text-[10px] truncate max-w-[130px]">
+                      {activeSemesters.length > 0 ? activeSemesters.map(s => `Sem ${s}`).join(', ') : 'Semua'}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Kartu per Semester yang benar-benar ada di TA Aktif */}
+                {activeSemesters.map((sem) => {
+                  const semKey = String(sem);
                   const info = getPortalInfo(semKey);
                   const isSelected = selectedSemester === semKey;
 
@@ -777,7 +863,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                          {info.title}
+                          Semester {sem}
                         </h3>
                         {isSelected ? (
                           <CheckCircle2 className="w-5 h-5 text-[#166534] dark:text-emerald-400 shrink-0" />
@@ -1088,27 +1174,46 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </div>
 
               {/* Search bar + Select all */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Cari mata kuliah atau kode..."
-                    className="w-full h-10 pl-10 pr-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#166534]"
-                  />
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Cari matkul serupa (misal: tanah, agronomi, kimia, biologi)..."
+                      className="w-full h-10 pl-10 pr-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#166534] shadow-2xs"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                        title="Hapus pencarian"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none self-end sm:self-center shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={areAllVisibleSelected}
+                      onChange={handleToggleSelectAllVisible}
+                      className="w-4 h-4 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer"
+                    />
+                    <span>Pilih Semua yang Tampil ({filteredCourses.length})</span>
+                  </label>
                 </div>
 
-                <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none self-end sm:self-center shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={areAllVisibleSelected}
-                    onChange={handleToggleSelectAllVisible}
-                    className="w-4 h-4 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer"
-                  />
-                  <span>Pilih Semua yang Tampil ({filteredCourses.length})</span>
-                </label>
+                {searchQuery.trim() && (
+                  <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80 animate-fade-in">
+                    <span className="font-bold">🔍 Live Search:</span>
+                    <span>Ditemukan <strong>{filteredCourses.length}</strong> mata kuliah yang cocok dengan kata kunci "{searchQuery}"</span>
+                  </div>
+                )}
               </div>
 
               {/* Course rows list */}

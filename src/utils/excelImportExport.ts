@@ -109,7 +109,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
       'SKS',
       'SEMESTER',
       'PROGRAM_STUDI',
-      'KELAS_TERSEDIA'
+      'KELAS_TERSEDIA',
+      'TAHUN_AJARAN'
     ],
     [
       'agro-101',
@@ -117,7 +118,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
       3,
       3,
       'agroteknologi',
-      'Kelas A, Kelas B, Kelas C, Kelas D, Kelas Karyawan'
+      'Kelas A, Kelas B, Kelas C, Kelas D, Kelas Karyawan',
+      '2025/2026'
     ],
     [
       'agro-102',
@@ -125,7 +127,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
       3,
       5,
       'agroteknologi',
-      'Kelas A, Kelas B, Kelas C, Kelas Karyawan'
+      'Kelas A, Kelas B, Kelas C, Kelas Karyawan',
+      '2025/2026'
     ],
     [
       'agri-201',
@@ -133,7 +136,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
       3,
       3,
       'agribisnis',
-      'Kelas A, Kelas B, Kelas C, Kelas Karyawan'
+      'Kelas A, Kelas B, Kelas C, Kelas Karyawan',
+      '2025/2026'
     ],
     [
       'agri-202',
@@ -141,7 +145,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
       2,
       5,
       'agribisnis',
-      'Kelas A, Kelas B, Kelas C, Kelas D, Kelas Karyawan'
+      'Kelas A, Kelas B, Kelas C, Kelas D, Kelas Karyawan',
+      '2025/2026'
     ]
   ];
 
@@ -154,7 +159,8 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
     { wch: 8 },  // SKS
     { wch: 12 }, // SEMESTER
     { wch: 18 }, // PROGRAM_STUDI
-    { wch: 55 }  // KELAS_TERSEDIA
+    { wch: 55 }, // KELAS_TERSEDIA
+    { wch: 16 }  // TAHUN_AJARAN
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Master_Matakuliah');
@@ -280,6 +286,7 @@ export async function parseMasterCoursesFile(
     let colSemester = headers.findIndex((h: string) => h.includes('SEMESTER') || h === 'SMT');
     let colProdi = headers.findIndex((h: string) => h.includes('PRODI') || h.includes('JURUSAN'));
     let colKelas = headers.findIndex((h: string) => h.includes('KELAS'));
+    let colTahun = headers.findIndex((h: string) => h.includes('TAHUN') || h.includes('AKADEMIK') || h.includes('AJARAN') || h === 'TA');
 
     if (colKode === -1) colKode = 0;
     if (colNama === -1) colNama = 1;
@@ -314,13 +321,16 @@ export async function parseMasterCoursesFile(
         }
       }
 
+      const tahunRaw = colTahun !== -1 ? String(row[colTahun] || '').trim() : '';
+
       results.push({
         id: kode,
         name: nama,
         sks,
         prodi,
         semester,
-        availableClasses
+        availableClasses,
+        academicYear: tahunRaw || undefined
       });
     }
 
