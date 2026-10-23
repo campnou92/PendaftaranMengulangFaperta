@@ -30,8 +30,10 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronUp,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
+import { checkNimIsRegistered } from '../lib/firebase';
 
 interface RegistrationFormProps {
   courses: CourseItem[];
@@ -99,11 +101,22 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Helper untuk menentukan target batas waktu penutupan pendaftaran
   const getTargetDeadline = (): { date: Date; formatted: string } => {
-    const semKey = selectedSemester === 'all' ? '3' : selectedSemester;
-    const schedule = adminSettings.semesterSchedules?.[semKey];
-    const targetStr = schedule?.endDate || adminSettings.semesterSchedules?.['3']?.endDate || '2026-10-21T23:59:59';
-    const target = new Date(targetStr);
-    const validTarget = isNaN(target.getTime()) ? new Date('2026-10-21T23:59:59') : target;
+    let targetStr: string | undefined;
+    if (selectedSemester !== 'all') {
+      targetStr = adminSettings.semesterSchedules?.[selectedSemester]?.endDate;
+    } else {
+      const semKeys = activeSemesters.length > 0 ? activeSemesters.map(String) : ['3', '5'];
+      for (const k of semKeys) {
+        const s = adminSettings.semesterSchedules?.[k];
+        if (s?.endDate) {
+          targetStr = s.endDate;
+          break;
+        }
+      }
+    }
+    const finalStr = targetStr || adminSettings.semesterSchedules?.['3']?.endDate || '2026-11-30T23:59:59';
+    const target = new Date(finalStr);
+    const validTarget = isNaN(target.getTime()) ? new Date('2026-11-30T23:59:59') : target;
     const formatted = validTarget.toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
@@ -210,12 +223,53 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   };
 
   // Check duplicate registration by NIM (hanya jika pendaftaran aktif / belum ditolak)
-  const duplicateRegistration = useMemo(() => {
+  const localDuplicate = useMemo(() => {
     if (!nim.trim()) return null;
     return existingRegistrations.find(
       (r) => r.nim.toLowerCase().trim() === nim.toLowerCase().trim() && r.status !== 'rejected'
     );
   }, [nim, existingRegistrations]);
+
+  const [cloudDuplicate, setCloudDuplicate] = useState<SimpleRegistration | null>(null);
+  const [isCheckingCloudNim, setIsCheckingCloudNim] = useState<boolean>(false);
+
+  // Debounced cloud check for NIM to prevent cross-device duplicate submission
+  useEffect(() => {
+    const clean = nim.trim().toUpperCase();
+    if (clean.length < 5) {
+      setCloudDuplicate(null);
+      setIsCheckingCloudNim(false);
+      return;
+    }
+
+    if (localDuplicate) {
+      setCloudDuplicate(localDuplicate);
+      return;
+    }
+
+    let isMounted = true;
+    setIsCheckingCloudNim(true);
+    const timer = setTimeout(() => {
+      checkNimIsRegistered(clean).then((res) => {
+        if (!isMounted) return;
+        setIsCheckingCloudNim(false);
+        if (res.exists && res.registration) {
+          setCloudDuplicate(res.registration);
+        } else {
+          setCloudDuplicate(null);
+        }
+      }).catch(() => {
+        if (isMounted) setIsCheckingCloudNim(false);
+      });
+    }, 450);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [nim, localDuplicate]);
+
+  const duplicateRegistration = localDuplicate || cloudDuplicate;
 
   // Mahasiswa yang pendaftarannya ditolak diberi izin mendaftar ulang perbaikan
   const previousRejectedRegistration = useMemo(() => {
@@ -415,27 +469,33 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return `Kelas Beasiswa dikhususkan untuk penerima beasiswa dan tidak diperkenankan untuk mengulang mata kuliah. Silakan pilih kelas reguler yang tersedia.`;
   }, [adminSettings]);
 
-  // Status jadwal pembukaan portal semester
-  const sem3Status = useMemo(() => getSemesterStatus(3, adminSettings), [adminSettings]);
-  const sem5Status = useMemo(() => getSemesterStatus(5, adminSettings), [adminSettings]);
-
+  // Status jadwal pembukaan portal semester (dinamis untuk semua semester aktif)
   const activePortalStatus = useMemo(() => {
-    if (selectedSemester === '3') return sem3Status;
-    if (selectedSemester === '5') return sem5Status;
+    if (selectedSemester !== 'all') {
+      const semNum = Number(selectedSemester);
+      if (!isNaN(semNum)) {
+        return getSemesterStatus(semNum, adminSettings);
+      }
+    }
+    const semesters = activeSemesters.length > 0 ? activeSemesters : [3, 5];
+    const statuses = semesters.map(s => getSemesterStatus(s, adminSettings));
+    const anyOpen = statuses.some(s => s.isOpen);
     return {
-      isOpen: sem3Status.isOpen || sem5Status.isOpen,
-      message: 'Portal Gabungan Semester 3 & 5'
+      isOpen: anyOpen,
+      message: anyOpen ? 'Portal Gabungan Pendaftaran Mengulang' : 'Seluruh jadwal pendaftaran semester saat ini ditutup'
     };
-  }, [selectedSemester, sem3Status, sem5Status]);
+  }, [selectedSemester, activeSemesters, adminSettings]);
 
   // Cek apakah ada matakuliah yang dipilih berada di semester yang sedang ditutup
   const closedCourseSelected = useMemo(() => {
     return selectedList.find(c => {
-      if (c.semester === 3 && !sem3Status.isOpen) return true;
-      if (c.semester === 5 && !sem5Status.isOpen) return true;
+      if (typeof c.semester === 'number') {
+        const s = getSemesterStatus(c.semester, adminSettings);
+        return !s.isOpen;
+      }
       return false;
     });
-  }, [selectedList, sem3Status, sem5Status]);
+  }, [selectedList, adminSettings]);
 
   // Validation before submission
   const canSubmit = useMemo(() => {
@@ -451,12 +511,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const getSubmitDisabledReason = (): string | null => {
     if (!activePortalStatus.isOpen) {
-      return activePortalStatus.message || `Pendaftaran untuk ${selectedSemester === '3' ? 'Semester 3' : 'Semester 5'} saat ini sedang ditutup oleh pihak Fakultas.`;
+      return activePortalStatus.message || `Pendaftaran untuk ${selectedSemester === 'all' ? 'seluruh semester' : `Semester ${selectedSemester}`} saat ini sedang ditutup oleh pihak Fakultas.`;
     }
     if (closedCourseSelected) {
       return `Mata kuliah "${closedCourseSelected.name}" berada di Semester ${closedCourseSelected.semester} yang saat ini pendaftarannya sedang ditutup.`;
     }
-    if (duplicateRegistration) return `NIM ${nim} sudah terdaftar sebelumnya. Hubungi admin jika ingin melakukan perubahan.`;
+    if (duplicateRegistration) return `NIM ${nim} sudah terdaftar sebelumnya atas nama ${duplicateRegistration.nama} (ID: ${duplicateRegistration.id}). Anda tidak dapat mendaftar dua kali kecuali pendaftaran sebelumnya ditolak.`;
     if (!email.trim() || !nama.trim() || !nim.trim() || !noWa.trim() || !kelasAsal.trim()) {
       return 'Harap lengkapi semua data mahasiswa yang wajib diisi (*).';
     }
@@ -957,13 +1017,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     placeholder="Contoh: 2112345"
                     className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
                   />
-                  {duplicateRegistration && (
-                    <p className="text-xs text-red-600 mt-1 font-semibold flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>NIM ini sudah terdaftar atas nama {duplicateRegistration.nama}.</span>
+                  {isCheckingCloudNim && (
+                    <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                      <Loader2 className="w-3 h-3 animate-spin text-[#166534]" />
+                      <span>Memeriksa status pendaftaran NIM di server cloud...</span>
                     </p>
                   )}
-                  {previousRejectedRegistration && !duplicateRegistration && (
+                  {duplicateRegistration && !isCheckingCloudNim && (
+                    <div className="mt-2 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-200 animate-fade-in">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>NIM {duplicateRegistration.nim} sudah terdaftar ({duplicateRegistration.id})</span>
+                      </div>
+                      <p className="mt-0.5 text-[11px] text-rose-700 dark:text-rose-300">
+                        Pendaftaran atas nama <strong>{duplicateRegistration.nama}</strong> sudah aktif di sistem. Satu NIM hanya diizinkan mendaftar satu kali. Buka menu <strong>Cek Status</strong> untuk mencetak KRS Anda.
+                      </p>
+                    </div>
+                  )}
+                  {previousRejectedRegistration && !duplicateRegistration && !isCheckingCloudNim && (
                     <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 font-semibold flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>Pendaftaran sebelumnya ditolak{previousRejectedRegistration.rejectionReason ? ` (${previousRejectedRegistration.rejectionReason})` : ''}. Anda dapat mengajukan pendaftaran perbaikan.</span>
@@ -1019,19 +1090,94 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 </div>
 
-                {/* Kelas Asal */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Kelas Asal Reguler <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={kelasAsal}
-                    onChange={(e) => setKelasAsal(e.target.value)}
-                    placeholder="Contoh: Agroteknologi 2A"
-                    className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
-                  />
+                {/* Kelas Asal - Disinkronkan dengan Data Opsi Kelas Admin */}
+                <div className="flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Kelas Asal Reguler <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                        {adminSettings.kelasAsalMode === 'select' ? 'Pilihan Data Admin' : 'Sesuai Data Kelas Admin'}
+                      </span>
+                    </div>
+
+                    {adminSettings.kelasAsalMode === 'select' ? (
+                      <select
+                        required
+                        value={kelasAsal}
+                        onChange={(e) => setKelasAsal(e.target.value)}
+                        className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs cursor-pointer"
+                      >
+                        <option value="">-- Pilih Kelas Asal ({globalClassOptions.length} Opsi Admin) --</option>
+                        {globalClassOptions.map((cls) => (
+                          <option key={cls} value={cls}>
+                            {cls}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div>
+                        <input
+                          type="text"
+                          required
+                          list="admin-kelas-asal-datalist"
+                          value={kelasAsal}
+                          onChange={(e) => setKelasAsal(e.target.value)}
+                          placeholder={adminSettings.kelasAsalPlaceholder || `Contoh: ${globalClassOptions[0] || 'Kelas A'}`}
+                          className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
+                        />
+                        <datalist id="admin-kelas-asal-datalist">
+                          {globalClassOptions.map((cls) => (
+                            <option key={cls} value={cls} />
+                          ))}
+                        </datalist>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Opsi Pilihan Cepat Sesuai Data Kelas Admin */}
+                  {adminSettings.kelasAsalMode !== 'select' && globalClassOptions.length > 0 && (
+                    <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                          Pilihan Cepat Kelas Admin:
+                        </span>
+                        {kelasAsal && (
+                          <button
+                            type="button"
+                            onClick={() => setKelasAsal('')}
+                            className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {globalClassOptions.map((cls) => {
+                          const isSelected = kelasAsal === cls;
+                          return (
+                            <button
+                              key={cls}
+                              type="button"
+                              onClick={() => setKelasAsal(cls)}
+                              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                                isSelected
+                                  ? 'bg-[#166534] text-white shadow-xs font-bold ring-2 ring-[#166534]/30'
+                                  : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-[#166534] dark:hover:border-emerald-500'
+                              }`}
+                            >
+                              {isSelected && <span className="text-white text-[10px] font-black">✓</span>}
+                              <span>{cls}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
+                        Tap nama kelas di atas untuk mengisi instan, atau ketik langsung jika ada variasi nama kelas.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
               </div>

@@ -88,7 +88,12 @@ export interface AdminSettings {
   classOptions: string[];
   classNote: string;
   
-  // Pengaturan Tahun Ajaran Aktif & Daftar Periode (Superadmin / BAAK)
+  // Pengaturan Format & Contoh Pengisian Kelas Asal (Superadmin)
+  kelasAsalMode?: 'input_with_chips' | 'select' | 'input';
+  kelasAsalPlaceholder?: string;
+  kelasAsalCustomOptions?: string[];
+
+  // Pengaturan Tahun Ajaran Aktif & Daftar Periode (Superadmin / Admin Fakultas)
   activeAcademicYear?: string; // Default: '2025/2026'
   activeTerm?: string; // Default: 'Ganjil'
   availableAcademicYears?: string[]; // Contoh: ['2023/2024', '2024/2025', '2025/2026', '2026/2027']

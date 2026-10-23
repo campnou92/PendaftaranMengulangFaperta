@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { 
   CourseItem, 
   SimpleRegistration, 
+  RegistrationStatus,
   AdminSettings, 
   AuthUser,
   ManagedUser,
@@ -80,6 +81,7 @@ interface AdminPanelProps {
   onUpdateCourses: (newCourses: CourseItem[]) => void;
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onDeleteRegistration: (id: string) => void;
+  onUpdateRegistrationStatus?: (id: string, status: RegistrationStatus, rejectionReason?: string) => void;
   onViewReceipt: (registration: SimpleRegistration) => void;
   onSwitchToFinance?: () => void;
   onLogout?: () => void;
@@ -93,6 +95,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateCourses,
   onUpdateSettings,
   onDeleteRegistration,
+  onUpdateRegistrationStatus,
   onViewReceipt,
   onSwitchToFinance,
   onLogout
@@ -167,6 +170,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editUserActive, setEditUserActive] = useState<boolean>(true);
   const [editUserFeedback, setEditUserFeedback] = useState<string | null>(null);
 
+  // Superadmin: Fitur Mengintip (Reveal/Peek) Password Semua Akun
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+  const [showAllPasswords, setShowAllPasswords] = useState<boolean>(false);
+  const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
+
+  const toggleRevealPassword = (userId: string) => {
+    setRevealedPasswords(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const handleCopyCredentials = (user: ManagedUser) => {
+    const text = `Username: ${user.username}\nPassword: ${user.password}\nPeran: ${user.title}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedUserId(user.id);
+      setTimeout(() => setCopiedUserId(null), 2500);
+    }).catch(() => {});
+  };
+
   const refreshUsersList = () => {
     setManagedUsers(getStoredUsers());
   };
@@ -230,6 +253,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // In-app Confirmations for Registrations and Users (No blocked window.confirm)
   const [registrationToDelete, setRegistrationToDelete] = useState<SimpleRegistration | null>(null);
+  const [statusModalReg, setStatusModalReg] = useState<SimpleRegistration | null>(null);
+  const [selectedNewStatus, setSelectedNewStatus] = useState<RegistrationStatus>('approved');
+  const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
 
   // Superadmin: Note editing state
@@ -389,12 +415,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleCopyCourses = () => {
     if (!copySourceYear || !copyTargetYear) return;
     if (copySourceYear === copyTargetYear) {
-      alert('Tahun ajaran asal dan tujuan tidak boleh sama.');
+      setCourseFeedback({ type: 'error', message: 'Tahun ajaran asal dan tujuan tidak boleh sama.' });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
     const sourceCourses = courses.filter(c => (c.academicYear || '2025/2026') === copySourceYear);
     if (sourceCourses.length === 0) {
-      alert(`Tidak ada mata kuliah pada Tahun Ajaran ${copySourceYear} untuk disalin.`);
+      setCourseFeedback({ type: 'error', message: `Tidak ada mata kuliah pada Tahun Ajaran ${copySourceYear} untuk disalin.` });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
 
@@ -414,7 +442,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setCourseFeedback(null), 4000);
   };
 
-  // Simpan Pengaturan Tahun Ajaran Aktif (Superadmin / BAAK)
+  // Simpan Pengaturan Tahun Ajaran Aktif (Superadmin / Admin Fakultas)
   const handleSaveAcademicYearSettings = () => {
     onUpdateSettings({
       ...adminSettings,
@@ -432,7 +460,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const clean = newAcademicYearInput.trim();
     if (!clean) return;
     if (availableYearsDraft.includes(clean)) {
-      alert(`Tahun ajaran "${clean}" sudah ada dalam daftar.`);
+      setCourseFeedback({ type: 'error', message: `Tahun ajaran "${clean}" sudah ada dalam daftar.` });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
     const updated = [...availableYearsDraft, clean];
@@ -496,7 +525,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (!trimmed) return;
 
     if (adminSettings.classOptions.includes(trimmed)) {
-      alert(`Opsi "${trimmed}" sudah ada dalam daftar.`);
+      setCourseFeedback({ type: 'error', message: `Opsi "${trimmed}" sudah ada dalam daftar.` });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
 
@@ -517,7 +547,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Delete Class Option
   const handleDeleteClassOption = (className: string) => {
     if (adminSettings.classOptions.length <= 1) {
-      alert('Minimal harus ada 1 opsi kelas aktif.');
+      setCourseFeedback({ type: 'error', message: 'Minimal harus ada 1 opsi kelas aktif.' });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
     const updatedOptions = adminSettings.classOptions.filter(c => c !== className);
@@ -583,7 +614,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const trimmed = newCustomBatch.trim();
     if (!trimmed) return;
     if (selectedPaidBatches.includes(trimmed)) {
-      alert(`Angkatan ${trimmed} sudah ada dalam daftar.`);
+      setCourseFeedback({ type: 'error', message: `Angkatan ${trimmed} sudah ada dalam daftar.` });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
     setSelectedPaidBatches(prev => [...prev, trimmed].sort());
@@ -893,7 +925,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Export registrations to Excel (.xlsx)
   const handleExportExcel = () => {
     if (registrations.length === 0) {
-      alert('Belum ada data pendaftar untuk diexport.');
+      setCourseFeedback({ type: 'error', message: 'Belum ada data pendaftar untuk diexport.' });
+      setTimeout(() => setCourseFeedback(null), 3500);
       return;
     }
 
@@ -1135,10 +1168,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="font-black text-sm tracking-tight text-slate-900 dark:text-white uppercase">
-                    PORTAL UJIAN
+                    PORTAL PENGELOLA
                   </span>
                   <span className="bg-[#008744] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    CBT
+                    ADMIN
                   </span>
                 </div>
                 <p className="text-[11px] font-black text-[#008744] dark:text-emerald-400 mt-0.5 tracking-tight uppercase">
@@ -1254,7 +1287,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         ? 'bg-[#008744] text-white font-bold shadow-xs'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                     }`}
-                    title="Kelola Akun, Username & Password Pengelola (Khusus Superadmin - Terpisah dari BAAK)"
+                    title="Kelola Akun, Username & Password Pengelola (Khusus Superadmin - Terpisah dari Admin Fakultas)"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <KeyRound className={`w-4 h-4 shrink-0 ${activeTab === 'users' ? 'text-white' : 'text-amber-500'}`} />
@@ -1401,7 +1434,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {activeTab === 'users' && (
                 <span className="text-xs bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
                   <KeyRound className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>Akses Khusus Superadmin (Terpisah dari BAAK)</span>
+                  <span>Akses Khusus Superadmin (Terpisah dari Admin Fakultas)</span>
                 </span>
               )}
             </div>
@@ -1985,7 +2018,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
                       Master Periode Tahun Ajaran &amp; Semester Berjalan
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#166534] border border-emerald-300">
-                        BAAK / Superadmin
+                        Admin Fakultas / Superadmin
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -3518,7 +3551,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={searchReg}
                     onChange={(e) => setSearchReg(e.target.value)}
-                    placeholder="Cari ujian / pendaftar (nama mahasiswa, NIM, angkatan, kelas)..."
+                    placeholder="Cari data pendaftar (nama mahasiswa, NIM, angkatan, kelas)..."
                     className="w-full h-11 pl-11 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008744] bg-slate-50 dark:bg-slate-800/80 transition-all shadow-2xs"
                   />
                   {searchReg && (
@@ -3677,15 +3710,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <tr key={r.id} className="hover:bg-emerald-50/30 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="py-3 px-4 align-top">
                             <span className="font-mono font-bold text-blue-900 dark:text-blue-300 block text-xs">{r.id}</span>
-                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              r.targetSemester === 'Semester 3'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
-                                : r.targetSemester === 'Semester 5'
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'
-                            }`}>
-                              {r.targetSemester || 'Semester 3'}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                r.targetSemester === 'Semester 3'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
+                                  : r.targetSemester === 'Semester 5'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300'
+                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'
+                              }`}>
+                                {r.targetSemester || 'Semester 3'}
+                              </span>
+                              {r.status === 'approved' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                                  ✓ Disetujui
+                                </span>
+                              )}
+                              {r.status === 'rejected' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300">
+                                  ✗ Ditolak
+                                </span>
+                              )}
+                              {(!r.status || r.status === 'pending') && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
+                                  ⏳ Menunggu
+                                </span>
+                              )}
+                            </div>
                             <span className="block text-[10px] text-slate-400 mt-1">{r.registrationDate}</span>
                           </td>
                           <td className="py-3 px-4 align-top">
@@ -3747,6 +3797,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="py-3 px-4 text-center align-top">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
+                                onClick={() => {
+                                  setStatusModalReg(r);
+                                  setSelectedNewStatus(r.status || 'approved');
+                                  setRejectionReasonInput(r.rejectionReason || '');
+                                }}
+                                className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl cursor-pointer border border-blue-200 dark:border-blue-800 transition-colors shadow-2xs"
+                                title="Verifikasi / Validasi Status Berkas Mahasiswa"
+                              >
+                                <ShieldCheck className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => onViewReceipt(r)}
                                 className="p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-xl cursor-pointer border border-emerald-200 dark:border-emerald-800 transition-colors shadow-2xs"
                                 title="Cetak KRS & Bukti Pendaftaran"
@@ -3780,11 +3841,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div key={r.id} className="p-4 space-y-3 bg-white">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="font-mono text-xs font-bold text-blue-900">{r.id}</span>
                             <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#009A44]/15 text-[#009A44]">
                               {r.targetSemester || 'Semester 3'}
                             </span>
+                            {r.status === 'approved' && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                ✓ Disetujui
+                              </span>
+                            )}
+                            {r.status === 'rejected' && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                ✗ Ditolak
+                              </span>
+                            )}
+                            {(!r.status || r.status === 'pending') && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                ⏳ Menunggu
+                              </span>
+                            )}
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 mt-1">{r.nama}</h4>
                           <p className="text-xs text-slate-500 font-mono">NIM: {r.nim} • {r.noWa}</p>
@@ -3821,7 +3897,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setStatusModalReg(r);
+                              setSelectedNewStatus(r.status || 'approved');
+                              setRejectionReasonInput(r.rejectionReason || '');
+                            }}
+                            className="p-1.5 text-blue-700 hover:bg-blue-50 rounded-lg border border-blue-200 cursor-pointer"
+                            title="Verifikasi Status"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => onViewReceipt(r)}
                             className="px-3 py-1.5 bg-[#009A44] text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
@@ -3847,7 +3934,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {/* ============================================================== */}
-        {/* TAB 4: MANAJEMEN KREDENSIAL USER (TERPISAH DARI ADMIN BAAK - KHUSUS SUPERADMIN) */}
+        {/* TAB 4: MANAJEMEN KREDENSIAL USER (TERPISAH DARI ADMIN FAKULTAS - KHUSUS SUPERADMIN) */}
         {/* ============================================================== */}
         {activeTab === 'users' && (
           currentUser?.role !== 'superadmin' ? (
@@ -3859,7 +3946,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 Akses Kredensial Terproteksi Khusus Superadmin
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                Tab Kredensial dan Manajemen Akun terpisah dari operasional Admin BAAK. Hanya Superadmin Fakultas yang berhak mengelola akun dan kata sandi pengelola.
+                Tab Kredensial dan Manajemen Akun terpisah dari operasional Admin Fakultas. Hanya Superadmin Fakultas yang berhak mengelola akun dan kata sandi pengelola.
               </p>
               <button
                 type="button"
@@ -3881,13 +3968,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                     <div>
                       <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                        Manajemen Akun & Kredensial Pengelola (Terpisah dari BAAK)
+                        Manajemen Akun & Kredensial Pengelola (Terpisah dari Admin Fakultas)
                         <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase">
                           Akses Full Superadmin
                         </span>
                       </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Kelola username, password, peran hak akses, dan status keaktifan akun staf BAAK, Keuangan, dan Kaprodi.
+                      Kelola username, password, peran hak akses, dan status keaktifan akun staf Admin Fakultas, Keuangan, dan Kaprodi.
                     </p>
                   </div>
                 </div>
@@ -3921,13 +4008,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* User List Table & Mobile Cards */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  Daftar Pengguna Terdaftar ({managedUsers.length} Akun)
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Aktif: {managedUsers.filter(u => u.isActive).length} • Nonaktif: {managedUsers.filter(u => !u.isActive).length}
-                </span>
+              <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                    Daftar Pengguna Terdaftar ({managedUsers.length} Akun)
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium ml-2">
+                    Aktif: {managedUsers.filter(u => u.isActive).length} • Nonaktif: {managedUsers.filter(u => !u.isActive).length}
+                  </span>
+                </div>
+
+                {/* Master Peek Passwords Toggle */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllPasswords(prev => !prev)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${
+                      showAllPasswords
+                        ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                    title="Tampilkan atau sembunyikan kata sandi seluruh akun staf"
+                  >
+                    {showAllPasswords ? <EyeOff className="w-3.5 h-3.5 text-amber-700" /> : <Eye className="w-3.5 h-3.5 text-slate-600" />}
+                    <span>{showAllPasswords ? 'Tutup Semua Password' : 'Intip Semua Password'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Desktop Table View */}
@@ -3935,7 +4041,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-100 font-bold border-b border-slate-200 text-slate-700">
                     <tr>
-                      <th className="py-3 px-4">Username & Nama</th>
+                      <th className="py-3 px-4">Username &amp; Nama</th>
+                      <th className="py-3 px-4">Kata Sandi (Kredensial)</th>
                       <th className="py-3 px-4">Peran / Hak Akses</th>
                       <th className="py-3 px-4">Email Kontak</th>
                       <th className="py-3 px-4 text-center">Status</th>
@@ -3958,6 +4065,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 <span className="text-slate-600 text-[11px]">{u.name}</span>
                               </div>
                             </div>
+                          </td>
+
+                          {/* Kolom Kata Sandi dengan Tombol Intip & Salin */}
+                          <td className="py-3 px-4">
+                            {(() => {
+                              const isRevealed = showAllPasswords || revealedPasswords[u.id];
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`px-2.5 py-1 rounded-lg font-mono text-xs transition-all border select-all ${
+                                    isRevealed
+                                      ? 'bg-amber-50 text-amber-950 border-amber-300 font-bold shadow-2xs'
+                                      : 'bg-slate-100 text-slate-400 border-slate-200'
+                                  }`}>
+                                    {isRevealed ? u.password : '••••••••••••'}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleRevealPassword(u.id)}
+                                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                      isRevealed
+                                        ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'
+                                        : 'bg-white text-slate-500 border-slate-200 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                    title={isRevealed ? 'Sembunyikan password' : 'Intip kata sandi akun ini'}
+                                  >
+                                    {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopyCredentials(u)}
+                                    className="p-1.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-[#009A44] rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                                    title="Salin Username & Password"
+                                  >
+                                    {copiedUserId === u.id ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </td>
 
                           <td className="py-3 px-4">
@@ -4078,6 +4227,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </span>
                       </div>
 
+                      {/* Box Kredensial Password dengan Intip & Salin */}
+                      {(() => {
+                        const isRevealed = showAllPasswords || revealedPasswords[u.id];
+                        return (
+                          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-[10px] uppercase font-bold text-slate-400">Password:</span>
+                              <span className={`font-mono text-xs px-2 py-0.5 rounded ${
+                                isRevealed
+                                  ? 'bg-amber-100 text-amber-900 font-bold border border-amber-300 select-all'
+                                  : 'text-slate-400 font-medium'
+                              }`}>
+                                {isRevealed ? u.password : '••••••••••••'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleRevealPassword(u.id)}
+                                className={`px-2 py-1 rounded-lg text-xs font-bold border flex items-center gap-1 cursor-pointer transition-colors ${
+                                  isRevealed
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                                }`}
+                              >
+                                {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                <span>{isRevealed ? 'Tutup' : 'Intip'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyCredentials(u)}
+                                className="p-1.5 bg-white text-slate-600 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50"
+                                title="Salin Kredensial"
+                              >
+                                {copiedUserId === u.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-50">
                         <span className="text-[10px] text-slate-400 font-mono">
                           Login: {u.lastLogin || '-'}
@@ -4174,7 +4364,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         required
                         value={newUsername}
                         onChange={(e) => setNewUsername(e.target.value)}
-                        placeholder="Contoh: admin_baak2 / kasir_fp"
+                        placeholder="Contoh: admin_fakultas / kasir_fp"
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold"
                       />
                     </div>
@@ -4210,7 +4400,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onChange={(e) => setNewUserRole(e.target.value as UserRole)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold"
                       >
-                        <option value="baak">Staf BAAK / Verifikator Akademik</option>
+                        <option value="baak">Admin Fakultas / Verifikator Akademik</option>
                         <option value="finance">Staf Keuangan / Kasir Pembayaran</option>
                         <option value="kaprodi">Ketua Program Studi (Kaprodi)</option>
                         <option value="superadmin">Superadmin Fakultas</option>
@@ -4399,7 +4589,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onChange={(e) => setEditUserRole(e.target.value as UserRole)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold"
                       >
-                        <option value="baak">Staf BAAK / Verifikator Akademik</option>
+                        <option value="baak">Admin Fakultas / Verifikator Akademik</option>
                         <option value="finance">Staf Keuangan / Kasir Pembayaran</option>
                         <option value="kaprodi">Ketua Program Studi (Kaprodi)</option>
                         <option value="superadmin">Superadmin Fakultas</option>
@@ -4790,6 +4980,145 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Ya, Hapus</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 4B: VERIFIKASI / VALIDASI STATUS BERKAS PENDAFTARAN */}
+      {/* ============================================================== */}
+      {statusModalReg && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            {/* Header */}
+            <div className="bg-[#008744] text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white">Validasi &amp; Verifikasi Berkas</h3>
+                  <p className="text-[11px] text-emerald-100">Fakultas Pertanian — Pengesahan Pendaftaran Mengulang</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatusModalReg(null)}
+                className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/15 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-mono font-bold text-blue-900 dark:text-blue-300">{statusModalReg.id}</span>
+                  <span className="font-semibold text-slate-500">{statusModalReg.targetSemester}</span>
+                </div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  {statusModalReg.nama} <span className="font-mono text-slate-500 font-normal">({statusModalReg.nim})</span>
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Angkatan {statusModalReg.angkatan} • {statusModalReg.selectedCourses.length} Mata Kuliah ({statusModalReg.totalSks} SKS)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Tentukan Keputusan Status Berkas:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNewStatus('approved')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                      selectedNewStatus === 'approved'
+                        ? 'border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 font-bold'
+                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    <span>Setujui (Sah)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNewStatus('pending')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                      selectedNewStatus === 'pending'
+                        ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 font-bold'
+                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <Clock className="w-5 h-5 text-amber-600" />
+                    <span>Menunggu</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNewStatus('rejected')}
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                      selectedNewStatus === 'rejected'
+                        ? 'border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 font-bold'
+                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <X className="w-5 h-5 text-rose-600" />
+                    <span>Tolak</span>
+                  </button>
+                </div>
+              </div>
+
+              {selectedNewStatus === 'rejected' && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="block text-xs font-bold text-rose-700 dark:text-rose-400">
+                    Alasan Penolakan (Akan tampil pada Cek Status Mahasiswa):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={rejectionReasonInput}
+                    onChange={(e) => setRejectionReasonInput(e.target.value)}
+                    placeholder="Contoh: Berkas fisik cetak KRS belum diserahkan ke loket, atau bukti transfer biaya mengulang belum valid..."
+                    className="w-full p-2.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-950/20 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    Mahasiswa yang ditolak diizinkan melakukan pendaftaran ulang perbaikan melalui formulir.
+                  </p>
+                </div>
+              )}
+
+              {selectedNewStatus === 'approved' && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-[11px] text-emerald-900 dark:text-emerald-300">
+                  Status ini menandakan berkas cetak fisik telah diterima di loket Administrasi Fakultas dan disahkan oleh pengelola.
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setStatusModalReg(null)}
+                className="px-4 py-2 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onUpdateRegistrationStatus) {
+                    onUpdateRegistrationStatus(statusModalReg.id, selectedNewStatus, rejectionReasonInput);
+                  }
+                  setStatusModalReg(null);
+                }}
+                className="px-5 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                <span>Simpan Keputusan Status</span>
+              </button>
             </div>
           </div>
         </div>

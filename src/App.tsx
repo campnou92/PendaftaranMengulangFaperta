@@ -155,6 +155,9 @@ export default function App() {
             semesterSchedules: parsed.semesterSchedules && typeof parsed.semesterSchedules === 'object' && !Array.isArray(parsed.semesterSchedules) ? parsed.semesterSchedules : (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
             restrictedRepeatClasses: parsed.restrictedRepeatClasses && typeof parsed.restrictedRepeatClasses === 'object' && !Array.isArray(parsed.restrictedRepeatClasses) ? parsed.restrictedRepeatClasses : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses,
             restrictedRepeatClassReason: parsed.restrictedRepeatClassReason && typeof parsed.restrictedRepeatClassReason === 'object' && !Array.isArray(parsed.restrictedRepeatClassReason) ? parsed.restrictedRepeatClassReason : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason,
+            kelasAsalMode: parsed.kelasAsalMode || DEFAULT_ADMIN_SETTINGS.kelasAsalMode || 'input_with_chips',
+            kelasAsalPlaceholder: parsed.kelasAsalPlaceholder || DEFAULT_ADMIN_SETTINGS.kelasAsalPlaceholder || 'Contoh: Kelas A',
+            kelasAsalCustomOptions: Array.isArray(parsed.kelasAsalCustomOptions) ? parsed.kelasAsalCustomOptions : (DEFAULT_ADMIN_SETTINGS.kelasAsalCustomOptions || []),
           };
         }
       }
@@ -396,6 +399,35 @@ export default function App() {
     showToast(`Status pembayaran pendaftar diubah menjadi: ${statusText}`);
   };
 
+  // Academic Admin updates registration approval status with Cloud sync
+  const handleUpdateRegistrationStatus = (registrationId: string, status: import('./types').RegistrationStatus, reason?: string) => {
+    const target = registrations.find(r => r.id === registrationId);
+    if (target) {
+      const updatedReg: SimpleRegistration = {
+        ...target,
+        status,
+        rejectionReason: status === 'rejected' ? (reason?.trim() || 'Berkas fisik belum diserahkan atau syarat tidak lengkap') : undefined
+      };
+      saveCloudRegistration(updatedReg).catch(err => {
+        console.warn('Cloud registration status update warning:', err);
+      });
+    }
+
+    setRegistrations(prev => prev.map(r => {
+      if (r.id === registrationId) {
+        return {
+          ...r,
+          status,
+          rejectionReason: status === 'rejected' ? (reason?.trim() || 'Berkas fisik belum diserahkan atau syarat tidak lengkap') : undefined
+        };
+      }
+      return r;
+    }));
+
+    const statusLabel = status === 'approved' ? 'DISETUJUI / DISAHKAN' : status === 'rejected' ? 'DITOLAK' : 'MENUNGGU VERIFIKASI';
+    showToast(`Status berkas pendaftaran berhasil diubah menjadi: ${statusLabel}`);
+  };
+
   // Charged registrations count for header badge
   const chargedRegistrationsCount = registrations.filter(r => {
     const isFeeActive = adminSettings.feePerSksEnabled ?? true;
@@ -495,6 +527,7 @@ export default function App() {
                   onUpdateCourses={handleUpdateCourses}
                   onUpdateSettings={handleUpdateSettings}
                   onDeleteRegistration={handleDeleteRegistration}
+                  onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
                   onViewReceipt={(r) => {
                     setActiveReceipt(r);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -577,13 +610,13 @@ export default function App() {
           <div className="text-center sm:text-right text-[11px] text-slate-400 flex flex-col sm:items-end gap-1.5">
             <p>Kampus INSTIPER: Jl. Nangka II, Krodan, Maguwoharjo, Depok, Sleman, D.I. Yogyakarta 55281</p>
             <div className="flex items-center justify-center sm:justify-end gap-3 text-[10px] text-slate-400">
-              <span>© {new Date().getFullYear()} BAAK &amp; Fakultas Pertanian INSTIPER.</span>
+              <span>© {new Date().getFullYear()} Fakultas Pertanian INSTIPER Yogyakarta.</span>
               <span>•</span>
               {!currentUser ? (
                 <button
                   onClick={() => handleOpenLoginModal('baak')}
                   className="text-emerald-400 hover:text-emerald-300 underline font-medium cursor-pointer inline-flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
-                  title="Akses Khusus Pengelola / Staf BAAK & Keuangan"
+                  title="Akses Khusus Pengelola / Staf Admin Fakultas & Keuangan"
                 >
                   <Lock className="w-3 h-3" />
                   <span>Akses Pengelola</span>

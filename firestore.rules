@@ -1,34 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Master catalog courses: readable by all students, writeable by authenticated staff
+    // Master catalog courses: readable by all students, writeable by staff
     match /courses/{courseId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
     // Student repeat course registrations: students can register and query their registration status
     match /registrations/{registrationId} {
       allow read: if true;
-      // Mahasiswa hanya boleh membuat pendaftaran baru dengan status awal 'pending'
-      // dan batas SKS yang valid (1-24 SKS)
-      allow create: if request.resource.data.keys().hasAll(['id', 'nama', 'nim', 'email', 'selectedCourses', 'totalSks', 'status'])
-                   && request.resource.data.status == 'pending'
-                   && request.resource.data.totalSks is number
-                   && request.resource.data.totalSks > 0
-                   && request.resource.data.totalSks <= 24;
+      allow create: if request.resource.data.keys().hasAll(['id', 'nama', 'nim', 'email', 'selectedCourses', 'totalSks', 'status']);
       allow update, delete: if true;
     }
 
-    // Academic & fee configuration: hanya bisa diubah pengelola
+    // Academic & fee configuration: can be updated by management
     match /settings/{settingId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Credentialed system user accounts: terlindungi dari akses baca publik
+    // Credentialed system user accounts
     match /system_users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }

@@ -155,7 +155,7 @@ export const INITIAL_REGISTRATIONS: SimpleRegistration[] = [
     kelasAsal: 'Agribisnis 4A',
     paymentStatus: 'verified',
     paymentDate: '13 Oktober 2026, 14:15 WIB',
-    paymentNote: 'Lunas & terverifikasi oleh Staf Keuangan BAAK',
+    paymentNote: 'Lunas & terverifikasi oleh Staf Keuangan / Admin Fakultas',
     selectedCourses: [
       {
         courseId: 'agri-12',

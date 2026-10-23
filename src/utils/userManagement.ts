@@ -18,10 +18,10 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
     id: 'usr-2',
     username: 'admin',
     password: 'admin123!',
-    name: 'Staf Pelayanan Akademik BAAK',
+    name: 'Staf Pelayanan Akademik Fakultas',
     role: 'baak',
-    title: 'Admin BAAK FP',
-    email: 'baak.pertanian@instiperjogja.ac.id',
+    title: 'Admin Fakultas',
+    email: 'akademik.pertanian@instiperjogja.ac.id',
     isActive: true,
     createdAt: '2026-01-01 08:00:00'
   },
@@ -235,7 +235,7 @@ export function getDefaultTitleForRole(role: UserRole): string {
     case 'superadmin':
       return 'Superadmin Fakultas';
     case 'baak':
-      return 'Staf Pelayanan Akademik BAAK';
+      return 'Admin Fakultas';
     case 'finance':
       return 'Staf Bagian Keuangan';
     case 'kaprodi':

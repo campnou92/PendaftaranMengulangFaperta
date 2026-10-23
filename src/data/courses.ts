@@ -78,15 +78,18 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   activeTerm: 'Ganjil',
   availableAcademicYears: ['2023/2024', '2024/2025', '2025/2026', '2026/2027'],
   classOptions: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'],
+  kelasAsalMode: 'input_with_chips',
+  kelasAsalPlaceholder: 'Contoh: Kelas A (atau pilih opsi kelas di bawah)',
+  kelasAsalCustomOptions: [],
   classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 3 atau Semester 5 sesuai kebutuhan.
-2. Admin BAAK dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel BAAK).
+2. Admin Fakultas dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel Admin Fakultas).
 3. NIM yang sudah dipakai untuk melakukan pendaftaran tidak bisa dipakai lagi (ada notifikasi peringatan).
 4. Setelah berhasil mendaftar, pendaftar dapat mencetak hasil matakuliah yang dipilih. Batas maksimal pengambilan adalah 24 SKS.
 5. Perhatian: Kelas berstatus "Kelas Beasiswa" tidak dapat dipilih untuk kelas mengulang.`,
   feePerSksEnabled: true,
   costPerSks: 50000,
   paidBatches: ['2020', '2021', '2022'], // Mahasiswa angkatan lama dikenakan biaya per SKS
-  paymentInstructions: `Pemberitahuan: Mahasiswa angkatan yang terdaftar dikenakan kewajiban pembayaran biaya mengulang mata kuliah sebesar Rp 50.000 per SKS. Harap segera melunasi pembayaran sebelum batas akhir validasi KRS dan mengirimkan bukti transfer ke Bagian Keuangan / BAAK Fakultas Pertanian.`,
+  paymentInstructions: `Pemberitahuan: Mahasiswa angkatan yang terdaftar dikenakan kewajiban pembayaran biaya mengulang mata kuliah sebesar Rp 50.000 per SKS. Harap segera melunasi pembayaran sebelum batas akhir validasi KRS dan mengirimkan bukti transfer ke Bagian Keuangan / Tata Usaha Fakultas Pertanian.`,
   paymentAccountInfo: `Bank Mandiri / BNI No. Rek: 137-00-1928374-1 a.n. Bendahara Fakultas Pertanian (Konfirmasi WA Keuangan: 0812-8877-6655)`,
   defaultMaxSks: 24,
   batchMaxSks: {
@@ -100,7 +103,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
       useSchedule: true,
       startDate: '2026-10-01T08:00',
       endDate: '2026-11-30T23:59',
-      closedMessage: 'Pendaftaran Mengulang Semester 3 saat ini telah ditutup oleh pihak BAAK / Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
+      closedMessage: 'Pendaftaran Mengulang Semester 3 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
     },
     '5': {
       semester: 5,
@@ -108,7 +111,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
       useSchedule: true,
       startDate: '2026-10-01T08:00',
       endDate: '2026-11-30T23:59',
-      closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak BAAK / Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
+      closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
     }
   },
   // Konfigurasi Kelas Beasiswa yang TIDAK Boleh Dipilih untuk Mengulang Per Semester

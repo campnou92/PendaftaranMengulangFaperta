@@ -12,9 +12,8 @@ export function downloadRegistrationTemplate(
 ) {
   // Filter courses sesuai tab semester saat ini atau semua
   const targetCourses = courses.filter(c => {
-    if (selectedSemester === '3') return c.semester === 3;
-    if (selectedSemester === '5') return c.semester === 5;
-    return true;
+    if (selectedSemester === 'all') return true;
+    return String(c.semester) === String(selectedSemester);
   });
 
   const sem3Restricted = getRestrictedClassesForSemester(3, adminSettings);
@@ -74,7 +73,7 @@ export function downloadRegistrationTemplate(
   // Sheet Petunjuk Pengisian
   const petunjukRows: any[][] = [
     ['PETUNJUK PENGISIAN TEMPLATE PENDAFTARAN MENGULANG MATAKULIAH'],
-    ['FAKULTAS PERTANIAN — SISTEM AKADEMIK BAAK'],
+    ['FAKULTAS PERTANIAN — SISTEM AKADEMIK FAKULTAS'],
     [''],
     ['1.', 'KOLOM PILIH_MENGULANG: Isi dengan huruf "Y" untuk memilih mata kuliah yang akan diulang, atau "T" jika tidak diambil.'],
     ['2.', 'KOLOM PILIHAN_KELAS: Isi dengan salah satu nama kelas (contoh: Kelas A, Kelas B, Kelas C, Kelas D, Kelas Karyawan).'],
@@ -99,7 +98,7 @@ export function downloadRegistrationTemplate(
 }
 
 /**
- * Unduh Template Excel / CSV Master Mata Kuliah untuk Admin BAAK
+ * Unduh Template Excel / CSV Master Mata Kuliah untuk Admin Fakultas
  */
 export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
   const rows: any[][] = [
@@ -165,7 +164,7 @@ export function downloadMasterCoursesTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
 
   XLSX.utils.book_append_sheet(wb, ws, 'Master_Matakuliah');
 
-  const filename = `Template_Master_Matakuliah_BAAK_${Date.now()}.${format === 'csv' ? 'csv' : 'xlsx'}`;
+  const filename = `Template_Master_Matakuliah_Fakultas_${Date.now()}.${format === 'csv' ? 'csv' : 'xlsx'}`;
 
   if (format === 'csv') {
     XLSX.writeFile(wb, filename, { bookType: 'csv' });
@@ -255,7 +254,7 @@ export async function parseRegistrationFile(
 }
 
 /**
- * Parsing file master mata kuliah untuk Admin BAAK
+ * Parsing file master mata kuliah untuk Admin Fakultas
  */
 export async function parseMasterCoursesFile(
   file: File,

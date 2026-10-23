@@ -101,10 +101,10 @@ export const Header: React.FC<HeaderProps> = ({
                         ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-[#EAB308]'
                         : 'text-white/90 hover:text-white hover:bg-white/15'
                     }`}
-                    title="Panel Operasional Akademik & Pendaftar BAAK"
+                    title="Panel Operasional Akademik & Pendaftar Fakultas"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#FDE047]" />
-                    <span>Admin BAAK</span>
+                    <span>Admin Fakultas</span>
                     {registrationsCount > 0 && (
                       <span className="px-1.5 py-0.2 bg-black/30 text-white text-[10px] rounded-full font-bold">
                         {registrationsCount}
@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
                         ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-[#EAB308]'
                         : 'text-white/90 hover:text-white hover:bg-white/15'
                     }`}
-                    title="Portal Pengelola Lengkap (BAAK & Superadmin Kredensial)"
+                    title="Portal Pengelola Lengkap (Admin Fakultas & Superadmin Kredensial)"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#FDE047]" />
                     <span>Portal Pengelola</span>
@@ -269,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4 text-[#FDE047]" />
-                  <span>{currentUser.role === 'superadmin' ? 'Pengelola' : currentUser.role === 'kaprodi' ? 'Kaprodi' : 'BAAK'}</span>
+                  <span>{currentUser.role === 'superadmin' ? 'Pengelola' : currentUser.role === 'kaprodi' ? 'Kaprodi' : 'Fakultas'}</span>
                   {registrationsCount > 0 && (
                     <span className="px-1.5 py-0.2 bg-black/35 text-white text-[10px] rounded-full font-bold">
                       {registrationsCount}
