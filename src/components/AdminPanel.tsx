@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { 
   CourseItem, 
   SimpleRegistration, 
+  SelectedCourseItem,
   RegistrationStatus,
   AdminSettings, 
   AuthUser,
@@ -82,6 +83,7 @@ interface AdminPanelProps {
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onDeleteRegistration: (id: string) => void;
   onUpdateRegistrationStatus?: (id: string, status: RegistrationStatus, rejectionReason?: string) => void;
+  onUpdateRegistration?: (updatedRegistration: SimpleRegistration) => void;
   onViewReceipt: (registration: SimpleRegistration) => void;
   onSwitchToFinance?: () => void;
   onLogout?: () => void;
@@ -96,6 +98,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateSettings,
   onDeleteRegistration,
   onUpdateRegistrationStatus,
+  onUpdateRegistration,
   onViewReceipt,
   onSwitchToFinance,
   onLogout
@@ -248,6 +251,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
   const [courseBeingEdited, setCourseBeingEdited] = useState<CourseItem | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<CourseItem | null>(null);
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+  const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
   const [isResetCoursesModalOpen, setIsResetCoursesModalOpen] = useState(false);
   const [courseFeedback, setCourseFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -257,6 +262,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [selectedNewStatus, setSelectedNewStatus] = useState<RegistrationStatus>('approved');
   const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
+
+  // Edit Registration State (Admin mengedit data pendaftaran & mengganti kelas mengulang)
+  const [registrationBeingEdited, setRegistrationBeingEdited] = useState<SimpleRegistration | null>(null);
+  const [editRegNama, setEditRegNama] = useState('');
+  const [editRegNim, setEditRegNim] = useState('');
+  const [editRegAngkatan, setEditRegAngkatan] = useState('2022');
+  const [editRegKelasAsal, setEditRegKelasAsal] = useState('');
+  const [editRegNoWa, setEditRegNoWa] = useState('');
+  const [editRegEmail, setEditRegEmail] = useState('');
+  const [editRegTargetSemester, setEditRegTargetSemester] = useState('Semester 3');
+  const [editRegStatus, setEditRegStatus] = useState<RegistrationStatus>('approved');
+  const [editRegAdminNotes, setEditRegAdminNotes] = useState('');
+  const [editRegSelectedCourses, setEditRegSelectedCourses] = useState<SelectedCourseItem[]>([]);
+  const [courseToAddInEdit, setCourseToAddInEdit] = useState<string>('');
+  const [editRegFeedback, setEditRegFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Superadmin: Note editing state
   const [noteDraft, setNoteDraft] = useState(adminSettings.classNote);
@@ -477,7 +497,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const handleConfirmDeleteCourse = () => {
     if (!courseToDelete) return;
     const name = courseToDelete.name;
-    onUpdateCourses(courses.filter(c => c.id !== courseToDelete.id));
+    const targetId = courseToDelete.id;
+    onUpdateCourses(courses.filter(c => c.id !== targetId));
+    setSelectedCourseIds(prev => prev.filter(id => id !== targetId));
     setCourseToDelete(null);
     setCourseFeedback({
       type: 'success',
@@ -486,15 +508,184 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setCourseFeedback(null), 3500);
   };
 
+  // Toggle select all visible courses
+  const handleToggleSelectAllCourses = (filteredIds: string[]) => {
+    if (filteredIds.length === 0) return;
+    const allSelected = filteredIds.every(id => selectedCourseIds.includes(id));
+    if (allSelected) {
+      // Uncheck all in current filter
+      setSelectedCourseIds(prev => prev.filter(id => !filteredIds.includes(id)));
+    } else {
+      // Check all in current filter
+      setSelectedCourseIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+    }
+  };
+
+  // Toggle select single course
+  const handleToggleSelectCourse = (courseId: string) => {
+    setSelectedCourseIds(prev =>
+      prev.includes(courseId) ? prev.filter(id => id !== courseId) : [...prev, courseId]
+    );
+  };
+
+  // Clear selection
+  const handleClearSelectedCourses = () => {
+    setSelectedCourseIds([]);
+  };
+
+  // Confirm batch delete courses
+  const handleConfirmBatchDeleteCourses = () => {
+    if (selectedCourseIds.length === 0) return;
+    const count = selectedCourseIds.length;
+    const remaining = courses.filter(c => !selectedCourseIds.includes(c.id));
+    onUpdateCourses(remaining);
+    setSelectedCourseIds([]);
+    setIsBatchDeleteModalOpen(false);
+    setCourseFeedback({
+      type: 'success',
+      message: `Berhasil menghapus ${count} mata kuliah terpilih dari katalog kurikulum.`
+    });
+    setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
   // Confirm reset to default 18 courses (from Modal)
   const handleConfirmResetCourses = () => {
     onUpdateCourses(INITIAL_COURSES);
+    setSelectedCourseIds([]);
     setIsResetCoursesModalOpen(false);
     setCourseFeedback({
       type: 'success',
       message: 'Daftar mata kuliah berhasil dikembalikan ke 18 mata kuliah bawaan FP INSTIPER.'
     });
     setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
+  // ==========================================
+  // HANDLERS: EDIT DATA PENDAFTARAN & KELAS MENGULANG
+  // ==========================================
+  const handleStartEditRegistration = (reg: SimpleRegistration) => {
+    setRegistrationBeingEdited(reg);
+    setEditRegNama(reg.nama || '');
+    setEditRegNim(reg.nim || '');
+    setEditRegAngkatan(reg.angkatan || '2022');
+    setEditRegKelasAsal(reg.kelasAsal || '');
+    setEditRegNoWa(reg.noWa || '');
+    setEditRegEmail(reg.email || '');
+    setEditRegTargetSemester(reg.targetSemester || 'Semester 3');
+    setEditRegStatus(reg.status || 'approved');
+    setEditRegAdminNotes(reg.adminNotes || reg.rejectionReason || '');
+    setEditRegSelectedCourses(reg.selectedCourses ? JSON.parse(JSON.stringify(reg.selectedCourses)) : []);
+    setCourseToAddInEdit('');
+    setEditRegFeedback(null);
+  };
+
+  const handleChangeCourseClassInEdit = (index: number, newClass: string) => {
+    setEditRegSelectedCourses(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], selectedClass: newClass };
+      return copy;
+    });
+  };
+
+  const handleRemoveCourseFromEdit = (index: number) => {
+    setEditRegSelectedCourses(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddCourseToRegistrationEdit = () => {
+    if (!courseToAddInEdit) return;
+    const courseObj = courses.find(c => c.id === courseToAddInEdit);
+    if (!courseObj) return;
+
+    if (editRegSelectedCourses.some(c => c.courseId === courseObj.id)) {
+      setEditRegFeedback({
+        type: 'error',
+        message: `Mata kuliah "${courseObj.name}" sudah ada dalam daftar mahasiswa ini.`
+      });
+      setTimeout(() => setEditRegFeedback(null), 3500);
+      return;
+    }
+
+    const availableClasses = courseObj.availableClasses && courseObj.availableClasses.length > 0
+      ? courseObj.availableClasses
+      : adminSettings.classOptions;
+    const defaultClass = availableClasses[0] || 'Kelas A';
+
+    setEditRegSelectedCourses(prev => [
+      ...prev,
+      {
+        courseId: courseObj.id,
+        name: courseObj.name,
+        sks: courseObj.sks,
+        prodi: courseObj.prodi,
+        semester: courseObj.semester,
+        selectedClass: defaultClass,
+        academicYear: courseObj.academicYear || registrationBeingEdited?.academicYear || adminSettings.activeAcademicYear || '2025/2026'
+      }
+    ]);
+    setCourseToAddInEdit('');
+  };
+
+  const handleSaveRegistrationEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registrationBeingEdited) return;
+
+    const cleanNama = editRegNama.trim();
+    const cleanNim = editRegNim.trim().toUpperCase();
+
+    if (!cleanNama || !cleanNim) {
+      setEditRegFeedback({
+        type: 'error',
+        message: 'Nama dan NIM mahasiswa tidak boleh kosong.'
+      });
+      return;
+    }
+
+    if (editRegSelectedCourses.length === 0) {
+      setEditRegFeedback({
+        type: 'error',
+        message: 'Mahasiswa harus mengambil minimal 1 mata kuliah.'
+      });
+      return;
+    }
+
+    const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
+    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
+
+    if (currentTotalSks > maxSksAllowed) {
+      setEditRegFeedback({
+        type: 'error',
+        message: `Total beban SKS (${currentTotalSks} SKS) melebihi batas kuota Angkatan ${editRegAngkatan} (maksimal ${maxSksAllowed} SKS).`
+      });
+      return;
+    }
+
+    const isPaidBatch = (adminSettings.paidBatches || []).includes(editRegAngkatan);
+    const costPerSks = adminSettings.costPerSks || 50000;
+    const estimatedFee = (adminSettings.feePerSksEnabled && isPaidBatch) ? currentTotalSks * costPerSks : 0;
+
+    const updatedReg: SimpleRegistration = {
+      ...registrationBeingEdited,
+      nama: cleanNama,
+      nim: cleanNim,
+      angkatan: editRegAngkatan,
+      kelasAsal: editRegKelasAsal.trim(),
+      noWa: editRegNoWa.trim(),
+      email: editRegEmail.trim(),
+      targetSemester: editRegTargetSemester,
+      status: editRegStatus,
+      adminNotes: editRegAdminNotes.trim(),
+      rejectionReason: editRegStatus === 'rejected' ? (editRegAdminNotes.trim() || registrationBeingEdited.rejectionReason || 'Ditolak oleh admin') : '',
+      selectedCourses: editRegSelectedCourses,
+      totalSks: currentTotalSks,
+      estimatedFee,
+      paymentStatus: registrationBeingEdited.paymentStatus
+    };
+
+    if (onUpdateRegistration) {
+      onUpdateRegistration(updatedReg);
+    }
+
+    setRegistrationBeingEdited(null);
   };
 
   // Save Note (Superadmin Note feature)
@@ -1715,289 +1906,404 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Bawaan</span>
                 </button>
+
+                {selectedCourseIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsBatchDeleteModalOpen(true)}
+                    className="px-3 py-2 bg-[#E4202A] hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer animate-fade-in"
+                    title="Hapus mata kuliah yang telah dipilih"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Terpilih ({selectedCourseIds.length})</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Courses Table */}
-            <div className="border border-slate-300 rounded-lg overflow-hidden shadow-sm">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-100 font-bold border-b border-slate-300 text-slate-800">
-                  <tr>
-                    <th className="py-2.5 px-3 w-12 text-center">No</th>
-                    <th className="py-2.5 px-3">Nama Mata Kuliah</th>
-                    <th className="py-2.5 px-3 w-28 text-center">Semester</th>
-                    <th className="py-2.5 px-3 w-24 text-center">Beban SKS</th>
-                    <th className="py-2.5 px-3 w-32">Program Studi</th>
-                    <th className="py-2.5 px-3">Opsi Kelas Ditawarkan</th>
-                    <th className="py-2.5 px-3 w-28 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {courses
-                    .filter(c => {
-                      if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
-                        return false;
-                      }
-                      if (filterCourseSemester !== 'all' && String(c.semester) !== filterCourseSemester) {
-                        return false;
-                      }
-                      return true;
-                    })
-                    .map((course, idx) => {
-                      const isEditing = editingCourseId === course.id;
+            {/* Filtered courses list and batch selection helpers */}
+            {(() => {
+              const filteredCoursesForTable = courses.filter(c => {
+                if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
+                  return false;
+                }
+                if (filterCourseSemester !== 'all' && String(c.semester) !== filterCourseSemester) {
+                  return false;
+                }
+                return true;
+              });
+              const visibleCourseIds = filteredCoursesForTable.map(c => c.id);
+              const isAllVisibleSelected = visibleCourseIds.length > 0 && visibleCourseIds.every(id => selectedCourseIds.includes(id));
+              const isSomeVisibleSelected = visibleCourseIds.some(id => selectedCourseIds.includes(id)) && !isAllVisibleSelected;
 
-                      return (
-                        <tr key={course.id} className="hover:bg-slate-50">
-                          <td className="py-2.5 px-3 text-center font-bold text-slate-500">
-                            {idx + 1}
-                          </td>
-
-                          {/* Nama MK */}
-                          <td className="py-2.5 px-3">
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                className="w-full px-2 py-1 rounded border border-blue-400 text-xs font-semibold"
-                              />
-                            ) : (
-                              <span className="font-medium text-slate-900">{course.name}</span>
-                            )}
-                          </td>
-
-                          {/* Semester */}
-                          <td className="py-2.5 px-3 text-center">
-                            {isEditing ? (
-                              <select
-                                value={editSemester}
-                                onChange={(e) => setEditSemester(Number(e.target.value))}
-                                className="px-2 py-1 rounded border border-blue-400 text-xs font-bold"
-                              >
-                                <option value={3}>Sem 3</option>
-                                <option value={5}>Sem 5</option>
-                                <option value={1}>Sem 1</option>
-                                <option value={2}>Sem 2</option>
-                                <option value={4}>Sem 4</option>
-                                <option value={6}>Sem 6</option>
-                                <option value={7}>Sem 7</option>
-                              </select>
-                            ) : (
-                              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                                course.semester === 3
-                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                  : course.semester === 5
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}>
-                                Sem {course.semester || 3}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* SKS */}
-                          <td className="py-2.5 px-3 text-center">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                min={1}
-                                max={6}
-                                value={editSks}
-                                onChange={(e) => setEditSks(Number(e.target.value))}
-                                className="w-16 px-1 py-1 rounded border border-blue-400 text-xs text-center font-bold"
-                              />
-                            ) : (
-                              <span className="font-bold text-blue-900 px-2 py-0.5 bg-blue-50 rounded border border-blue-200">
-                                {course.sks} SKS
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Prodi */}
-                          <td className="py-2.5 px-3">
-                            {isEditing ? (
-                              <select
-                                value={editProdi}
-                                onChange={(e) => setEditProdi(e.target.value as any)}
-                                className="px-2 py-1 rounded border border-blue-400 text-xs"
-                              >
-                                <option value="agroteknologi">Agroteknologi</option>
-                                <option value="agribisnis">Agribisnis</option>
-                              </select>
-                            ) : (
-                              <span className="capitalize text-slate-700 font-medium">
-                                {course.prodi}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Opsi Kelas Ditawarkan */}
-                          <td className="py-2.5 px-3">
-                            {isEditing ? (
-                              <div className="space-y-1">
-                                <div className="flex flex-wrap gap-1">
-                                  {adminSettings.classOptions.map((cls) => {
-                                    const isChosen = editClasses.includes(cls);
-                                    return (
-                                      <button
-                                        key={cls}
-                                        type="button"
-                                        onClick={() => {
-                                          if (isChosen) {
-                                            if (editClasses.length > 1) {
-                                              setEditClasses(editClasses.filter(c => c !== cls));
-                                            }
-                                          } else {
-                                            setEditClasses([...editClasses, cls]);
-                                          }
-                                        }}
-                                        className={`px-1.5 py-0.5 text-[10px] rounded font-bold border transition-colors cursor-pointer ${
-                                          isChosen
-                                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                                            : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'
-                                        }`}
-                                      >
-                                        {cls}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[10px]">
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditClasses(adminSettings.classOptions)}
-                                    className="text-blue-600 hover:underline font-semibold cursor-pointer"
-                                  >
-                                    Pilih Semua
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions).map((cls) => {
-                                  const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
-                                  return (
-                                    <span
-                                      key={cls}
-                                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                                        isScholarship
-                                          ? 'bg-rose-50 text-rose-700 border-rose-300'
-                                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                                      }`}
-                                      title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
-                                    >
-                                      {cls}
-                                      {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-2.5 px-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEdit(course)}
-                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors cursor-pointer"
-                                title="Edit Mata Kuliah, Semester & SKS"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => setCourseToDelete(course)}
-                                className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors cursor-pointer"
-                                title="Hapus Mata Kuliah"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-
-              {/* Mobile Card View for Courses (HP-friendly, tidak butuh scroll horizontal) */}
-              <div className="md:hidden divide-y divide-slate-200 border-t border-slate-200 bg-white">
-                {courses
-                  .filter(c => {
-                    if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
-                      return false;
-                    }
-                    if (filterCourseSemester !== 'all' && String(c.semester) !== filterCourseSemester) {
-                      return false;
-                    }
-                    return true;
-                  })
-                  .map((course, idx) => (
-                    <div key={course.id} className="p-4 space-y-2.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[10px] text-slate-500 font-bold">#{idx + 1}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              course.semester === 3
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : course.semester === 5
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              Semester {course.semester || 3}
-                            </span>
-                            <span className="capitalize text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
-                              {course.prodi}
-                            </span>
-                          </div>
-                          <h4 className="text-sm font-bold text-slate-900 mt-1">{course.name}</h4>
+              return (
+                <div className="space-y-3">
+                  {/* Batch Action Bar saat ada matakuliah yang dipilih */}
+                  {selectedCourseIds.length > 0 && (
+                    <div className="p-3 sm:p-4 bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-fade-in">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-[#E4202A] text-white flex items-center justify-center text-sm font-black shadow-xs shrink-0">
+                          {selectedCourseIds.length}
                         </div>
-                        <span className="font-extrabold text-xs text-[#009A44] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
-                          {course.sks} SKS
-                        </span>
+                        <div>
+                          <p className="text-xs sm:text-sm font-extrabold text-rose-950 dark:text-rose-100">
+                            {selectedCourseIds.length} Mata Kuliah Dipilih
+                          </p>
+                          <p className="text-[11px] text-rose-700 dark:text-rose-300">
+                            Pilih hapus massal untuk menghapus semua mata kuliah yang telah ditandai sekaligus
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex flex-wrap gap-1 max-w-[200px]">
-                          {(course.availableClasses || adminSettings.classOptions).slice(0, 4).map(cls => (
-                            <span key={cls} className="text-[9px] font-bold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
-                              {cls}
-                            </span>
-                          ))}
-                          {(course.availableClasses || adminSettings.classOptions).length > 4 && (
-                            <span className="text-[9px] text-slate-500 font-semibold">
-                              +{(course.availableClasses || adminSettings.classOptions).length - 4} kelas
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSelectAllCourses(visibleCourseIds)}
+                          className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                        >
+                          {isAllVisibleSelected ? 'Batalkan Semua di Tampilan' : `Pilih Semua (${visibleCourseIds.length})`}
+                        </button>
 
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(course)}
-                            className="px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 flex items-center gap-1 cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCourseToDelete(course)}
-                            className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 cursor-pointer"
-                            title="Hapus"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={handleClearSelectedCourses}
+                          className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
+                        >
+                          Batal
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsBatchDeleteModalOpen(true)}
+                          className="px-4 py-2 bg-[#E4202A] hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Hapus Terpilih ({selectedCourseIds.length})</span>
+                        </button>
                       </div>
                     </div>
-                  ))}
-              </div>
-            </div>
+                  )}
+
+                  {/* Courses Table */}
+                  <div className="border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-slate-900">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-100 dark:bg-slate-800 font-bold border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                        <tr>
+                          {/* Checkbox Select All */}
+                          <th className="py-2.5 px-3 w-10 text-center">
+                            <div className="flex items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={isAllVisibleSelected}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = isSomeVisibleSelected;
+                                }}
+                                onChange={() => handleToggleSelectAllCourses(visibleCourseIds)}
+                                className="w-4 h-4 rounded border-slate-300 text-[#166534] focus:ring-[#166534] cursor-pointer"
+                                title={isAllVisibleSelected ? "Batalkan pilihan semua" : "Pilih semua mata kuliah"}
+                              />
+                            </div>
+                          </th>
+                          <th className="py-2.5 px-2 w-10 text-center">No</th>
+                          <th className="py-2.5 px-3">Nama Mata Kuliah</th>
+                          <th className="py-2.5 px-3 w-28 text-center">Semester</th>
+                          <th className="py-2.5 px-3 w-24 text-center">Beban SKS</th>
+                          <th className="py-2.5 px-3 w-32">Program Studi</th>
+                          <th className="py-2.5 px-3">Opsi Kelas Ditawarkan</th>
+                          <th className="py-2.5 px-3 w-28 text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                        {filteredCoursesForTable.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-8 text-center text-slate-500 font-medium">
+                              Tidak ada mata kuliah yang sesuai dengan filter.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredCoursesForTable.map((course, idx) => {
+                            const isEditing = editingCourseId === course.id;
+                            const isSelected = selectedCourseIds.includes(course.id);
+
+                            return (
+                              <tr
+                                key={course.id}
+                                className={`transition-colors ${
+                                  isSelected
+                                    ? 'bg-rose-50/70 dark:bg-rose-950/30'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                {/* Checkbox Baris */}
+                                <td className="py-2.5 px-3 text-center">
+                                  <div className="flex items-center justify-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => handleToggleSelectCourse(course.id)}
+                                      className="w-4 h-4 rounded border-slate-300 text-[#166534] focus:ring-[#166534] cursor-pointer"
+                                    />
+                                  </div>
+                                </td>
+
+                                <td className="py-2.5 px-2 text-center font-bold text-slate-500">
+                                  {idx + 1}
+                                </td>
+
+                                {/* Nama MK */}
+                                <td className="py-2.5 px-3">
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={editName}
+                                      onChange={(e) => setEditName(e.target.value)}
+                                      className="w-full px-2 py-1 rounded border border-blue-400 text-xs font-semibold"
+                                    />
+                                  ) : (
+                                    <span className="font-medium text-slate-900 dark:text-slate-100">{course.name}</span>
+                                  )}
+                                </td>
+
+                                {/* Semester */}
+                                <td className="py-2.5 px-3 text-center">
+                                  {isEditing ? (
+                                    <select
+                                      value={editSemester}
+                                      onChange={(e) => setEditSemester(Number(e.target.value))}
+                                      className="px-2 py-1 rounded border border-blue-400 text-xs font-bold"
+                                    >
+                                      <option value={3}>Sem 3</option>
+                                      <option value={5}>Sem 5</option>
+                                      <option value={1}>Sem 1</option>
+                                      <option value={2}>Sem 2</option>
+                                      <option value={4}>Sem 4</option>
+                                      <option value={6}>Sem 6</option>
+                                      <option value={7}>Sem 7</option>
+                                    </select>
+                                  ) : (
+                                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                      course.semester === 3
+                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                        : course.semester === 5
+                                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                        : 'bg-slate-100 text-slate-700'
+                                    }`}>
+                                      Sem {course.semester || 3}
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* SKS */}
+                                <td className="py-2.5 px-3 text-center">
+                                  {isEditing ? (
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={6}
+                                      value={editSks}
+                                      onChange={(e) => setEditSks(Number(e.target.value))}
+                                      className="w-16 px-1 py-1 rounded border border-blue-400 text-xs text-center font-bold"
+                                    />
+                                  ) : (
+                                    <span className="font-bold text-blue-900 dark:text-blue-300 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 rounded border border-blue-200 dark:border-blue-800">
+                                      {course.sks} SKS
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Prodi */}
+                                <td className="py-2.5 px-3">
+                                  {isEditing ? (
+                                    <select
+                                      value={editProdi}
+                                      onChange={(e) => setEditProdi(e.target.value as any)}
+                                      className="px-2 py-1 rounded border border-blue-400 text-xs"
+                                    >
+                                      <option value="agroteknologi">Agroteknologi</option>
+                                      <option value="agribisnis">Agribisnis</option>
+                                    </select>
+                                  ) : (
+                                    <span className="capitalize text-slate-700 dark:text-slate-300 font-medium">
+                                      {course.prodi}
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Opsi Kelas Ditawarkan */}
+                                <td className="py-2.5 px-3">
+                                  {isEditing ? (
+                                    <div className="space-y-1">
+                                      <div className="flex flex-wrap gap-1">
+                                        {adminSettings.classOptions.map((cls) => {
+                                          const isChosen = editClasses.includes(cls);
+                                          return (
+                                            <button
+                                              key={cls}
+                                              type="button"
+                                              onClick={() => {
+                                                if (isChosen) {
+                                                  if (editClasses.length > 1) {
+                                                    setEditClasses(editClasses.filter(c => c !== cls));
+                                                  }
+                                                } else {
+                                                  setEditClasses([...editClasses, cls]);
+                                                }
+                                              }}
+                                              className={`px-1.5 py-0.5 text-[10px] rounded font-bold border transition-colors cursor-pointer ${
+                                                isChosen
+                                                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                                  : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'
+                                              }`}
+                                            >
+                                              {cls}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[10px]">
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditClasses(adminSettings.classOptions)}
+                                          className="text-blue-600 hover:underline font-semibold cursor-pointer"
+                                        >
+                                          Pilih Semua
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1">
+                                      {(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions).map((cls) => {
+                                        const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
+                                        return (
+                                          <span
+                                            key={cls}
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                              isScholarship
+                                                ? 'bg-rose-50 text-rose-700 border-rose-300'
+                                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                                            }`}
+                                            title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
+                                          >
+                                            {cls}
+                                            {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-2.5 px-3 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEdit(course)}
+                                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors cursor-pointer"
+                                      title="Edit Mata Kuliah, Semester & SKS"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setCourseToDelete(course)}
+                                      className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                                      title="Hapus Mata Kuliah"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+
+                    {/* Mobile Card View for Courses (HP-friendly) */}
+                    <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                      {filteredCoursesForTable.map((course, idx) => {
+                        const isSelected = selectedCourseIds.includes(course.id);
+                        return (
+                          <div
+                            key={course.id}
+                            className={`p-4 space-y-2.5 transition-colors ${
+                              isSelected ? 'bg-rose-50/70 dark:bg-rose-950/30' : ''
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleToggleSelectCourse(course.id)}
+                                className="w-4 h-4 mt-0.5 rounded border-slate-300 text-[#166534] focus:ring-[#166534] cursor-pointer"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-mono text-[10px] text-slate-500 font-bold">#{idx + 1}</span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    course.semester === 3
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : course.semester === 5
+                                      ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    Semester {course.semester || 3}
+                                  </span>
+                                  <span className="capitalize text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {course.prodi}
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{course.name}</h4>
+                              </div>
+                              <span className="font-extrabold text-xs text-[#009A44] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                                {course.sks} SKS
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1">
+                              <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                {(course.availableClasses || adminSettings.classOptions).slice(0, 4).map(cls => (
+                                  <span key={cls} className="text-[9px] font-bold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
+                                    {cls}
+                                  </span>
+                                ))}
+                                {(course.availableClasses || adminSettings.classOptions).length > 4 && (
+                                  <span className="text-[9px] text-slate-500 font-semibold">
+                                    +{(course.availableClasses || adminSettings.classOptions).length - 4} kelas
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEdit(course)}
+                                  className="px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCourseToDelete(course)}
+                                  className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 cursor-pointer"
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -3797,6 +4103,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="py-3 px-4 text-center align-top">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
+                                onClick={() => handleStartEditRegistration(r)}
+                                className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 rounded-xl cursor-pointer border border-amber-300 dark:border-amber-700 transition-colors shadow-2xs"
+                                title="Edit Data Mahasiswa & Ganti Kelas Tempat Mengulang"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
                                 onClick={() => {
                                   setStatusModalReg(r);
                                   setSelectedNewStatus(r.status || 'approved');
@@ -3898,6 +4211,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
 
                         <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleStartEditRegistration(r)}
+                            className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 rounded-lg border border-amber-300 dark:border-amber-700 cursor-pointer"
+                            title="Edit Data & Ganti Kelas"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => {
                               setStatusModalReg(r);
@@ -4905,6 +5225,83 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       )}
 
       {/* ============================================================== */}
+      {/* MODAL 2B: KONFIRMASI HAPUS BANYAK MATA KULIAH (BATCH DELETE) */}
+      {/* ============================================================== */}
+      {isBatchDeleteModalOpen && selectedCourseIds.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-100 text-[#E4202A] flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-xs">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1">
+                Hapus {selectedCourseIds.length} Mata Kuliah Terpilih?
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-3 leading-relaxed">
+                Anda akan menghapus <strong>{selectedCourseIds.length} mata kuliah</strong> dari katalog kurikulum secara permanen.
+              </p>
+
+              {/* Rincian Mata Kuliah yang Ditandai untuk Dihapus */}
+              <div className="text-left mb-3">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 px-1">
+                  <span>Daftar Mata Kuliah ({selectedCourseIds.length}):</span>
+                  <span>Semester / SKS</span>
+                </div>
+                <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-2 space-y-1.5 divide-y divide-slate-100 dark:divide-slate-700/60">
+                  {courses
+                    .filter(c => selectedCourseIds.includes(c.id))
+                    .map((course, i) => (
+                      <div
+                        key={course.id}
+                        className="flex items-center justify-between pt-1.5 first:pt-0 text-xs"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate">
+                            <span className="font-mono text-slate-400 text-[10px] mr-1.5">#{i + 1}</span>
+                            {course.name}
+                          </p>
+                          <span className="text-[10px] text-slate-500 capitalize">{course.prodi}</span>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Sem {course.semester}
+                          </span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200 font-mono">
+                            {course.sks} SKS
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-left mb-5">
+                ⚠️ <strong>Perhatian:</strong> Mata kuliah yang dihapus tidak akan dapat dipilih lagi oleh mahasiswa dalam portal pendaftaran mengulang.
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBatchDeleteModalOpen(false)}
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmBatchDeleteCourses}
+                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Ya, Hapus {selectedCourseIds.length} MK</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
       {/* MODAL 3: KONFIRMASI RESET MATA KULIAH KE 18 BAWAAN */}
       {/* ============================================================== */}
       {isResetCoursesModalOpen && (
@@ -5125,7 +5522,403 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 5: KONFIRMASI HAPUS PENGGUNA */}
+      {/* MODAL: EDIT DATA PENDAFTARAN & GANTI KELAS TEMPAT MENGULANG */}
+      {/* ============================================================== */}
+      {registrationBeingEdited && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {/* Header */}
+            <div className="bg-[#008744] text-white p-4 sm:p-5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Edit3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Edit Data Pendaftaran Mahasiswa</h3>
+                  <p className="text-xs text-emerald-100">
+                    Ubah biodata, ganti kelas mengulang, atau sesuaikan mata kuliah terpilih
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegistrationBeingEdited(null)}
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSaveRegistrationEdit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-5 sm:p-6 space-y-6 overflow-y-auto text-xs">
+                {/* Metadata Tag */}
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">ID Registrasi:</span>
+                    <span className="font-mono font-bold text-sm text-blue-900 dark:text-blue-300">
+                      {registrationBeingEdited.id}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Tanggal Submit:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {registrationBeingEdited.registrationDate}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Tahun Ajaran:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {registrationBeingEdited.academicYear || adminSettings.activeAcademicYear || '2025/2026'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Feedback Alert if any */}
+                {editRegFeedback && (
+                  <div
+                    className={`p-3.5 rounded-xl border flex items-center gap-2.5 ${
+                      editRegFeedback.type === 'error'
+                        ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+                        : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                    }`}
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span className="text-xs font-semibold">{editRegFeedback.message}</span>
+                  </div>
+                )}
+
+                {/* Section 1: Biodata Mahasiswa */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-slate-800">
+                    <Users className="w-4 h-4 text-[#008744]" />
+                    <span>Biodata &amp; Informasi Mahasiswa</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Nama Lengkap Mahasiswa *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editRegNama}
+                        onChange={(e) => setEditRegNama(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        placeholder="Contoh: Budi Santoso"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        NIM (Nomor Induk Mahasiswa) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editRegNim}
+                        onChange={(e) => setEditRegNim(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        placeholder="Contoh: 21/45678/SP/01234"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Angkatan Masuk
+                      </label>
+                      <select
+                        value={editRegAngkatan}
+                        onChange={(e) => setEditRegAngkatan(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                      >
+                        {ANGKATAN_OPTIONS.map((angk) => (
+                          <option key={angk} value={angk}>
+                            Angkatan {angk}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Kelas Asal Mahasiswa
+                      </label>
+                      <input
+                        type="text"
+                        value={editRegKelasAsal}
+                        onChange={(e) => setEditRegKelasAsal(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        placeholder="Contoh: Agroteknologi A / Agribisnis B"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Nomor WhatsApp / HP
+                      </label>
+                      <input
+                        type="text"
+                        value={editRegNoWa}
+                        onChange={(e) => setEditRegNoWa(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        placeholder="08123456789"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Alamat Email Mahasiswa
+                      </label>
+                      <input
+                        type="email"
+                        value={editRegEmail}
+                        onChange={(e) => setEditRegEmail(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        placeholder="nama@instiperjogja.ac.id"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Portal Semester Tujuan
+                      </label>
+                      <select
+                        value={editRegTargetSemester}
+                        onChange={(e) => setEditRegTargetSemester(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                      >
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 3 & 5 Gabungan">Semester 3 &amp; 5 Gabungan</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Status Verifikasi Berkas
+                      </label>
+                      <select
+                        value={editRegStatus}
+                        onChange={(e) => setEditRegStatus(e.target.value as RegistrationStatus)}
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                      >
+                        <option value="approved">✅ Disetujui (Approved)</option>
+                        <option value="pending">⏳ Menunggu Verifikasi (Pending)</option>
+                        <option value="rejected">❌ Ditolak / Perlu Perbaikan (Rejected)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Mata Kuliah & Pilihan Kelas Mengulang */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-1 border-b border-slate-200 dark:border-slate-800">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#008744]" />
+                      <span>Mata Kuliah &amp; Kelas Tempat Mengulang</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                      {editRegSelectedCourses.length} mata kuliah dipilih
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Pilih dropdown kelas pada tiap matakuliah untuk memindahkan mahasiswa ke kelas mengulang yang diminta. Anda juga dapat menambah atau menghapus matakuliah.
+                  </p>
+
+                  {/* Course Items List */}
+                  <div className="space-y-2.5">
+                    {editRegSelectedCourses.length === 0 ? (
+                      <div className="p-6 text-center rounded-xl border border-dashed border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/20">
+                        Belum ada mata kuliah yang dipilih. Silakan tambahkan mata kuliah di bawah.
+                      </div>
+                    ) : (
+                      editRegSelectedCourses.map((c, idx) => {
+                        const matchedCourse = courses.find(item => item.id === c.courseId);
+                        const courseClasses = matchedCourse?.availableClasses && matchedCourse.availableClasses.length > 0
+                          ? matchedCourse.availableClasses
+                          : adminSettings.classOptions;
+
+                        return (
+                          <div
+                            key={`${c.courseId}-${idx}`}
+                            className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900 dark:text-white text-xs">
+                                  {c.name}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                                  {c.sks} SKS
+                                </span>
+                                {c.semester && (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                    Sem. {c.semester}
+                                  </span>
+                                )}
+                                {c.prodi && (
+                                  <span className="text-[10px] text-slate-500 uppercase">
+                                    {c.prodi}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Class Selector Dropdown & Remove Button */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1.5">
+                                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                  Kelas Mengulang:
+                                </label>
+                                <select
+                                  value={c.selectedClass || courseClasses[0] || 'Kelas A'}
+                                  onChange={(e) => handleChangeCourseClassInEdit(idx, e.target.value)}
+                                  className="px-2.5 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-blue-900 dark:text-blue-300 font-bold text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                  {courseClasses.map((cls) => {
+                                    const isRestricted = c.semester
+                                      ? isClassRestrictedForRepeat(cls, c.semester, adminSettings)
+                                      : false;
+                                    return (
+                                      <option key={cls} value={cls}>
+                                        {cls} {isRestricted ? '(Khusus/Beasiswa)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCourseFromEdit(idx)}
+                                className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg border border-rose-200 dark:border-rose-800 cursor-pointer transition-colors"
+                                title="Hapus mata kuliah ini dari pendaftaran"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Add New Course to this Registration */}
+                  <div className="pt-2">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Tambah Mata Kuliah Lain dari Katalog:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={courseToAddInEdit}
+                        onChange={(e) => setCourseToAddInEdit(e.target.value)}
+                        className="flex-1 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                      >
+                        <option value="">-- Pilih Mata Kuliah untuk Ditambahkan --</option>
+                        {courses
+                          .filter(c => !editRegSelectedCourses.some(item => item.courseId === c.id))
+                          .map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} ({c.sks} SKS, Semester {c.semester}, {c.prodi === 'agroteknologi' ? 'Agrotek' : 'Agribis'})
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleAddCourseToRegistrationEdit}
+                        disabled={!courseToAddInEdit}
+                        className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shrink-0"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Tambah</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Live SKS & Fee Estimate Info Box */}
+                  {(() => {
+                    const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
+                    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
+                    const isOverLimit = currentTotalSks > maxSksAllowed;
+                    const isPaidBatch = (adminSettings.paidBatches || []).includes(editRegAngkatan);
+                    const costPerSks = adminSettings.costPerSks || 50000;
+                    const estFee = (adminSettings.feePerSksEnabled && isPaidBatch) ? currentTotalSks * costPerSks : 0;
+
+                    return (
+                      <div className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                        isOverLimit
+                          ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+                          : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <span className="text-[11px] block font-semibold">Total Beban SKS:</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-base font-black font-mono">
+                                {currentTotalSks} SKS
+                              </span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                (Batas Angkatan {editRegAngkatan}: {maxSksAllowed} SKS)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[11px] block font-semibold">Estimasi Biaya SKS:</span>
+                          <span className="font-black text-sm font-mono">
+                            {adminSettings.feePerSksEnabled && isPaidBatch
+                              ? `Rp ${estFee.toLocaleString('id-ID')}`
+                              : 'Bebas Biaya (SPP Reguler)'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Section 3: Catatan Pengelola / Alasan Penolakan */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Catatan Pengelola / Memo Perubahan (Opsional):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editRegAdminNotes}
+                    onChange={(e) => setEditRegAdminNotes(e.target.value)}
+                    placeholder="Contoh: Pemindahan kelas A ke B atas permohonan mahasiswa karena jadwal bentrok dengan praktikum..."
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    Jika status ditolak (rejected), catatan ini akan tampil sebagai alasan penolakan bagi mahasiswa saat cek status.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setRegistrationBeingEdited(null)}
+                  className="px-4 py-2.5 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-600 cursor-pointer transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Perubahan Pendaftaran</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* ============================================================== */}
       {userToDelete && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">

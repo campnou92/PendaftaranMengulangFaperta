@@ -78,6 +78,7 @@ export interface SimpleRegistration {
   paymentStatus?: PaymentStatus;
   paymentDate?: string;
   paymentNote?: string;
+  estimatedFee?: number;
   
   // Catatan admin jika ada & alasan penolakan
   adminNotes?: string;

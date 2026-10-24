@@ -428,6 +428,22 @@ export default function App() {
     showToast(`Status berkas pendaftaran berhasil diubah menjadi: ${statusLabel}`);
   };
 
+  // Academic Admin edits registration data with Cloud sync
+  const handleUpdateRegistration = (updatedReg: SimpleRegistration) => {
+    saveCloudRegistration(updatedReg).catch(err => {
+      console.warn('Cloud registration update warning:', err);
+    });
+
+    setRegistrations(prev => prev.map(r => {
+      if (r.id === updatedReg.id) {
+        return updatedReg;
+      }
+      return r;
+    }));
+
+    showToast(`Data pendaftaran ${updatedReg.nama} (${updatedReg.nim}) berhasil diperbarui!`);
+  };
+
   // Charged registrations count for header badge
   const chargedRegistrationsCount = registrations.filter(r => {
     const isFeeActive = adminSettings.feePerSksEnabled ?? true;
@@ -528,6 +544,7 @@ export default function App() {
                   onUpdateSettings={handleUpdateSettings}
                   onDeleteRegistration={handleDeleteRegistration}
                   onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
+                  onUpdateRegistration={handleUpdateRegistration}
                   onViewReceipt={(r) => {
                     setActiveReceipt(r);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
