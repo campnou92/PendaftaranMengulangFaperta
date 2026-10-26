@@ -85,7 +85,8 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 2. Admin Fakultas dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel Admin Fakultas).
 3. NIM yang sudah dipakai untuk melakukan pendaftaran tidak bisa dipakai lagi (ada notifikasi peringatan).
 4. Setelah berhasil mendaftar, pendaftar dapat mencetak hasil matakuliah yang dipilih. Batas maksimal pengambilan adalah 24 SKS.
-5. Perhatian: Kelas berstatus "Kelas Beasiswa" tidak dapat dipilih untuk kelas mengulang.`,
+5. Perhatian: Kelas berstatus "Kelas Beasiswa" tidak dapat dipilih untuk kelas mengulang.
+Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_instiper_jadwal_kuliah/edit)`,
   feePerSksEnabled: true,
   costPerSks: 50000,
   paidBatches: ['2020', '2021', '2022'], // Mahasiswa angkatan lama dikenakan biaya per SKS

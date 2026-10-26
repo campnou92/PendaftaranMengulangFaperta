@@ -34,6 +34,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { checkNimIsRegistered } from '../lib/firebase';
+import { renderFormattedNote } from '../utils/textFormatting';
 
 interface RegistrationFormProps {
   courses: CourseItem[];
@@ -1390,13 +1391,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
               </div>
 
-              {/* Catatan dari Superadmin */}
+              {/* Catatan dari Superadmin dengan Format Link Aktif ala Google Form */}
               {adminSettings.classNote && (
-                <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300">
-                  <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="font-semibold text-slate-700 dark:text-slate-200">Catatan Pengumuman Akademik:</strong>{' '}
-                    <span>{adminSettings.classNote}</span>
+                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl flex items-start gap-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 shadow-2xs">
+                  <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <strong className="font-bold text-slate-900 dark:text-slate-100 block mb-1.5">
+                      Catatan Pengumuman Akademik:
+                    </strong>
+                    {renderFormattedNote(adminSettings.classNote)}
                   </div>
                 </div>
               )}

@@ -66,6 +66,8 @@ import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS } from '../da
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
 import { InstiperLogo } from './InstiperLogo';
 import { ExamAttendanceModal } from './ExamAttendanceModal';
+import { RichNoteEditor } from './RichNoteEditor';
+import { renderFormattedNote } from '../utils/textFormatting';
 import { 
   getStoredUsers, 
   saveStoredUsers, 
@@ -2748,26 +2750,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* FITUR NOTE: Admin bisa mengedit Note */}
-            <div className="bg-amber-50/70 border-2 border-amber-300 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-200">
-                <div className="flex items-center gap-2">
-                  <StickyNote className="w-5 h-5 text-amber-700" />
+            {/* FITUR NOTE: Admin bisa mengedit Note dengan Link Tautan ala Google Form */}
+            <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-slate-50 border-2 border-amber-300 rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-700 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+                    <StickyNote className="w-4 h-4" />
+                  </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-amber-950">
-                      Tampilan Fitur Note (Admin Bisa Mengedit Note)
-                    </h3>
-                    <p className="text-[11px] text-amber-800">
-                      Catatan ini tampil pada kotak "Note:" di sisi kanan formulir pendaftaran untuk dibaca oleh mahasiswa.
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-sm text-amber-950">
+                        Catatan Pengumuman Akademik &amp; Tautan Link (Format Google Form)
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300">
+                        🔗 Hyperlink Support
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 mt-0.5">
+                      Sisipkan link tautan (seperti jadwal kuliah Google Sheets, Google Drive, dll) dengan teks tampilan khusus (misal: "Link Jadwal Kuliah: Klik Disini") persis seperti di Google Form.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   {noteSavedFeedback && (
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1">
-                      <Check className="w-3 h-3" />
-                      Tersimpan!
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-md flex items-center gap-1 border border-emerald-300">
+                      <Check className="w-3.5 h-3.5" />
+                      Note Tersimpan!
                     </span>
                   )}
                   <button
@@ -2777,49 +2786,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     Kembalikan Default
                   </button>
-                </div>
-              </div>
-
-              {/* Textarea Editor */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-800">
-                  Isi Teks Note / Catatan:
-                </label>
-                <textarea
-                  rows={5}
-                  value={noteDraft}
-                  onChange={(e) => setNoteDraft(e.target.value)}
-                  placeholder="Ketik catatan pengumuman atau instruksi pendaftaran di sini..."
-                  className="w-full p-3 rounded-lg border border-amber-300 bg-white text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner font-serif leading-relaxed"
-                />
-
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 italic">
-                    Perubahan note akan langsung terlihat pada formulir mahasiswa.
-                  </span>
                   <button
                     type="button"
                     onClick={handleSaveNote}
                     className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    Simpan Perubahan Note
+                    <span>Simpan Perubahan Note</span>
                   </button>
                 </div>
               </div>
 
-              {/* Live Preview Box */}
-              <div className="mt-5 pt-4 border-t border-amber-200">
+              {/* Rich Note Editor Google Forms */}
+              <RichNoteEditor
+                value={noteDraft}
+                onChange={setNoteDraft}
+                label="Isi Teks Catatan / Pengumuman untuk Mahasiswa:"
+                placeholder="Ketik catatan pengumuman atau instruksi pendaftaran di sini..."
+              />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                <span className="text-[11px] text-slate-500 italic">
+                  💡 Tip: Gunakan tombol <strong className="text-blue-600 font-bold">Link 🔗</strong> pada toolbar untuk menyisipkan tautan Google Sheets atau Drive dengan label tampilan khusus.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveNote}
+                  className="px-5 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all self-end sm:self-auto"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Catatan &amp; Link</span>
+                </button>
+              </div>
+
+              {/* Pratinjau Tampilan Note Hasil Akhir di Sisi Mahasiswa */}
+              <div className="pt-4 border-t border-amber-200">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 block mb-2">
                   Pratinjau Tampilan Note di Formulir Mahasiswa:
                 </span>
-                <div className="bg-white border-2 border-amber-300 rounded-lg p-3 text-xs text-amber-950 flex items-start gap-2.5 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 border-2 border-amber-300 rounded-xl p-4 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-3 shadow-xs">
                   <StickyNote className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-extrabold text-[11px] text-amber-900 block mb-0.5">
-                      Note / Catatan Opsi Kelas:
+                  <div className="flex-1 min-w-0">
+                    <span className="font-extrabold text-[11px] text-amber-900 dark:text-amber-300 block mb-1">
+                      Catatan Pengumuman Akademik:
                     </span>
-                    <p className="font-medium text-amber-900">{noteDraft || 'Belum ada catatan.'}</p>
+                    <div className="font-medium">
+                      {noteDraft ? renderFormattedNote(noteDraft) : <span className="text-slate-400 italic">Belum ada catatan.</span>}
+                    </div>
                   </div>
                 </div>
               </div>
