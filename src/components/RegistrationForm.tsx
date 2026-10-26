@@ -99,36 +99,123 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Form submission feedback
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-  // Helper untuk menentukan target batas waktu penutupan pendaftaran
-  const getTargetDeadline = (): { date: Date; formatted: string } => {
-    let targetStr: string | undefined;
+  // Helper untuk menghitung sisa waktu & status penutupan link berdasarkan semester
+  const calculateTimeLeft = () => {
+    const now = new Date();
+
+    // 1. Jika pengguna memilih semester tertentu (misal Semester 3 atau Semester 5)
     if (selectedSemester !== 'all') {
-      targetStr = adminSettings.semesterSchedules?.[selectedSemester]?.endDate;
-    } else {
-      const semKeys = activeSemesters.length > 0 ? activeSemesters.map(String) : ['3', '5'];
-      for (const k of semKeys) {
-        const s = adminSettings.semesterSchedules?.[k];
-        if (s?.endDate) {
-          targetStr = s.endDate;
-          break;
-        }
+      const semNum = Number(selectedSemester);
+      const semStatus = !isNaN(semNum) 
+        ? getSemesterStatus(semNum, adminSettings) 
+        : { isOpen: true, state: 'open', message: 'Sesuai Jadwal Akademik' };
+      const schedule = adminSettings.semesterSchedules?.[selectedSemester];
+      const semTitle = `Semester ${selectedSemester}`;
+
+      // Cek apakah semester ini berstatus tutup (manual closed atau jadwal expired)
+      if (!semStatus.isOpen) {
+        return {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isClosed: true,
+          statusLabel: `Link Ditutup (${semTitle})`,
+          detailMessage: semStatus.message || `Pendaftaran ${semTitle} saat ini sedang ditutup.`,
+          semesterLabel: semTitle,
+          targetDateFormatted: '-'
+        };
+      }
+
+      // Jika dibuka, hitung waktu mundur terhadap endDate
+      const endDateStr = schedule?.endDate || '2026-11-30T23:59:59';
+      const targetDate = new Date(endDateStr);
+      const validTarget = isNaN(targetDate.getTime()) ? new Date('2026-11-30T23:59:59') : targetDate;
+      const formatted = validTarget.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const difference = validTarget.getTime() - now.getTime();
+      if (difference <= 0) {
+        return {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isClosed: true,
+          statusLabel: `Link Ditutup (${semTitle} Berakhir)`,
+          detailMessage: `Pendaftaran ${semTitle} telah berakhir pada ${formatted}.`,
+          semesterLabel: semTitle,
+          targetDateFormatted: formatted
+        };
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      return {
+        days,
+        hours,
+        minutes,
+        seconds,
+        isClosed: false,
+        statusLabel: `Ditutup s.d. ${formatted} (${semTitle}):`,
+        detailMessage: `Pendaftaran ${semTitle} sedang aktif dibuka.`,
+        semesterLabel: semTitle,
+        targetDateFormatted: formatted
+      };
+    }
+
+    // 2. Jika dipilih "Semua Semester" (Gabungan)
+    const semKeys = activeSemesters.length > 0 ? activeSemesters.map(String) : ['3', '5'];
+    const statuses = semKeys.map(k => ({
+      semKey: k,
+      status: getSemesterStatus(k, adminSettings),
+      schedule: adminSettings.semesterSchedules?.[k]
+    }));
+
+    const openStatuses = statuses.filter(s => s.status.isOpen);
+
+    // Jika seluruh semester ditutup
+    if (openStatuses.length === 0) {
+      return {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        isClosed: true,
+        statusLabel: 'Link Pendaftaran Ditutup (Semua Semester)',
+        detailMessage: 'Seluruh pendaftaran semester saat ini ditutup oleh Fakultas Pertanian.',
+        semesterLabel: 'Semua Semester',
+        targetDateFormatted: '-'
+      };
+    }
+
+    // Jika ada semester yang masih buka, cari target penutupan terdekat
+    let minTargetDate: Date | null = null;
+    let minFormatted = '';
+    let minSemKey = openStatuses[0].semKey;
+
+    for (const item of openStatuses) {
+      const endStr = item.schedule?.endDate || '2026-11-30T23:59:59';
+      const d = new Date(endStr);
+      const validD = isNaN(d.getTime()) ? new Date('2026-11-30T23:59:59') : d;
+      if (!minTargetDate || validD.getTime() < minTargetDate.getTime()) {
+        minTargetDate = validD;
+        minSemKey = item.semKey;
+        minFormatted = validD.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
       }
     }
-    const finalStr = targetStr || adminSettings.semesterSchedules?.['3']?.endDate || '2026-11-30T23:59:59';
-    const target = new Date(finalStr);
-    const validTarget = isNaN(target.getTime()) ? new Date('2026-11-30T23:59:59') : target;
-    const formatted = validTarget.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    return { date: validTarget, formatted };
-  };
 
-  // Helper untuk menghitung sisa waktu (Hari, Jam, Menit, Detik)
-  const calculateTimeLeft = () => {
-    const { date: targetDate, formatted: targetDateFormatted } = getTargetDeadline();
-    const now = new Date();
+    const targetDate = minTargetDate || new Date('2026-11-30T23:59:59');
     const difference = targetDate.getTime() - now.getTime();
 
     if (difference <= 0) {
@@ -137,8 +224,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         hours: 0,
         minutes: 0,
         seconds: 0,
-        isExpired: true,
-        targetDateFormatted
+        isClosed: true,
+        statusLabel: 'Link Pendaftaran Ditutup (Semua Semester)',
+        detailMessage: 'Jadwal pendaftaran seluruh semester telah berakhir.',
+        semesterLabel: 'Semua Semester',
+        targetDateFormatted: minFormatted || '-'
       };
     }
 
@@ -147,13 +237,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
+    const closedCount = statuses.length - openStatuses.length;
+    const closedNote = closedCount > 0 ? ` (${closedCount} Sem Ditutup)` : '';
+
     return {
       days,
       hours,
       minutes,
       seconds,
-      isExpired: false,
-      targetDateFormatted
+      isClosed: false,
+      statusLabel: `Ditutup s.d. ${minFormatted}${closedNote}:`,
+      detailMessage: `Pendaftaran aktif dibuka s/d ${minFormatted}.`,
+      semesterLabel: 'Semua Semester',
+      targetDateFormatted: minFormatted
     };
   };
 
@@ -167,7 +263,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [adminSettings.semesterSchedules, selectedSemester]);
+  }, [adminSettings.semesterSchedules, selectedSemester, activeSemesters]);
 
   // Auto generated registration date
   const [autoDate] = useState(() => {
@@ -358,8 +454,56 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const isOverSksLimit = totalSks > currentMaxSks;
 
+  // Helper: Cek apakah suatu mata kuliah berada di semester yang pendaftarannya sedang ditutup
+  const isCourseClosedCheck = (course: CourseItem): { isClosed: boolean; reason: string } => {
+    // 1. Jika portal semester yang dipilih secara global saat ini ditutup
+    if (selectedSemester !== 'all') {
+      const semStatus = getSemesterStatus(selectedSemester, adminSettings);
+      if (!semStatus.isOpen) {
+        return {
+          isClosed: true,
+          reason: semStatus.message || `Pendaftaran Semester ${selectedSemester} ditutup.`
+        };
+      }
+    }
+
+    // 2. Cek status spesifik semester mata kuliah tersebut
+    if (typeof course.semester === 'number') {
+      const semStatus = getSemesterStatus(course.semester, adminSettings);
+      if (!semStatus.isOpen) {
+        return {
+          isClosed: true,
+          reason: semStatus.message || `Pendaftaran Semester ${course.semester} ditutup.`
+        };
+      }
+    }
+
+    return { isClosed: false, reason: '' };
+  };
+
+  // Uncheck otomatis mata kuliah jika semester-nya ditutup oleh admin
+  useEffect(() => {
+    setCourseSelections((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      Object.keys(next).forEach((id) => {
+        if (next[id]?.checked) {
+          const course = courses.find((c) => c.id === id);
+          if (course && isCourseClosedCheck(course).isClosed) {
+            next[id] = { ...next[id], checked: false };
+            changed = true;
+          }
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [adminSettings.semesterSchedules, selectedSemester]);
+
   // Toggle single course selection
   const handleToggleCourse = (course: CourseItem) => {
+    const { isClosed } = isCourseClosedCheck(course);
+    if (isClosed) return; // Kotak centang nonaktif ketika link ditutup
+
     setCourseSelections((prev) => {
       const current = prev[course.id];
       const isCurrentlyChecked = current?.checked || false;
@@ -377,6 +521,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Change class for a course
   const handleChangeClass = (courseId: string, newClass: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course && isCourseClosedCheck(course).isClosed) return;
+
     setCourseSelections((prev) => ({
       ...prev,
       [courseId]: {
@@ -386,12 +533,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }));
   };
 
-  // Apply batch class to all currently checked courses
+  // Apply batch class to all currently checked courses (hanya mata kuliah yang terbuka)
   const handleApplyBatchClass = (cls: string) => {
     setCourseSelections((prev) => {
       const next = { ...prev };
       activeYearCourses.forEach((c) => {
-        if (next[c.id]?.checked) {
+        if (next[c.id]?.checked && !isCourseClosedCheck(c).isClosed) {
           const available = getAvailableClasses(c);
           if (available.includes(cls) && !isClassRestrictedForRepeat(cls, c.semester, adminSettings)) {
             next[c.id] = {
@@ -405,22 +552,36 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     });
   };
 
-  // Select all or Deselect all visible courses
+  // Select all or Deselect all visible courses (Hanya berlaku untuk mata kuliah yang dibuka)
   const areAllVisibleSelected = useMemo(() => {
-    if (filteredCourses.length === 0) return false;
-    return filteredCourses.every(c => courseSelections[c.id]?.checked);
-  }, [filteredCourses, courseSelections]);
+    const openCourses = filteredCourses.filter(c => !isCourseClosedCheck(c).isClosed);
+    if (openCourses.length === 0) return false;
+    return openCourses.every(c => courseSelections[c.id]?.checked);
+  }, [filteredCourses, courseSelections, adminSettings, selectedSemester]);
 
   const handleToggleSelectAllVisible = () => {
+    const openCourses = filteredCourses.filter(c => !isCourseClosedCheck(c).isClosed);
+    if (openCourses.length === 0) return;
+
     setCourseSelections((prev) => {
       const next = { ...prev };
       const targetState = !areAllVisibleSelected;
-      filteredCourses.forEach((c) => {
+
+      // Hanya pilih mata kuliah yang semester-nya sedang DIBUKA
+      openCourses.forEach((c) => {
         next[c.id] = {
           checked: targetState,
           selectedClass: next[c.id]?.selectedClass || getDefaultClass(c.id),
         };
       });
+
+      // Pastikan mata kuliah yang tertutup tetap tidak tercentang
+      filteredCourses.filter(c => isCourseClosedCheck(c).isClosed).forEach((c) => {
+        if (next[c.id]?.checked) {
+          next[c.id] = { ...next[c.id], checked: false };
+        }
+      });
+
       return next;
     });
   };
@@ -618,63 +779,106 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         </div>
 
         {/* Countdown Timer Penutupan Pendaftaran (Hari, Jam, Menit, Detik) */}
-        <div className="bg-white dark:bg-slate-800/90 p-2.5 sm:p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 shadow-xs flex flex-col items-start sm:items-end gap-1.5 self-stretch sm:self-auto min-w-[260px]">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-            <span className={`w-2 h-2 rounded-full ${timeLeft.isExpired ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'} shrink-0`} />
-            <Clock className={`w-3.5 h-3.5 ${timeLeft.isExpired ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'} shrink-0`} />
-            <span>
-              {timeLeft.isExpired ? 'Pendaftaran Telah Ditutup' : `Ditutup s.d. ${timeLeft.targetDateFormatted}:`}
+        <div className={`p-2.5 sm:p-3 rounded-2xl border shadow-xs flex flex-col items-start sm:items-end gap-1.5 self-stretch sm:self-auto min-w-[280px] transition-all ${
+          timeLeft.isClosed
+            ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 ring-1 ring-rose-400/20'
+            : 'bg-white dark:bg-slate-800/90 border-emerald-200 dark:border-emerald-800/60'
+        }`}>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold">
+            <span className={`w-2.5 h-2.5 rounded-full ${timeLeft.isClosed ? 'bg-rose-600' : 'bg-emerald-500 animate-pulse'} shrink-0`} />
+            <Clock className={`w-3.5 h-3.5 ${timeLeft.isClosed ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'} shrink-0`} />
+            <span className={timeLeft.isClosed ? 'text-rose-900 dark:text-rose-200 font-extrabold' : 'text-slate-700 dark:text-slate-300'}>
+              {timeLeft.statusLabel}
             </span>
           </div>
 
-          {timeLeft.isExpired ? (
-            <div className="px-3 py-1 bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700 rounded-xl text-xs font-black">
-              BATAS WAKTU TELAH BERAKHIR
+          {/* 4 Box Waktu: Hari, Jam, Menit, Detik (Tetap Tampil & Berhenti / Ter-reset ke 00 saat ditutup) */}
+          <div className="flex items-center gap-1.5">
+            {/* Box Hari */}
+            <div className={`flex flex-col items-center border px-2.5 py-1 rounded-lg min-w-[44px] transition-all ${
+              timeLeft.isClosed 
+                ? 'bg-rose-100/70 dark:bg-rose-900/40 border-rose-300 dark:border-rose-800' 
+                : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60'
+            }`}>
+              <span className={`font-mono font-black text-sm sm:text-base leading-none ${
+                timeLeft.isClosed ? 'text-rose-700 dark:text-rose-300' : 'text-[#166534] dark:text-emerald-300'
+              }`}>
+                {String(timeLeft.days).padStart(2, '0')}
+              </span>
+              <span className={`text-[9px] font-bold uppercase tracking-tighter mt-0.5 ${
+                timeLeft.isClosed ? 'text-rose-800 dark:text-rose-400' : 'text-emerald-800 dark:text-emerald-400'
+              }`}>
+                Hari
+              </span>
+            </div>
+            <span className={`font-bold ${timeLeft.isClosed ? 'text-rose-400 dark:text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>:</span>
+
+            {/* Box Jam */}
+            <div className={`flex flex-col items-center border px-2.5 py-1 rounded-lg min-w-[44px] transition-all ${
+              timeLeft.isClosed 
+                ? 'bg-rose-100/70 dark:bg-rose-900/40 border-rose-300 dark:border-rose-800' 
+                : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60'
+            }`}>
+              <span className={`font-mono font-black text-sm sm:text-base leading-none ${
+                timeLeft.isClosed ? 'text-rose-700 dark:text-rose-300' : 'text-[#166534] dark:text-emerald-300'
+              }`}>
+                {String(timeLeft.hours).padStart(2, '0')}
+              </span>
+              <span className={`text-[9px] font-bold uppercase tracking-tighter mt-0.5 ${
+                timeLeft.isClosed ? 'text-rose-800 dark:text-rose-400' : 'text-emerald-800 dark:text-emerald-400'
+              }`}>
+                Jam
+              </span>
+            </div>
+            <span className={`font-bold ${timeLeft.isClosed ? 'text-rose-400 dark:text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>:</span>
+
+            {/* Box Menit */}
+            <div className={`flex flex-col items-center border px-2.5 py-1 rounded-lg min-w-[44px] transition-all ${
+              timeLeft.isClosed 
+                ? 'bg-rose-100/70 dark:bg-rose-900/40 border-rose-300 dark:border-rose-800' 
+                : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60'
+            }`}>
+              <span className={`font-mono font-black text-sm sm:text-base leading-none ${
+                timeLeft.isClosed ? 'text-rose-700 dark:text-rose-300' : 'text-[#166534] dark:text-emerald-300'
+              }`}>
+                {String(timeLeft.minutes).padStart(2, '0')}
+              </span>
+              <span className={`text-[9px] font-bold uppercase tracking-tighter mt-0.5 ${
+                timeLeft.isClosed ? 'text-rose-800 dark:text-rose-400' : 'text-emerald-800 dark:text-emerald-400'
+              }`}>
+                Menit
+              </span>
+            </div>
+            <span className={`font-bold ${timeLeft.isClosed ? 'text-rose-400 dark:text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>:</span>
+
+            {/* Box Detik */}
+            <div className={`flex flex-col items-center border px-2.5 py-1 rounded-lg min-w-[44px] transition-all ${
+              timeLeft.isClosed 
+                ? 'bg-rose-100/70 dark:bg-rose-900/40 border-rose-300 dark:border-rose-800' 
+                : 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700/60'
+            }`}>
+              <span className={`font-mono font-black text-sm sm:text-base leading-none ${
+                timeLeft.isClosed ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300'
+              }`}>
+                {String(timeLeft.seconds).padStart(2, '0')}
+              </span>
+              <span className={`text-[9px] font-bold uppercase tracking-tighter mt-0.5 ${
+                timeLeft.isClosed ? 'text-rose-800 dark:text-rose-400' : 'text-amber-800 dark:text-amber-400'
+              }`}>
+                Detik
+              </span>
+            </div>
+          </div>
+
+          {/* Subtext Status Waktu Berhenti / Ditutup */}
+          {timeLeft.isClosed ? (
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-rose-800 dark:text-rose-200 bg-rose-100 dark:bg-rose-900/50 px-2 py-0.5 rounded-md border border-rose-300 dark:border-rose-800">
+              <Ban className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+              <span>Waktu Berhenti • Link {timeLeft.semesterLabel} Ditutup</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
-              {/* Box Hari */}
-              <div className="flex flex-col items-center bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg min-w-[44px]">
-                <span className="font-mono font-black text-sm sm:text-base text-[#166534] dark:text-emerald-300 leading-none">
-                  {String(timeLeft.days).padStart(2, '0')}
-                </span>
-                <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-tighter mt-0.5">
-                  Hari
-                </span>
-              </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">:</span>
-
-              {/* Box Jam */}
-              <div className="flex flex-col items-center bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg min-w-[44px]">
-                <span className="font-mono font-black text-sm sm:text-base text-[#166534] dark:text-emerald-300 leading-none">
-                  {String(timeLeft.hours).padStart(2, '0')}
-                </span>
-                <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-tighter mt-0.5">
-                  Jam
-                </span>
-              </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">:</span>
-
-              {/* Box Menit */}
-              <div className="flex flex-col items-center bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg min-w-[44px]">
-                <span className="font-mono font-black text-sm sm:text-base text-[#166534] dark:text-emerald-300 leading-none">
-                  {String(timeLeft.minutes).padStart(2, '0')}
-                </span>
-                <span className="text-[9px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-tighter mt-0.5">
-                  Menit
-                </span>
-              </div>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">:</span>
-
-              {/* Box Detik */}
-              <div className="flex flex-col items-center bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/60 px-2.5 py-1 rounded-lg min-w-[44px]">
-                <span className="font-mono font-black text-sm sm:text-base text-amber-700 dark:text-amber-300 leading-none">
-                  {String(timeLeft.seconds).padStart(2, '0')}
-                </span>
-                <span className="text-[9px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-tighter mt-0.5">
-                  Detik
-                </span>
-              </div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+              Sistem menghitung mundur batas waktu
             </div>
           )}
         </div>
@@ -896,8 +1100,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </p>
 
                   <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className="font-semibold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/50 text-[#166534] dark:text-emerald-300">
-                      Gabungan
+                    <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
+                      activePortalStatus.isOpen
+                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-[#166534] dark:text-emerald-300'
+                        : 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                    }`}>
+                      {activePortalStatus.isOpen ? 'Dibuka' : 'Ditutup'}
                     </span>
                     <span className="text-slate-400 text-[10px] truncate max-w-[130px]">
                       {activeSemesters.length > 0 ? activeSemesters.map(s => `Sem ${s}`).join(', ') : 'Semua'}
@@ -938,10 +1146,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       </p>
 
                       <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                        <span className={`font-semibold px-2 py-0.5 rounded ${
+                        <span className={`font-bold px-2 py-0.5 rounded text-[10px] ${
                           info.isOpen 
                             ? 'bg-emerald-100 dark:bg-emerald-900/50 text-[#166534] dark:text-emerald-300' 
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            : 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
                         }`}>
                           {info.isOpen ? 'Dibuka' : 'Ditutup'}
                         </span>
@@ -1344,15 +1552,36 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     )}
                   </div>
 
-                  <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none self-end sm:self-center shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={areAllVisibleSelected}
-                      onChange={handleToggleSelectAllVisible}
-                      className="w-4 h-4 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer"
-                    />
-                    <span>Pilih Semua yang Tampil ({filteredCourses.length})</span>
-                  </label>
+                  {/* Tombol Pilih Semua (Dinonaktifkan jika semua matakuliah berstatus tutup) */}
+                  {(() => {
+                    const openCourses = filteredCourses.filter(c => !isCourseClosedCheck(c).isClosed);
+                    const allVisibleClosed = filteredCourses.length > 0 && openCourses.length === 0;
+
+                    return (
+                      <label className={`inline-flex items-center gap-2 text-xs font-semibold select-none self-end sm:self-center shrink-0 ${
+                        allVisibleClosed 
+                          ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' 
+                          : 'text-slate-700 dark:text-slate-300 cursor-pointer'
+                      }`}>
+                        <input
+                          type="checkbox"
+                          disabled={allVisibleClosed}
+                          checked={areAllVisibleSelected}
+                          onChange={handleToggleSelectAllVisible}
+                          className={`w-4 h-4 rounded transition-all ${
+                            allVisibleClosed 
+                              ? 'text-slate-400 bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-50' 
+                              : 'text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer'
+                          }`}
+                        />
+                        <span>
+                          {allVisibleClosed 
+                            ? `Pilih Semua Dinonaktifkan (Link Ditutup)` 
+                            : `Pilih Semua yang Tampil (${openCourses.length}/${filteredCourses.length})`}
+                        </span>
+                      </label>
+                    );
+                  })()}
                 </div>
 
                 {searchQuery.trim() && (
@@ -1362,6 +1591,21 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Banner Peringatan Jika Link Pendaftaran Semester Sedang Ditutup */}
+              {activePortalStatus.isOpen === false && (
+                <div className="p-3.5 sm:p-4 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50/90 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-3 shadow-xs animate-fade-in">
+                  <Ban className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-black text-sm mb-1 text-rose-800 dark:text-rose-200">
+                      Link Pendaftaran Ditutup ({selectedSemester === 'all' ? 'Seluruh Semester' : `Semester ${selectedSemester}`})
+                    </h4>
+                    <p className="leading-relaxed">
+                      {activePortalStatus.message || `Pendaftaran untuk ${selectedSemester === 'all' ? 'seluruh semester' : `Semester ${selectedSemester}`} saat ini sedang ditutup oleh pihak Fakultas Pertanian. Seluruh kotak centang pemilihan mata kuliah dinonaktifkan secara otomatis.`}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Course rows list */}
               <div className="space-y-2.5">
@@ -1374,7 +1618,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 ) : (
                   filteredCourses.map((course) => {
-                    const isChecked = courseSelections[course.id]?.checked || false;
+                    const { isClosed: isCourseClosed, reason: closedReason } = isCourseClosedCheck(course);
+                    const isChecked = !isCourseClosed && (courseSelections[course.id]?.checked || false);
                     const chosenClass = getSelectedClass(course);
                     const availableClasses = getAvailableClasses(course);
 
@@ -1382,33 +1627,62 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       <div
                         key={course.id}
                         className={`p-3.5 sm:p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                          isChecked
+                          isCourseClosed
+                            ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed select-none'
+                            : isChecked
                             ? 'bg-emerald-50/50 dark:bg-emerald-950/25 border-[#15803D]/60 shadow-xs ring-1 ring-[#15803D]/20'
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
                         {/* Left: Checkbox + Course Name + SKS */}
                         <div 
-                          className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer select-none"
-                          onClick={() => handleToggleCourse(course)}
+                          className={`flex items-start gap-3 flex-1 min-w-0 select-none ${
+                            isCourseClosed ? 'cursor-not-allowed' : 'cursor-pointer'
+                          }`}
+                          onClick={() => {
+                            if (!isCourseClosed) {
+                              handleToggleCourse(course);
+                            }
+                          }}
                         >
                           <input
                             type="checkbox"
+                            disabled={isCourseClosed}
                             checked={isChecked}
-                            onChange={() => handleToggleCourse(course)}
+                            onChange={() => {
+                              if (!isCourseClosed) {
+                                handleToggleCourse(course);
+                              }
+                            }}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-5 h-5 mt-0.5 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-700 cursor-pointer shrink-0"
+                            className={`w-5 h-5 mt-0.5 rounded shrink-0 transition-all ${
+                              isCourseClosed
+                                ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-400 cursor-not-allowed opacity-50'
+                                : 'text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-700 cursor-pointer'
+                            }`}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className={`text-xs sm:text-sm font-bold tracking-tight truncate ${
-                                isChecked ? 'text-[#166534] dark:text-emerald-300' : 'text-slate-700 dark:text-slate-300'
+                                isCourseClosed
+                                  ? 'text-slate-400 dark:text-slate-500 line-through'
+                                  : isChecked 
+                                  ? 'text-[#166534] dark:text-emerald-300' 
+                                  : 'text-slate-700 dark:text-slate-300'
                               }`}>
                                 {course.name}
                               </h3>
                               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
                                 {course.sks} SKS
                               </span>
+
+                              {/* Badge Link Ditutup pada Mata Kuliah */}
+                              {isCourseClosed && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1 shrink-0" title={closedReason}>
+                                  <Ban className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                                  <span>Link Ditutup (Sem {course.semester})</span>
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
@@ -1417,6 +1691,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                               <span className="capitalize">{course.prodi}</span>
                               <span>•</span>
                               <span>Semester {course.semester}</span>
+                              {isCourseClosed && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-rose-600 dark:text-rose-400 font-medium">{closedReason}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1425,13 +1705,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800 shrink-0">
                           <span className="text-[11px] text-slate-400 font-medium">Kelas:</span>
                           <select
-                            disabled={!isChecked}
+                            disabled={!isChecked || isCourseClosed}
                             value={chosenClass}
                             onChange={(e) => handleChangeClass(course.id, e.target.value)}
-                            className={`flex-1 sm:flex-initial h-10 sm:h-9 px-3 rounded-xl sm:rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                              !isChecked
+                            className={`flex-1 sm:flex-initial h-10 sm:h-9 px-3 rounded-xl sm:rounded-lg text-xs font-bold border transition-all ${
+                              !isChecked || isCourseClosed
                                 ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-60'
-                                : 'bg-white dark:bg-slate-800 text-[#166534] dark:text-emerald-400 border-[#15803D]/40 shadow-xs focus:ring-2 focus:ring-[#166534]'
+                                : 'bg-white dark:bg-slate-800 text-[#166534] dark:text-emerald-400 border-[#15803D]/40 shadow-xs focus:ring-2 focus:ring-[#166534] cursor-pointer'
                             }`}
                           >
                             {availableClasses.map((cls) => {

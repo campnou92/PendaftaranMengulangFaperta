@@ -65,6 +65,7 @@ import {
 import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
 import { InstiperLogo } from './InstiperLogo';
+import { ExamAttendanceModal } from './ExamAttendanceModal';
 import { 
   getStoredUsers, 
   saveStoredUsers, 
@@ -238,6 +239,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Filter registrations by semester and class
   const [filterRegSemester, setFilterRegSemester] = useState<'all' | 'Semester 3' | 'Semester 5' | 'gabungan'>('all');
   const [filterRegClass, setFilterRegClass] = useState<string>('all');
+
+  // Exam Attendance Print Modal State (UTS & UAS - Format Standar A4)
+  const [isExamAttendanceModalOpen, setIsExamAttendanceModalOpen] = useState(false);
+  const [examAttendanceCourseId, setExamAttendanceCourseId] = useState<string | undefined>(undefined);
+  const [examAttendanceClass, setExamAttendanceClass] = useState<string | undefined>(undefined);
 
   // Editing course state
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
@@ -1456,6 +1462,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </nav>
             </div>
 
+            {/* Kelompok Menu: DOKUMEN & PRESENSI */}
+            <div>
+              <div className="px-3 pb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                DOKUMEN &amp; PRESENSI
+              </div>
+              <nav className="space-y-1">
+                {/* Menu: Presensi Ujian (UTS / UAS) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExamAttendanceCourseId(undefined);
+                    setExamAttendanceClass(undefined);
+                    setIsExamAttendanceModalOpen(true);
+                  }}
+                  className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-amber-50/70 hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/60 font-semibold border border-amber-200/80 dark:border-amber-900/50"
+                  title="Cetak Presensi Ujian UTS &amp; UAS format standar A4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Printer className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <span className="truncate">Presensi Ujian (UTS/UAS)</span>
+                  </div>
+                  <span className="px-1.5 py-0.2 text-[9px] rounded-md font-bold uppercase tracking-wider bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                    A4
+                  </span>
+                </button>
+              </nav>
+            </div>
+
             {/* Kelompok Menu: SISTEM & KREDENSIAL */}
             {/* Requirement: Kredensial DIBUAT TERPISAH dari Admin BAAK (Khusus Superadmin) */}
             {currentUser?.role === 'superadmin' ? (
@@ -2196,6 +2230,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 {/* Actions */}
                                 <td className="py-2.5 px-3 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setExamAttendanceCourseId(course.id);
+                                        setExamAttendanceClass(undefined);
+                                        setIsExamAttendanceModalOpen(true);
+                                      }}
+                                      className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer"
+                                      title="Cetak Presensi Ujian (UTS / UAS) Mata Kuliah Ini"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                    </button>
+
                                     <button
                                       type="button"
                                       onClick={() => handleStartEdit(course)}
@@ -3872,6 +3919,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExamAttendanceCourseId(undefined);
+                      setExamAttendanceClass(undefined);
+                      setIsExamAttendanceModalOpen(true);
+                    }}
+                    title="Cetak Presensi Ujian (UTS / UAS) Ukuran Standar A4"
+                    className="flex items-center gap-2 h-11 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
+                  >
+                    <Printer className="w-4 h-4 text-white" />
+                    <span>Presensi Ujian (UTS/UAS)</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleExportExcel}
@@ -6302,6 +6363,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Cetak Presensi Ujian (UTS / UAS) Format Standar A4 */}
+      <ExamAttendanceModal
+        isOpen={isExamAttendanceModalOpen}
+        onClose={() => setIsExamAttendanceModalOpen(false)}
+        courses={courses}
+        registrations={registrations}
+        adminSettings={adminSettings}
+        defaultCourseId={examAttendanceCourseId}
+        defaultClass={examAttendanceClass}
+      />
 
     </div>
   );
