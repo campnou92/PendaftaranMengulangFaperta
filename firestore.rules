@@ -46,15 +46,18 @@ service cloud.firestore {
     match /courses/{courseId} {
       allow read: if true;
 
-      // Izinkan write HANYA jika dokumen memiliki struktur CourseItem yang valid
-      allow write: if request.resource.data.keys().hasAll(['id', 'name', 'sks', 'prodi', 'semester'])
+      // Izinkan create & update HANYA jika dokumen memiliki struktur CourseItem yang valid
+      allow create, update: if request.resource.data.keys().hasAll(['id', 'name', 'sks', 'prodi', 'semester'])
         && request.resource.data.id is string
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.sks is int
         && request.resource.data.sks > 0
         && request.resource.data.sks <= 12
-        && request.resource.data.prodi in ['agroteknologi', 'agribisnis'];
+        && request.resource.data.prodi is string;
+
+      // Izinkan delete (hapus satuan atau batch delete matakuliah oleh admin)
+      allow delete: if true;
     }
 
     // ============================================================
