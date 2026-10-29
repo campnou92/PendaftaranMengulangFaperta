@@ -193,15 +193,10 @@ export function getStoredUsers(): ManagedUser[] {
 export function saveStoredUsers(users: ManagedUser[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-    // Asynchronous cloud sync ke Firestore (hanya metadata, BUKAN password)
-    // Password hash tetap tersimpan di localStorage saja untuk keamanan tambahan
+    // Asynchronous cloud sync ke Firestore (password tersimpan aman dalam format hash SHA-256)
     import('../lib/firebase').then(({ saveCloudUser }) => {
       users.forEach((u) => {
-        // Kirim ke Firestore TANPA field password (keamanan ekstra)
-        const { password: _omit, ...safeUser } = u;
-        // Simpan versi tanpa password ke Firestore
-        saveCloudUser({ ...safeUser, password: '[PROTECTED]' } as ManagedUser)
-          .catch(() => {});
+        saveCloudUser(u).catch((err) => console.warn('Sync user to cloud warning:', err));
       });
     }).catch(() => {});
   } catch (err) {
@@ -229,8 +224,21 @@ export async function authenticateUser(usernameInput: string, passwordInput: str
     return { success: false, message: 'Password terlalu pendek.' };
   }
 
-  const users = getStoredUsers();
-  const matched = users.find(u => u.username.toLowerCase() === cleanUser);
+  let users = getStoredUsers();
+  let matched = users.find(u => u.username.toLowerCase() === cleanUser);
+
+  // Jika akun belum ada di localStorage lokal (misal baru dibuat di perangkat lain), cari langsung di Firestore Cloud
+  if (!matched) {
+    try {
+      const { fetchCloudUsers } = await import('../lib/firebase');
+      const cloudUsers = await fetchCloudUsers();
+      if (cloudUsers && cloudUsers.length > 0) {
+        users = cloudUsers;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudUsers));
+        matched = users.find(u => u.username.toLowerCase() === cleanUser);
+      }
+    } catch { /* ignore */ }
+  }
 
   if (!matched) {
     return {
@@ -248,6 +256,19 @@ export async function authenticateUser(usernameInput: string, passwordInput: str
 
   // Verifikasi password menggunakan SHA-256 (dengan backward-compat plaintext)
   let passwordMatches = await verifyPassword(cleanPass, matched.password);
+
+  // Jika password di lokal masih '[PROTECTED]' (efek bug versi lama), sinkronkan ulang dari Cloud
+  if (!passwordMatches && matched.password === '[PROTECTED]') {
+    try {
+      const { fetchCloudUsers } = await import('../lib/firebase');
+      const cloudUsers = await fetchCloudUsers();
+      const cloudMatched = cloudUsers.find(u => u.username.toLowerCase() === cleanUser);
+      if (cloudMatched && cloudMatched.password && cloudMatched.password !== '[PROTECTED]') {
+        matched.password = cloudMatched.password;
+        passwordMatches = await verifyPassword(cleanPass, matched.password);
+      }
+    } catch { /* ignore */ }
+  }
 
   // Failsafe pemulihan: jika verifikasi gagal namun password default resmi cocok
   const defaultPass = KNOWN_DEFAULT_PASSWORDS[cleanUser];
@@ -381,6 +402,9 @@ export function deleteManagedUser(userId: string): { success: boolean; message?:
 
   const updated = users.filter(u => u.id !== userId);
   saveStoredUsers(updated);
+  import('../lib/firebase').then(({ deleteCloudUser }) => {
+    deleteCloudUser(userId).catch(() => {});
+  }).catch(() => {});
   return { success: true, message: `Akun "${target.username}" berhasil dihapus.` };
 }
 

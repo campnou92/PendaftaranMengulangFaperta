@@ -345,6 +345,22 @@ export function subscribeCloudUsers(
   );
 }
 
+export async function fetchCloudUsers(): Promise<ManagedUser[]> {
+  const colRef = collection(db, 'system_users');
+  try {
+    const snapshot = await getDocs(colRef);
+    if (snapshot.empty) return [];
+    const users: ManagedUser[] = [];
+    snapshot.forEach((d) => {
+      users.push(d.data() as ManagedUser);
+    });
+    return users;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, 'system_users');
+    return [];
+  }
+}
+
 export async function saveCloudUser(user: ManagedUser): Promise<void> {
   const path = `system_users/${user.id}`;
   try {

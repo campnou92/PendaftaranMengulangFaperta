@@ -262,19 +262,26 @@ export default function App() {
       }
     });
 
-    // 5. Real-time system users sync from Firestore: HANYA untuk Superadmin
-    let unsubUsers = () => {};
-    if (currentUser && currentUser.role === 'superadmin') {
-      unsubUsers = subscribeCloudUsers((cloudUsers) => {
-        if (cloudUsers && cloudUsers.length > 0) {
-          try {
-            localStorage.setItem('instiper_managed_users', JSON.stringify(cloudUsers));
-          } catch (e) {
-            console.warn('Sync cloud users to cache error:', e);
-          }
+    // 5. Real-time system users sync from Firestore: sinkronkan ke seluruh sesi pengguna
+    const unsubUsers = subscribeCloudUsers((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length > 0) {
+        try {
+          const raw = localStorage.getItem('instiper_managed_users');
+          const localList: ManagedUser[] = raw ? JSON.parse(raw) : [];
+          // Gabungkan akun cloud dengan lokal, utamakan hash password valid jika cloud [PROTECTED]
+          const merged = cloudUsers.map((cu) => {
+            const local = localList.find((l) => l.id === cu.id || l.username.toLowerCase() === cu.username.toLowerCase());
+            if (cu.password === '[PROTECTED]' && local && local.password && local.password !== '[PROTECTED]') {
+              return { ...cu, password: local.password };
+            }
+            return cu;
+          });
+          localStorage.setItem('instiper_managed_users', JSON.stringify(merged));
+        } catch (e) {
+          console.warn('Sync cloud users to cache error:', e);
         }
-      });
-    }
+      }
+    });
 
     return () => {
       unsubRegs();

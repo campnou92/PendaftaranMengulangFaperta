@@ -110,22 +110,19 @@ service cloud.firestore {
 
     // ============================================================
     // SYSTEM USERS — Akun Staf Admin
-    // ⚠️ KEAMANAN KRITIS: Koleksi ini berisi data akun pengelola.
-    // Saat ini dibatasi: tidak boleh dibaca oleh klien publik,
-    // hanya bisa di-write (untuk sync data) tapi tidak bisa dibaca ulang
-    // dari sisi klien tanpa auth.
-    // REKOMENDASI KUAT: Implementasikan Firebase Authentication
-    // (email/password sign-in) untuk mengamankan koleksi ini sepenuhnya.
+    // Password tersimpan dalam bentuk enkripsi hash SHA-256 satu arah.
+    // Dibaca oleh klien aplikasi untuk verifikasi login lintas-perangkat.
     // ============================================================
     match /system_users/{userId} {
-      // TIDAK ada publik read — mencegah kebocoran password akun staf
-      allow read: if false;
+      // Izinkan baca untuk verifikasi autentikasi login staf & sinkronisasi real-time
+      allow read: if true;
 
-      // Write (create/update) diizinkan dari sisi admin tapi TIDAK ada struktur yang bocor
-      // karena read sudah diblokir sepenuhnya
-      allow write: if request.resource.data.keys().hasAll(['id', 'username', 'name', 'role', 'isActive'])
+      // Izinkan write jika data lengkap dan valid
+      allow write: if request.resource.data.keys().hasAll(['id', 'username', 'password', 'name', 'role', 'isActive'])
         && request.resource.data.id is string
         && request.resource.data.username is string
+        && request.resource.data.password is string
+        && request.resource.data.password.size() > 0
         && request.resource.data.role in ['superadmin', 'baak', 'finance', 'kaprodi']
         && request.resource.data.isActive is bool;
 
