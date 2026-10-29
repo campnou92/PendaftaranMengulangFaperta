@@ -70,8 +70,8 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
   {
     id: 'usr-1',
     username: 'superadmin',
-    // Hash SHA-256 dari 'superadmin123!' — WAJIB GANTI SETELAH DEPLOY!
-    password: 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3',
+    // Hash SHA-256 dari 'superadmin123!'
+    password: 'ff76f204c1ae38467d2d63cc3a6042316b4e8034822c31e5956362482173c29f',
     name: 'Koordinator Sistem Informasi FP',
     role: 'superadmin',
     title: 'Superadmin Fakultas',
@@ -83,7 +83,7 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
     id: 'usr-2',
     username: 'admin',
     // Hash SHA-256 dari 'admin123!'
-    password: 'e9d71f5ee7c92d6dc9e92ffdad17b8bd49418f98b8812bcf78de46e87a397680',
+    password: '5c06eb3d5a05a19f49476d694ca81a36344660e9d5b98e3d6a6630f31c2422e7',
     name: 'Staf Pelayanan Akademik Fakultas',
     role: 'baak',
     title: 'Admin Fakultas',
@@ -95,7 +95,7 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
     id: 'usr-3',
     username: 'keuangan',
     // Hash SHA-256 dari 'keuangan123!'
-    password: '6b651bc5b6db7d7e8a3dbcef5bb0c6aecacf38a6e0cc9fe5d1e91ba3c4dc61f5',
+    password: '9c3da062375650de698b3c9c19b5ba4fabde94f6525fe3548a1f9be6a33835e8',
     name: 'Staf Bagian Keuangan & Kasir FP',
     role: 'finance',
     title: 'Admin Keuangan FP',
@@ -107,7 +107,7 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
     id: 'usr-4',
     username: 'kaprodi_agro',
     // Hash SHA-256 dari 'kaprodi123!'
-    password: '3dd6a0d826b83af6a19d8c9c5b6e49c3d9f5e2b1a0f7c8e4b3d2a1e0f9c8b7d',
+    password: '7fc8c6afb9084dfc291ca1dbd42f387831dba0cb648654d93a4e6ec603b52d75',
     name: 'Dr. Ir. Kaprodi Agroteknologi, M.P.',
     role: 'kaprodi',
     title: 'Ketua Program Studi Agroteknologi',
@@ -119,7 +119,7 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
     id: 'usr-5',
     username: 'kaprodi_agri',
     // Hash SHA-256 dari 'kaprodi123!'
-    password: '3dd6a0d826b83af6a19d8c9c5b6e49c3d9f5e2b1a0f7c8e4b3d2a1e0f9c8b7d',
+    password: '7fc8c6afb9084dfc291ca1dbd42f387831dba0cb648654d93a4e6ec603b52d75',
     name: 'Dr. Ir. Kaprodi Agribisnis, M.Si.',
     role: 'kaprodi',
     title: 'Ketua Program Studi Agribisnis',
@@ -129,13 +129,20 @@ export const INITIAL_MANAGED_USERS: ManagedUser[] = [
   }
 ];
 
+// Mapping default hash valid untuk pemulihan otomatis
+const KNOWN_DEFAULT_HASHES: Record<string, string> = {
+  superadmin: 'ff76f204c1ae38467d2d63cc3a6042316b4e8034822c31e5956362482173c29f',
+  admin: '5c06eb3d5a05a19f49476d694ca81a36344660e9d5b98e3d6a6630f31c2422e7',
+  keuangan: '9c3da062375650de698b3c9c19b5ba4fabde94f6525fe3548a1f9be6a33835e8',
+  kaprodi_agro: '7fc8c6afb9084dfc291ca1dbd42f387831dba0cb648654d93a4e6ec603b52d75',
+  kaprodi_agri: '7fc8c6afb9084dfc291ca1dbd42f387831dba0cb648654d93a4e6ec603b52d75'
+};
+
 export function getStoredUsers(): ManagedUser[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // Simpan data awal (password sudah hashed) ke localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MANAGED_USERS));
-      // Jalankan migrasi async di background (tidak blocking)
       migratePasswordsIfNeeded(INITIAL_MANAGED_USERS).then((migrated) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
       }).catch(() => {});
@@ -143,11 +150,23 @@ export function getStoredUsers(): ManagedUser[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      // Jalankan migrasi password lama ke hash di background
-      migratePasswordsIfNeeded(parsed).then((migrated) => {
+      // Auto-heal: jika ada hash rusak/placeholder dari versi sebelumnya, pulihkan ke hash resmi
+      let healed = false;
+      const verifiedUsers = parsed.map((u: ManagedUser) => {
+        const expected = KNOWN_DEFAULT_HASHES[u.username?.toLowerCase()];
+        if (expected && u.password !== expected && (u.password.length !== 64 || u.password.startsWith('a665a459') || u.password.startsWith('3dd6a0d8') || u.password.startsWith('e9d71f5e') || u.password.startsWith('6b651bc5'))) {
+          healed = true;
+          return { ...u, password: expected };
+        }
+        return u;
+      });
+      if (healed) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(verifiedUsers));
+      }
+      migratePasswordsIfNeeded(verifiedUsers).then((migrated) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
       }).catch(() => {});
-      return parsed;
+      return verifiedUsers;
     }
   } catch (err) {
     console.warn('Gagal membaca users dari localStorage:', err);
