@@ -50,10 +50,29 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   const [noteDraft, setNoteDraft] = useState<string>('');
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
-  // Tarif & konfigurasi biaya global (fallback jika tidak ada override per-periode)
   const isFeeActive = adminSettings.feePerSksEnabled ?? true;
   const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
   const costPerSks = adminSettings.costPerSks ?? 50000;
+
+  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
+  const financeSemesters = useMemo(() => {
+    const semSet = new Set<string>();
+    (adminSettings.registrationPeriods || []).forEach(p => {
+      if (p.semester) semSet.add(String(p.semester));
+    });
+    registrations.forEach(r => {
+      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
+      if (match) semSet.add(match[1]);
+      r.selectedCourses?.forEach(c => {
+        if (c.semester) semSet.add(String(c.semester));
+      });
+    });
+    if (semSet.size === 0) {
+      semSet.add('3');
+      semSet.add('5');
+    }
+    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [adminSettings.registrationPeriods, registrations]);
 
   // Helper: Temukan periode pendaftaran yang sesuai untuk suatu registrasi
   // Digunakan untuk membaca aturan biaya SKS yang di-override per periode
@@ -85,27 +104,6 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
     const rate = period?.costPerSks ?? costPerSks;
     return reg.totalSks * rate;
   };
-
-  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
-  const financeSemesters = useMemo(() => {
-    const semSet = new Set<string>();
-    (adminSettings.registrationPeriods || []).forEach(p => {
-      if (p.semester) semSet.add(String(p.semester));
-    });
-    registrations.forEach(r => {
-      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
-      if (match) semSet.add(match[1]);
-      r.selectedCourses?.forEach(c => {
-        if (c.semester) semSet.add(String(c.semester));
-      });
-    });
-    if (semSet.size === 0) {
-      semSet.add('3');
-      semSet.add('5');
-    }
-    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
-  }, [adminSettings.registrationPeriods, registrations]);
-
 
   // Filtered registrations
   const filteredData = registrations.filter((reg) => {
@@ -453,9 +451,9 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
                 <option value="all">Semua Status Pembayaran</option>
-                <option value="pending">â³ Menunggu Pembayaran (Belum Lunas)</option>
-                <option value="paid">ðŸ’³ Sudah Bayar (Menunggu Verifikasi)</option>
-                <option value="verified">âœ… Lunas & Terverifikasi</option>
+                <option value="pending">⏳ Menunggu Pembayaran (Belum Lunas)</option>
+                <option value="paid">💳 Sudah Bayar (Menunggu Verifikasi)</option>
+                <option value="verified">✅ Lunas & Terverifikasi</option>
               </select>
             </div>
 
@@ -473,7 +471,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 {financeSemesters.map((sem) => (
                   <option key={sem} value={sem}>Semester {sem}</option>
                 ))}
-                <option value="gabungan">ðŸ“‘ Lintas / Gabungan</option>
+                <option value="gabungan">📑 Lintas / Gabungan</option>
               </select>
             </div>
 
@@ -604,7 +602,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                           <ul className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 max-w-xs space-y-0.5">
                             {reg.selectedCourses.slice(0, 2).map((c, i) => (
                               <li key={i} className="truncate">
-                                â€¢ {c.name} ({c.sks} SKS)
+                                • {c.name} ({c.sks} SKS)
                               </li>
                             ))}
                             {reg.selectedCourses.length > 2 && (
@@ -623,7 +621,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                                 Rp {tagihan.toLocaleString('id-ID')}
                               </span>
                               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                                {reg.totalSks} SKS Ã— Rp {costPerSks.toLocaleString('id-ID')}
+                                {reg.totalSks} SKS × Rp {costPerSks.toLocaleString('id-ID')}
                               </span>
                             </div>
                           ) : (
@@ -756,7 +754,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                       <div>
                         <strong className="text-sm font-bold text-slate-900 dark:text-white block">{reg.nama}</strong>
                         <span className="font-mono text-xs text-blue-700 dark:text-blue-400 font-bold">NIM: {reg.nim}</span>
-                        <span className="block text-[10px] text-slate-400 mt-0.5">Angkatan {reg.angkatan} â€¢ {reg.kelasAsal}</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5">Angkatan {reg.angkatan} • {reg.kelasAsal}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-black text-amber-900 dark:text-amber-300 block font-mono">
@@ -774,7 +772,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                           ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
                           : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                       }`}>
-                        {status === 'verified' ? 'âœ“ Lunas' : status === 'paid' ? 'Sudah Bayar' : 'Menunggu Bayar'}
+                        {status === 'verified' ? '✓ Lunas' : status === 'paid' ? 'Sudah Bayar' : 'Menunggu Bayar'}
                       </span>
 
                       <div className="flex items-center gap-1.5">
