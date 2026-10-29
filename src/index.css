@@ -67,19 +67,9 @@
   }
 }
 
-/* Motif ornamen sangat halus untuk Login dan Hero (SVG ringan, 0 KB network) */
+/* Elegant subtle surfaces */
 .instiper-academic-pattern {
-  background-color: #F8FAFC;
-  background-image: radial-gradient(#166534 0.75px, transparent 0.75px), radial-gradient(#EAB308 0.5px, #F8FAFC 0.5px);
-  background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
-}
-
-html.dark .instiper-academic-pattern {
-  background-color: #08120C;
-  background-image: radial-gradient(#22C55E 0.75px, transparent 0.75px), radial-gradient(#EAB308 0.5px, #08120C 0.5px);
-  background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
+  background-color: transparent;
 }
 
 /* Hide scrollbar */
