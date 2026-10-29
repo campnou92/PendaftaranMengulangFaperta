@@ -355,8 +355,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return () => clearInterval(timer);
   }, [adminSettings.semesterSchedules, selectedSemester, activeSemesters]);
 
-  // Auto generated registration date
-  const [autoDate] = useState(() => {
+  // Helper untuk generate tanggal pendaftaran saat submit (bukan saat mount)
+  const generateRegistrationDate = () => {
     const now = new Date();
     const months = [
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -368,7 +368,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${day} ${month} ${year}, ${hours}:${minutes} WIB`;
-  });
+  };
 
   // Global class options
   const globalClassOptions = useMemo(() => {
@@ -881,7 +881,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       kelasAsal: kelasAsal.trim(),
       selectedCourses: finalSelectedCourses,
       totalSks,
-      registrationDate: autoDate,
+      registrationDate: generateRegistrationDate(), // Generate SAAT submit, bukan saat mount
       academicYear: finalAcademicYear,
       academicTerm: activeTerm,
       status: 'pending',

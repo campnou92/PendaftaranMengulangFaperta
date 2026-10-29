@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { 
   CourseItem, 
@@ -129,7 +129,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const backupObject = {
       exportedAt: new Date().toISOString(),
       system: 'Pendaftaran Mengulang FAPERTA INSTIPER',
-      academicYear: '2026/2027',
+      academicYear: adminSettings.activeAcademicYear || '2026/2027',
       operator: currentUser ? { name: currentUser.name, role: currentUser.role } : 'System Admin',
       totalMatakuliah: courses.length,
       totalPendaftar: registrations.length,
@@ -1756,7 +1756,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </h1>
                 <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   <span>Fakultas Pertanian INSTIPER</span>
-                  <span>•</span>
+                  <span>â€¢</span>
                   <span className="bg-emerald-50 dark:bg-emerald-950/60 text-[#008744] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold px-2 py-0.5 rounded-md text-[11px]">
                     T.A. 2026/2027
                   </span>
@@ -1999,7 +1999,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                   }`}
                 >
-                  🌿 Semester 3 ({courses.filter(c => c.semester === 3).length})
+                  ðŸŒ¿ Semester 3 ({courses.filter(c => c.semester === 3).length})
                 </button>
                 <button
                   type="button"
@@ -2010,7 +2010,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                   }`}
                 >
-                  🌾 Semester 5 ({courses.filter(c => c.semester === 5).length})
+                  ðŸŒ¾ Semester 5 ({courses.filter(c => c.semester === 5).length})
                 </button>
               </div>
 
@@ -2341,7 +2341,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                             title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
                                           >
                                             {cls}
-                                            {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
+                                            {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">ðŸš« Beasiswa</span>}
                                           </span>
                                         );
                                       })}
@@ -2680,7 +2680,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {/* Top Header of Card */}
                       <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{semKey === '3' ? '🌿' : '🌾'}</span>
+                          <span className="text-xl">{semKey === '3' ? 'ðŸŒ¿' : 'ðŸŒ¾'}</span>
                           <div>
                             <h4 className="font-black text-sm text-slate-900">
                               Semester {semKey}
@@ -2883,7 +2883,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         Catatan Pengumuman Akademik &amp; Tautan Link (Format Google Form)
                       </h3>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300">
-                        🔗 Hyperlink Support
+                        ðŸ”— Hyperlink Support
                       </span>
                     </div>
                     <p className="text-[11px] text-amber-800 mt-0.5">
@@ -2927,7 +2927,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                 <span className="text-[11px] text-slate-500 italic">
-                  💡 Tip: Gunakan tombol <strong className="text-blue-600 font-bold">Link 🔗</strong> pada toolbar untuk menyisipkan tautan Google Sheets atau Drive dengan label tampilan khusus.
+                  ðŸ’¡ Tip: Gunakan tombol <strong className="text-blue-600 font-bold">Link ðŸ”—</strong> pada toolbar untuk menyisipkan tautan Google Sheets atau Drive dengan label tampilan khusus.
                 </span>
                 <button
                   type="button"
@@ -3145,7 +3145,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      <span>🌿 Semester 3</span>
+                      <span>ðŸŒ¿ Semester 3</span>
                       <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-900/30 text-white font-mono">
                         {(restrictedRepeatClassesDraft['3'] || []).length} dilarang
                       </span>
@@ -3159,7 +3159,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      <span>🌾 Semester 5</span>
+                      <span>ðŸŒ¾ Semester 5</span>
                       <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-900/30 text-white font-mono">
                         {(restrictedRepeatClassesDraft['5'] || []).length} dilarang
                       </span>
@@ -3248,11 +3248,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div className="text-[10px] leading-tight font-medium">
                           {isRestricted ? (
                             <span className="text-rose-800 font-semibold flex items-center gap-1">
-                              <span>🚫 Kelas Beasiswa (Tidak Boleh Mengulang)</span>
+                              <span>ðŸš« Kelas Beasiswa (Tidak Boleh Mengulang)</span>
                             </span>
                           ) : (
                             <span className="text-emerald-800 font-medium">
-                              ✓ Kelas Reguler (Dapat dipilih mengulang)
+                              âœ“ Kelas Reguler (Dapat dipilih mengulang)
                             </span>
                           )}
                         </div>
@@ -3529,10 +3529,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* Preview Box */}
               <div className="bg-amber-100/60 border border-amber-300 rounded-lg p-3 text-xs">
                 <span className="font-bold text-amber-900 uppercase text-[10px] block mb-1">
-                  👁️ Simulasi Tampilan Note pada Hasil Cetak Mahasiswa:
+                  ðŸ‘ï¸ Simulasi Tampilan Note pada Hasil Cetak Mahasiswa:
                 </span>
                 <p className="text-[11px] text-amber-950 font-medium leading-relaxed">
-                  "⚠️ <strong>Angkatan Kena Biaya ({selectedPaidBatches.join(', ') || 'Belum dipilih'}):</strong> {paymentInstructionsDraft || '...'}"
+                  "âš ï¸ <strong>Angkatan Kena Biaya ({selectedPaidBatches.join(', ') || 'Belum dipilih'}):</strong> {paymentInstructionsDraft || '...'}"
                 </p>
                 <div className="mt-1 text-[10px] text-slate-600 font-mono">
                   Loket/Rekening: {paymentAccountInfoDraft || '...'}
@@ -3636,7 +3636,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <div className="text-[11px] text-slate-600 bg-slate-50 px-3 py-1.5 rounded border border-slate-200 flex-1">
-                    ℹ️ Standar bawaan sistem adalah <strong>24 SKS</strong>. Jika formulir mahasiswa melebihi angka ini, sistem otomatis menampilkan peringatan merah dan tombol kirim pendaftaran dinonaktifkan.
+                    â„¹ï¸ Standar bawaan sistem adalah <strong>24 SKS</strong>. Jika formulir mahasiswa melebihi angka ini, sistem otomatis menampilkan peringatan merah dan tombol kirim pendaftaran dinonaktifkan.
                   </div>
                 </div>
               </div>
@@ -3877,12 +3877,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* LIVE PREVIEW / PENJELASAN SINKRONISASI KE FORMULIR MAHASISWA */}
               <div className="bg-indigo-100/60 border border-indigo-200 rounded-lg p-3 text-xs">
                 <span className="font-bold text-indigo-950 uppercase text-[10px] block mb-1">
-                  👁️ Pratinjau & Penerapan Sistem Batas SKS:
+                  ðŸ‘ï¸ Pratinjau & Penerapan Sistem Batas SKS:
                 </span>
                 <p className="text-[11px] text-indigo-900 font-medium leading-relaxed">
-                  • <strong>Batas Default:</strong> Mahasiswa seluruh angkatan memiliki kuota maksimal <strong>{defaultMaxSksInput} SKS</strong>.
+                  â€¢ <strong>Batas Default:</strong> Mahasiswa seluruh angkatan memiliki kuota maksimal <strong>{defaultMaxSksInput} SKS</strong>.
                   <br />
-                  • <strong>Aturan Khusus:</strong> {
+                  â€¢ <strong>Aturan Khusus:</strong> {
                     Object.keys(batchMaxSksConfig).length > 0 ? (
                       Object.entries(batchMaxSksConfig).map(([b, sks]) => `Angkatan ${b}: maks ${sks} SKS`).join(' | ')
                     ) : (
@@ -3890,7 +3890,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     )
                   }
                   <br />
-                  • <strong>Validasi Otomatis:</strong> Di formulir pendaftaran, mahasiswa akan melihat info kuota SKS sesuai angkatannya secara otomatis. Jika pilihan mata kuliah melebihi kuota tersebut, tombol pendaftaran dikunci dan peringatan akan muncul.
+                  â€¢ <strong>Validasi Otomatis:</strong> Di formulir pendaftaran, mahasiswa akan melihat info kuota SKS sesuai angkatannya secara otomatis. Jika pilihan mata kuliah melebihi kuota tersebut, tombol pendaftaran dikunci dan peringatan akan muncul.
                 </p>
               </div>
             </div>
@@ -3979,7 +3979,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </span>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/80 text-[#166534] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <span>🌿</span>
+                    <span>ðŸŒ¿</span>
                   </div>
                 </div>
                 <div>
@@ -4005,7 +4005,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </span>
                   </div>
                   <div className="w-8 h-8 rounded-lg bg-blue-100/60 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center font-bold">
-                    <span>🌾</span>
+                    <span>ðŸŒ¾</span>
                   </div>
                 </div>
                 <div>
@@ -4152,7 +4152,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
-                    📑 Lintas / Gabungan ({registrations.filter(r => r.targetSemester?.toLowerCase().includes('gabungan') || r.targetSemester?.toLowerCase().includes('lintas')).length})
+                    ðŸ“‘ Lintas / Gabungan ({registrations.filter(r => r.targetSemester?.toLowerCase().includes('gabungan') || r.targetSemester?.toLowerCase().includes('lintas')).length})
                   </button>
 
                   {/* Filter Kelas */}
@@ -4234,17 +4234,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               </span>
                               {r.status === 'approved' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
-                                  ✓ Disetujui
+                                  âœ“ Disetujui
                                 </span>
                               )}
                               {r.status === 'rejected' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300">
-                                  ✗ Ditolak
+                                  âœ— Ditolak
                                 </span>
                               )}
                               {(!r.status || r.status === 'pending') && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300">
-                                  ⏳ Menunggu
+                                  â³ Menunggu
                                 </span>
                               )}
                             </div>
@@ -4262,7 +4262,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               className="text-[11px] text-emerald-700 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-0.5"
                               title="Hubungi Mahasiswa via WhatsApp"
                             >
-                              <span>📱</span> {r.noWa}
+                              <span>ðŸ“±</span> {r.noWa}
                             </a>
                           </td>
                           <td className="py-3 px-4 align-top">
@@ -4367,22 +4367,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </span>
                             {r.status === 'approved' && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                ✓ Disetujui
+                                âœ“ Disetujui
                               </span>
                             )}
                             {r.status === 'rejected' && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                                ✗ Ditolak
+                                âœ— Ditolak
                               </span>
                             )}
                             {(!r.status || r.status === 'pending') && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                                ⏳ Menunggu
+                                â³ Menunggu
                               </span>
                             )}
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 mt-1">{r.nama}</h4>
-                          <p className="text-xs text-slate-500 font-mono">NIM: {r.nim} • {r.noWa}</p>
+                          <p className="text-xs text-slate-500 font-mono">NIM: {r.nim} â€¢ {r.noWa}</p>
                         </div>
 
                         <div className="text-right">
@@ -4396,7 +4396,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <span className="font-bold text-slate-600 block text-[11px]">Mata Kuliah ({r.selectedCourses.length}):</span>
                         {r.selectedCourses.map((c, i) => (
                           <div key={i} className="flex justify-between text-[11px] text-slate-700">
-                            <span className="truncate pr-2">• {c.name} ({c.selectedClass})</span>
+                            <span className="truncate pr-2">â€¢ {c.name} ({c.selectedClass})</span>
                             <span className="font-bold shrink-0">{c.sks} SKS</span>
                           </div>
                         ))}
@@ -4540,7 +4540,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     Daftar Pengguna Terdaftar ({managedUsers.length} Akun)
                   </span>
                   <span className="text-xs text-slate-500 font-medium ml-2">
-                    Aktif: {managedUsers.filter(u => u.isActive).length} • Nonaktif: {managedUsers.filter(u => !u.isActive).length}
+                    Aktif: {managedUsers.filter(u => u.isActive).length} â€¢ Nonaktif: {managedUsers.filter(u => !u.isActive).length}
                   </span>
                 </div>
 
@@ -4604,7 +4604,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       ? 'bg-amber-50 text-amber-950 border-amber-300 font-bold shadow-2xs'
                                       : 'bg-slate-100 text-slate-400 border-slate-200'
                                   }`}>
-                                    {isRevealed ? u.password : '••••••••••••'}
+                                    {isRevealed ? u.password : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'}
                                   </div>
                                   <button
                                     type="button"
@@ -4657,8 +4657,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <button
                               type="button"
                               disabled={isSuper}
-                              onClick={() => {
-                                updateManagedUser(u.id, { isActive: !u.isActive });
+                              onClick={async () => {
+                                await updateManagedUser(u.id, { isActive: !u.isActive });
                                 refreshUsersList();
                               }}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
@@ -4668,7 +4668,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               } ${isSuper ? 'cursor-default opacity-90' : ''}`}
                               title={isSuper ? 'Akun Superadmin Utama selalu aktif' : 'Klik untuk ubah status keaktifan'}
                             >
-                              {u.isActive ? '✓ Aktif' : '✗ Nonaktif'}
+                              {u.isActive ? 'âœ“ Aktif' : 'âœ— Nonaktif'}
                             </button>
                           </td>
 
@@ -4765,7 +4765,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   ? 'bg-amber-100 text-amber-900 font-bold border border-amber-300 select-all'
                                   : 'text-slate-400 font-medium'
                               }`}>
-                                {isRevealed ? u.password : '••••••••••••'}
+                                {isRevealed ? u.password : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'}
                               </span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
@@ -4854,23 +4854,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       setUserModalFeedback(null);
-                      const res = addManagedUser({
-                        username: newUsername,
-                        password: newUserPassword,
-                        name: newUserName,
-                        role: newUserRole,
-                        title: getDefaultTitleForRole(newUserRole),
-                        email: newUserEmail
-                      });
-                      if (res.success) {
-                        refreshUsersList();
-                        setUserModalFeedback(res.message || 'Akun berhasil ditambahkan!');
-                        setTimeout(() => setIsAddUserModalOpen(false), 1200);
-                      } else {
-                        setUserModalFeedback(res.message || 'Gagal menambahkan akun.');
+                      try {
+                        const res = await addManagedUser({
+                          username: newUsername,
+                          password: newUserPassword,
+                          name: newUserName,
+                          role: newUserRole,
+                          title: getDefaultTitleForRole(newUserRole),
+                          email: newUserEmail
+                        });
+                        if (res.success) {
+                          refreshUsersList();
+                          setUserModalFeedback(res.message || 'Akun berhasil ditambahkan!');
+                          setTimeout(() => setIsAddUserModalOpen(false), 1200);
+                        } else {
+                          setUserModalFeedback(res.message || 'Gagal menambahkan akun.');
+                        }
+                      } catch {
+                        setUserModalFeedback('Gagal memproses akun. Coba lagi.');
                       }
                     }}
                     className="p-5 space-y-3.5 text-xs"
@@ -4982,20 +4986,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       setPasswordModalFeedback(null);
                       if (!newPasswordReset.trim()) {
                         setPasswordModalFeedback('Password baru tidak boleh kosong.');
                         return;
                       }
-                      const res = updateManagedUser(targetUserForPassword.id, { password: newPasswordReset.trim() });
-                      if (res.success) {
-                        refreshUsersList();
-                        setPasswordModalFeedback('Password berhasil diperbarui!');
-                        setTimeout(() => setIsPasswordModalOpen(false), 1200);
-                      } else {
-                        setPasswordModalFeedback(res.message || 'Gagal mengubah password.');
+                      if (newPasswordReset.trim().length < 8) {
+                        setPasswordModalFeedback('Password minimal 8 karakter.');
+                        return;
+                      }
+                      try {
+                        const res = await updateManagedUser(targetUserForPassword.id, { password: newPasswordReset.trim() });
+                        if (res.success) {
+                          refreshUsersList();
+                          setPasswordModalFeedback('Password berhasil diperbarui!');
+                          setTimeout(() => setIsPasswordModalOpen(false), 1200);
+                        } else {
+                          setPasswordModalFeedback(res.message || 'Gagal mengubah password.');
+                        }
+                      } catch {
+                        setPasswordModalFeedback('Gagal memproses perubahan password.');
                       }
                     }}
                     className="p-5 space-y-3.5 text-xs"
@@ -5064,22 +5076,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       setEditUserFeedback(null);
-                      const res = updateManagedUser(targetUserForEdit.id, {
-                        name: editUserName.trim(),
-                        role: editUserRole,
-                        title: getDefaultTitleForRole(editUserRole),
-                        email: editUserEmail.trim(),
-                        isActive: editUserActive
-                      });
-                      if (res.success) {
-                        refreshUsersList();
-                        setEditUserFeedback('Data akun berhasil diperbarui!');
-                        setTimeout(() => setIsEditUserModalOpen(false), 1200);
-                      } else {
-                        setEditUserFeedback(res.message || 'Gagal memperbarui akun.');
+                      try {
+                        const res = await updateManagedUser(targetUserForEdit.id, {
+                          name: editUserName.trim(),
+                          role: editUserRole,
+                          title: getDefaultTitleForRole(editUserRole),
+                          email: editUserEmail.trim(),
+                          isActive: editUserActive
+                        });
+                        if (res.success) {
+                          refreshUsersList();
+                          setEditUserFeedback('Data akun berhasil diperbarui!');
+                          setTimeout(() => setIsEditUserModalOpen(false), 1200);
+                        } else {
+                          setEditUserFeedback(res.message || 'Gagal memperbarui akun.');
+                        }
+                      } catch {
+                        setEditUserFeedback('Gagal memproses perubahan akun.');
                       }
                     }}
                     className="p-5 space-y-3.5 text-xs"
@@ -5283,7 +5299,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    🌱 Agroteknologi
+                    ðŸŒ± Agroteknologi
                   </button>
                   <button
                     type="button"
@@ -5294,7 +5310,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    🌾 Agribisnis
+                    ðŸŒ¾ Agribisnis
                   </button>
                 </div>
               </div>
@@ -5350,7 +5366,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       >
                         <span>{cls}</span>
                         {isChosen && <Check className="w-3 h-3 ml-0.5" />}
-                        {isRestricted && <span className="text-[9px] font-mono">🚫</span>}
+                        {isRestricted && <span className="text-[9px] font-mono">ðŸš«</span>}
                       </button>
                     );
                   })}
@@ -5402,11 +5418,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <br />
                 <span className="font-bold text-slate-900 text-sm block mt-1">"{courseToDelete.name}"</span>
                 <span className="text-[11px] text-slate-500 font-mono">
-                  {courseToDelete.sks} SKS • Semester {courseToDelete.semester} • Prodi {courseToDelete.prodi}
+                  {courseToDelete.sks} SKS â€¢ Semester {courseToDelete.semester} â€¢ Prodi {courseToDelete.prodi}
                 </span>
               </p>
               <div className="p-2.5 bg-amber-50 rounded-xl text-[11px] text-amber-800 border border-amber-200 text-left mb-5">
-                ⚠️ Mata kuliah ini akan dihapus dari portal penawaran mahasiswa.
+                âš ï¸ Mata kuliah ini akan dihapus dari portal penawaran mahasiswa.
               </div>
               <div className="flex items-center justify-center gap-3">
                 <button
@@ -5493,7 +5509,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-left mb-5">
-                ⚠️ <strong>Perhatian:</strong> Mata kuliah yang dihapus tidak akan dapat dipilih lagi oleh mahasiswa dalam portal pendaftaran mengulang.
+                âš ï¸ <strong>Perhatian:</strong> Mata kuliah yang dihapus tidak akan dapat dipilih lagi oleh mahasiswa dalam portal pendaftaran mengulang.
               </div>
 
               <div className="flex items-center justify-center gap-3">
@@ -5584,7 +5600,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 Anda akan menghapus seluruh <strong>{courses.length} mata kuliah</strong> di semua tahun ajaran dan semester secara permanen dari sistem &amp; Cloud.
               </p>
               <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl text-[11px] text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-left mb-5">
-                ⚠️ <strong>Peringatan:</strong> Seluruh mata kuliah akan dikosongkan total dan tidak akan muncul kembali sampai Anda menambahkan atau mengimpor mata kuliah baru.
+                âš ï¸ <strong>Peringatan:</strong> Seluruh mata kuliah akan dikosongkan total dan tidak akan muncul kembali sampai Anda menambahkan atau mengimpor mata kuliah baru.
               </div>
               <div className="flex items-center justify-center gap-3">
                 <button
@@ -5676,7 +5692,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-white">Validasi &amp; Verifikasi Berkas</h3>
-                  <p className="text-[11px] text-emerald-100">Fakultas Pertanian — Pengesahan Pendaftaran Mengulang</p>
+                  <p className="text-[11px] text-emerald-100">Fakultas Pertanian â€” Pengesahan Pendaftaran Mengulang</p>
                 </div>
               </div>
               <button
@@ -5699,7 +5715,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {statusModalReg.nama} <span className="font-mono text-slate-500 font-normal">({statusModalReg.nim})</span>
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Angkatan {statusModalReg.angkatan} • {statusModalReg.selectedCourses.length} Mata Kuliah ({statusModalReg.totalSks} SKS)
+                  Angkatan {statusModalReg.angkatan} â€¢ {statusModalReg.selectedCourses.length} Mata Kuliah ({statusModalReg.totalSks} SKS)
                 </p>
               </div>
 
@@ -5984,9 +6000,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onChange={(e) => setEditRegStatus(e.target.value as RegistrationStatus)}
                         className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#008744] focus:outline-none"
                       >
-                        <option value="approved">✅ Disetujui (Approved)</option>
-                        <option value="pending">⏳ Menunggu Verifikasi (Pending)</option>
-                        <option value="rejected">❌ Ditolak / Perlu Perbaikan (Rejected)</option>
+                        <option value="approved">âœ… Disetujui (Approved)</option>
+                        <option value="pending">â³ Menunggu Verifikasi (Pending)</option>
+                        <option value="rejected">âŒ Ditolak / Perlu Perbaikan (Rejected)</option>
                       </select>
                     </div>
                   </div>

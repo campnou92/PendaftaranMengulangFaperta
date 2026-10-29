@@ -24,22 +24,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setIsSubmitting(true);
 
-    const result = authenticateUser(username, password);
+    try {
+      const result = await authenticateUser(username, password);
 
-    if (result.success && result.user) {
+      if (result.success && result.user) {
+        onLoginSuccess(result.user);
+        // Reset form after successful login
+        setUsername('');
+        setPassword('');
+      } else {
+        setErrorMsg(result.message || 'Username atau password tidak sesuai.');
+      }
+    } catch (err) {
+      setErrorMsg('Terjadi kesalahan sistem saat verifikasi. Silakan coba lagi.');
+      console.error('Login error:', err);
+    } finally {
       setIsSubmitting(false);
-      onLoginSuccess(result.user);
-      // Reset form after successful login
-      setUsername('');
-      setPassword('');
-    } else {
-      setIsSubmitting(false);
-      setErrorMsg(result.message || 'Username atau password tidak sesuai.');
     }
   };
 

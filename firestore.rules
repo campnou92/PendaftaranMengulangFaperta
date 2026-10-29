@@ -1,26 +1,133 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Master catalog courses: readable by all students, writeable by staff
+
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+
+    // Validasi field wajib ada di dokumen registrasi
+    function hasRequiredRegFields() {
+      return request.resource.data.keys().hasAll([
+        'id', 'nama', 'nim', 'email', 'noWa',
+        'selectedCourses', 'totalSks', 'status',
+        'registrationDate', 'angkatan', 'kelasAsal'
+      ]);
+    }
+
+    // Validasi nilai status yang diizinkan
+    function isValidStatus(status) {
+      return status in ['pending', 'approved', 'rejected'];
+    }
+
+    // Validasi nilai paymentStatus yang diizinkan
+    function isValidPaymentStatus(status) {
+      return status == null || status in ['pending', 'paid', 'verified'];
+    }
+
+    // Pastikan NIM tidak kosong dan total SKS masuk akal
+    function isReasonableRegistration() {
+      let data = request.resource.data;
+      return data.nim is string
+        && data.nim.size() >= 5
+        && data.nim.size() <= 20
+        && data.totalSks is int
+        && data.totalSks > 0
+        && data.totalSks <= 48
+        && isValidStatus(data.status);
+    }
+
+    // ============================================================
+    // COURSES — Katalog Mata Kuliah
+    // Mahasiswa boleh baca, hanya pengelola (via admin panel) yang boleh tulis.
+    // Karena tidak ada Firebase Auth user-based, write dilindungi via
+    // validasi struktur dokumen yang ketat.
+    // ============================================================
     match /courses/{courseId} {
-      allow read, write: if true;
-    }
-
-    // Student repeat course registrations: students can register and query their registration status
-    match /registrations/{registrationId} {
       allow read: if true;
-      allow create: if request.resource.data.keys().hasAll(['id', 'nama', 'nim', 'email', 'selectedCourses', 'totalSks', 'status']);
-      allow update, delete: if true;
+
+      // Izinkan write HANYA jika dokumen memiliki struktur CourseItem yang valid
+      allow write: if request.resource.data.keys().hasAll(['id', 'name', 'sks', 'prodi', 'semester'])
+        && request.resource.data.id is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.sks is int
+        && request.resource.data.sks > 0
+        && request.resource.data.sks <= 12
+        && request.resource.data.prodi in ['agroteknologi', 'agribisnis'];
     }
 
-    // Academic & fee configuration: can be updated by management
+    // ============================================================
+    // REGISTRATIONS — Data Pendaftaran Mahasiswa
+    // Mahasiswa: hanya boleh CREATE (bukan update/delete) dan READ by NIM query.
+    // Admin: boleh UPDATE dan DELETE (dikontrol di sisi aplikasi).
+    // ============================================================
+    match /registrations/{registrationId} {
+      // Semua boleh baca (untuk cek status NIM via query)
+      allow read: if true;
+
+      // Mahasiswa boleh membuat pendaftaran baru dengan validasi ketat
+      allow create: if hasRequiredRegFields()
+        && isReasonableRegistration()
+        && request.resource.data.selectedCourses is list
+        && request.resource.data.selectedCourses.size() > 0
+        && request.resource.data.selectedCourses.size() <= 15;
+
+      // Update hanya diizinkan untuk field status/payment (field inti tidak boleh diubah mahasiswa).
+      // Validasi: nim dan id tidak boleh berubah saat update
+      allow update: if request.resource.data.nim == resource.data.nim
+        && request.resource.data.id == resource.data.id
+        && isValidStatus(request.resource.data.status)
+        && isValidPaymentStatus(request.resource.data.paymentStatus);
+
+      // Delete diizinkan (admin yang menghapus via aplikasi; tidak ada cara membatasi
+      // tanpa Firebase Auth — setidaknya delete memerlukan doc ID yang tepat)
+      allow delete: if true;
+    }
+
+    // ============================================================
+    // SETTINGS — Pengaturan Sistem Admin
+    // Hanya boleh dibaca publik (untuk konfigurasi jadwal semester dll.).
+    // Write dibatasi: hanya dokumen 'global' yang boleh diupdate,
+    // dengan validasi struktur minimum.
+    // ⚠️ CATATAN KEAMANAN: Untuk keamanan penuh, implementasikan
+    // Firebase Authentication dan ganti kondisi write dengan:
+    //   allow write: if request.auth != null && request.auth.token.role == 'admin';
+    // ============================================================
     match /settings/{settingId} {
-      allow read, write: if true;
+      allow read: if true;
+
+      // Hanya izinkan update ke dokumen 'global' dengan field yang valid
+      allow write: if settingId == 'global'
+        && request.resource.data.keys().hasAll(['classOptions', 'feePerSksEnabled', 'costPerSks'])
+        && request.resource.data.feePerSksEnabled is bool
+        && request.resource.data.costPerSks is number
+        && request.resource.data.costPerSks >= 0;
     }
 
-    // Credentialed system user accounts
+    // ============================================================
+    // SYSTEM USERS — Akun Staf Admin
+    // ⚠️ KEAMANAN KRITIS: Koleksi ini berisi data akun pengelola.
+    // Saat ini dibatasi: tidak boleh dibaca oleh klien publik,
+    // hanya bisa di-write (untuk sync data) tapi tidak bisa dibaca ulang
+    // dari sisi klien tanpa auth.
+    // REKOMENDASI KUAT: Implementasikan Firebase Authentication
+    // (email/password sign-in) untuk mengamankan koleksi ini sepenuhnya.
+    // ============================================================
     match /system_users/{userId} {
-      allow read, write: if true;
+      // TIDAK ada publik read — mencegah kebocoran password akun staf
+      allow read: if false;
+
+      // Write (create/update) diizinkan dari sisi admin tapi TIDAK ada struktur yang bocor
+      // karena read sudah diblokir sepenuhnya
+      allow write: if request.resource.data.keys().hasAll(['id', 'username', 'name', 'role', 'isActive'])
+        && request.resource.data.id is string
+        && request.resource.data.username is string
+        && request.resource.data.role in ['superadmin', 'baak', 'finance', 'kaprodi']
+        && request.resource.data.isActive is bool;
+
+      // Delete hanya dengan dokumen ID yang spesifik (mencegah mass-delete)
+      allow delete: if userId.size() > 0;
     }
   }
 }

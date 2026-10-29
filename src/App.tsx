@@ -179,7 +179,8 @@ export default function App() {
     } catch (e) {
       console.error('Failed to load registrations', e);
     }
-    return INITIAL_REGISTRATIONS;
+    // Mulai dengan array kosong — jangan tampilkan data mock ke produksi
+    return [];
   });
 
   // Active receipt view (Print receipt after register - FITUR 3)

@@ -50,9 +50,41 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   const [noteDraft, setNoteDraft] = useState<string>('');
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
+  // Tarif & konfigurasi biaya global (fallback jika tidak ada override per-periode)
   const isFeeActive = adminSettings.feePerSksEnabled ?? true;
   const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
   const costPerSks = adminSettings.costPerSks ?? 50000;
+
+  // Helper: Temukan periode pendaftaran yang sesuai untuk suatu registrasi
+  // Digunakan untuk membaca aturan biaya SKS yang di-override per periode
+  const findPeriodForReg = (reg: SimpleRegistration) => {
+    const periods = adminSettings.registrationPeriods || [];
+    if (periods.length === 0) return null;
+    const semMatch = reg.targetSemester?.match(/(\d+)/);
+    const semNum = semMatch ? semMatch[1] : null;
+    return periods.find((p) => {
+      const yearMatch = !reg.academicYear || p.academicYear === reg.academicYear;
+      const semesterMatch = !semNum || String(p.semester) === semNum;
+      return yearMatch && semesterMatch;
+    }) || null;
+  };
+
+  // Helper check: apakah registrasi ini kena biaya per SKS?
+  // Mendukung override per-periode (feePerSksEnabled, paidBatches)
+  const isChargedPerSks = (reg: SimpleRegistration) => {
+    const period = findPeriodForReg(reg);
+    const feeActive = period?.feePerSksEnabled !== undefined ? period.feePerSksEnabled : isFeeActive;
+    const batches = period?.paidBatches ?? paidBatches;
+    return feeActive && batches.includes(reg.angkatan);
+  };
+
+  // Helper: Hitung total tagihan per registrasi dengan tarif per-periode (jika ada override)
+  const getBillAmount = (reg: SimpleRegistration) => {
+    if (!isChargedPerSks(reg)) return 0;
+    const period = findPeriodForReg(reg);
+    const rate = period?.costPerSks ?? costPerSks;
+    return reg.totalSks * rate;
+  };
 
   // Daftar semester unik yang tersedia dari data periode & registrasi aktif
   const financeSemesters = useMemo(() => {
@@ -74,14 +106,6 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
     return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
   }, [adminSettings.registrationPeriods, registrations]);
 
-  // Helper check
-  const isChargedPerSks = (reg: SimpleRegistration) => {
-    return isFeeActive && paidBatches.includes(reg.angkatan);
-  };
-
-  const getBillAmount = (reg: SimpleRegistration) => {
-    return isChargedPerSks(reg) ? reg.totalSks * costPerSks : 0;
-  };
 
   // Filtered registrations
   const filteredData = registrations.filter((reg) => {
@@ -155,7 +179,10 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
     // Sheet 1: Rekap Tagihan Keuangan
     const financeRows = filteredData.map((reg, idx) => {
       const isCharged = isChargedPerSks(reg);
-      const tagihan = isCharged ? reg.totalSks * costPerSks : 0;
+      // Gunakan getBillAmount agar tarif per-periode dipakai jika ada override
+      const tagihan = getBillAmount(reg);
+      const periodForReg = findPeriodForReg(reg);
+      const effectiveRate = periodForReg?.costPerSks ?? costPerSks;
       let statusLabel = 'BEBAS BIAYA (GRATIS)';
       if (isCharged) {
         if (reg.paymentStatus === 'verified') statusLabel = 'LUNAS & TERVERIFIKASI';
@@ -177,7 +204,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
         'Semester Target': reg.targetSemester,
         'Total SKS': reg.totalSks,
         'Kewajiban Biaya': isCharged ? 'Ya (Kena Biaya SKS)' : 'Bebas Biaya',
-        'Tarif Per SKS': isCharged ? costPerSks : 0,
+        'Tarif Per SKS': isCharged ? effectiveRate : 0,
         'Total Tagihan (Rp)': tagihan,
         'Status Pembayaran': statusLabel,
         'Tanggal Verifikasi': reg.paymentDate || '-',
@@ -426,9 +453,9 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
                 <option value="all">Semua Status Pembayaran</option>
-                <option value="pending">⏳ Menunggu Pembayaran (Belum Lunas)</option>
-                <option value="paid">💳 Sudah Bayar (Menunggu Verifikasi)</option>
-                <option value="verified">✅ Lunas & Terverifikasi</option>
+                <option value="pending">â³ Menunggu Pembayaran (Belum Lunas)</option>
+                <option value="paid">ðŸ’³ Sudah Bayar (Menunggu Verifikasi)</option>
+                <option value="verified">âœ… Lunas & Terverifikasi</option>
               </select>
             </div>
 
@@ -446,7 +473,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 {financeSemesters.map((sem) => (
                   <option key={sem} value={sem}>Semester {sem}</option>
                 ))}
-                <option value="gabungan">📑 Lintas / Gabungan</option>
+                <option value="gabungan">ðŸ“‘ Lintas / Gabungan</option>
               </select>
             </div>
 
@@ -577,7 +604,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                           <ul className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 max-w-xs space-y-0.5">
                             {reg.selectedCourses.slice(0, 2).map((c, i) => (
                               <li key={i} className="truncate">
-                                • {c.name} ({c.sks} SKS)
+                                â€¢ {c.name} ({c.sks} SKS)
                               </li>
                             ))}
                             {reg.selectedCourses.length > 2 && (
@@ -596,7 +623,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                                 Rp {tagihan.toLocaleString('id-ID')}
                               </span>
                               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                                {reg.totalSks} SKS × Rp {costPerSks.toLocaleString('id-ID')}
+                                {reg.totalSks} SKS Ã— Rp {costPerSks.toLocaleString('id-ID')}
                               </span>
                             </div>
                           ) : (
@@ -729,7 +756,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                       <div>
                         <strong className="text-sm font-bold text-slate-900 dark:text-white block">{reg.nama}</strong>
                         <span className="font-mono text-xs text-blue-700 dark:text-blue-400 font-bold">NIM: {reg.nim}</span>
-                        <span className="block text-[10px] text-slate-400 mt-0.5">Angkatan {reg.angkatan} • {reg.kelasAsal}</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5">Angkatan {reg.angkatan} â€¢ {reg.kelasAsal}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-black text-amber-900 dark:text-amber-300 block font-mono">
@@ -747,7 +774,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                           ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
                           : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
                       }`}>
-                        {status === 'verified' ? '✓ Lunas' : status === 'paid' ? 'Sudah Bayar' : 'Menunggu Bayar'}
+                        {status === 'verified' ? 'âœ“ Lunas' : status === 'paid' ? 'Sudah Bayar' : 'Menunggu Bayar'}
                       </span>
 
                       <div className="flex items-center gap-1.5">

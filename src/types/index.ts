@@ -282,14 +282,15 @@ export function getSemesterStatus(
   // 2. Fallback: Cek semesterSchedules lama
   const schedule = settings?.semesterSchedules?.[semKey];
 
-  // Default jika belum disetel: Pendaftaran terbuka
+  // Default jika belum disetel: Pendaftaran TERTUTUP (aman by-default)
+  // Admin harus secara eksplisit membuka pendaftaran via periode atau semesterSchedules
   if (!schedule) {
     return {
-      isOpen: true,
-      state: 'open',
-      label: 'DIBUKA',
-      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-      message: `Pendaftaran Semester ${semKey} saat ini dibuka.`
+      isOpen: false,
+      state: 'manual_closed',
+      label: 'BELUM DIKONFIGURASI',
+      badgeClass: 'bg-slate-200 text-slate-700 border-slate-400',
+      message: `Pendaftaran Semester ${semKey} belum dikonfigurasi oleh Admin. Silakan hubungi Fakultas Pertanian.`
     };
   }
 
