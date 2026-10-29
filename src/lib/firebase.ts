@@ -147,12 +147,21 @@ export async function fetchRegistrationByExactNim(nim: string): Promise<SimpleRe
 }
 
 /**
- * Check if a NIM is already registered and active (not rejected).
+ * Check if a NIM is already registered and active (not rejected) in the given academic year.
  */
-export async function checkNimIsRegistered(nim: string): Promise<{ exists: boolean; registration?: SimpleRegistration }> {
+export async function checkNimIsRegistered(
+  nim: string,
+  academicYear?: string
+): Promise<{ exists: boolean; registration?: SimpleRegistration }> {
   try {
     const records = await fetchRegistrationByExactNim(nim);
-    const active = records.find(r => r.status !== 'rejected');
+    const active = records.find(r => {
+      if (r.status === 'rejected') return false;
+      if (academicYear && r.academicYear && r.academicYear !== academicYear) {
+        return false;
+      }
+      return true;
+    });
     if (active) {
       return { exists: true, registration: active };
     }

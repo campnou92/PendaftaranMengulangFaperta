@@ -1,14 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   CourseItem, 
   SelectedCourseItem, 
   SimpleRegistration, 
   AdminSettings, 
+  RegistrationPeriod,
   getMaxSksForBatch, 
   getSemesterStatus, 
   formatDateTimeId,
   isClassRestrictedForRepeat, 
-  getRestrictedClassesForSemester 
+  getRestrictedClassesForSemester,
+  getRestrictedClassReason
 } from '../types';
 import { ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
 import { 
@@ -50,46 +52,92 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   adminSettings,
   onSubmitSuccess,
 }) => {
-  // 1. Tahun Ajaran & Semester Aktif (Solusi 3: Hanya Menampilkan Tahun Ajaran yang Aktif)
+  // 1. Tahun Ajaran & Semester Aktif (Sinkron dengan Periode Pendaftaran Terbuka)
   const activeAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
   const activeTerm = adminSettings.activeTerm || 'Ganjil';
 
-  // HANYA ambil mata kuliah yang terdaftar pada Tahun Ajaran Aktif dan periode yang dibuka
-  const activeYearCourses = useMemo(() => {
-    const periods = adminSettings.registrationPeriods || [];
-    const activeYearPeriods = periods.filter(p => p.academicYear === activeAcademicYear || !p.academicYear);
+  // Ambil seluruh periode pendaftaran yang ditentukan Admin: hanya yang showOnMainForm !== false dan isOpen !== false
+  const openVisiblePeriods = useMemo(() => {
+    const allPeriods: RegistrationPeriod[] = adminSettings.registrationPeriods || [];
+    return allPeriods.filter(p => p.showOnMainForm !== false && p.isOpen !== false);
+  }, [adminSettings.registrationPeriods]);
 
-    return courses.filter((c) => {
-      // Jika ada periode khusus di TA aktif untuk semester ini, pastikan ID mata kuliah ditawarkan
-      if (activeYearPeriods.length > 0) {
-        const semPeriod = activeYearPeriods.find(p => p.semester === c.semester);
-        if (semPeriod && Array.isArray(semPeriod.offeredCourseIds) && semPeriod.offeredCourseIds.length > 0) {
-          return semPeriod.offeredCourseIds.includes(c.id);
-        }
-      }
-      return !c.academicYear || c.academicYear === activeAcademicYear;
-    });
-  }, [courses, activeAcademicYear, adminSettings.registrationPeriods]);
-
-  // Ekstrak secara dinamis semester apa saja yang memang dibuka atau memiliki mata kuliah di TA aktif (misal [1, 3, 5])
+  // Ekstrak secara dinamis semester apa saja yang diaktifkan Admin untuk tampil di halaman utama
   const activeSemesters = useMemo(() => {
     const semSet = new Set<number>();
-    // Dari registrationPeriods
-    (adminSettings.registrationPeriods || []).forEach((p) => {
-      if (p.academicYear === activeAcademicYear || !p.academicYear) {
-        semSet.add(p.semester);
+    
+    // Prioritas 1: Dari openVisiblePeriods (hanya semester yang dibuka & diset tampil oleh admin)
+    openVisiblePeriods.forEach((p) => {
+      const semNum = Number(p.semester);
+      if (!isNaN(semNum) && semNum > 0) {
+        semSet.add(semNum);
       }
     });
-    // Dari courses
-    activeYearCourses.forEach((c) => {
-      if (typeof c.semester === 'number') semSet.add(c.semester);
-    });
-    // Default fallback
-    if (semSet.size === 0) {
-      [1, 3, 5].forEach(s => semSet.add(s));
+
+    // Fallback awal jika belum pernah ada konfigurasi periode sama sekali di database:
+    if (semSet.size === 0 && (!adminSettings.registrationPeriods || adminSettings.registrationPeriods.length === 0)) {
+      courses.forEach((c) => {
+        const semNum = Number(c.semester);
+        if (!isNaN(semNum) && semNum > 0 && (!c.academicYear || c.academicYear === activeAcademicYear)) {
+          semSet.add(semNum);
+        }
+      });
     }
+
     return Array.from(semSet).sort((a, b) => a - b);
-  }, [activeYearCourses, adminSettings.registrationPeriods, activeAcademicYear]);
+  }, [openVisiblePeriods, adminSettings.registrationPeriods, courses, activeAcademicYear]);
+
+  // Helper mencari record periode pendaftaran yang cocok untuk suatu semester
+  const findPeriodForSemester = useCallback((semNum: number | string | undefined | null): RegistrationPeriod | undefined => {
+    if (!semNum) return undefined;
+    const targetSem = Number(semNum);
+    return openVisiblePeriods.find(p => Number(p.semester) === targetSem) 
+      || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem && (!p.academicYear || p.academicYear === activeAcademicYear));
+  }, [openVisiblePeriods, adminSettings.registrationPeriods, activeAcademicYear]);
+
+  // Helper mencari record periode pendaftaran yang cocok untuk suatu mata kuliah
+  const findPeriodForCourse = useCallback((course: CourseItem): RegistrationPeriod | undefined => {
+    if (course.periodId) {
+      const byId = (adminSettings.registrationPeriods || []).find(p => p.id === course.periodId);
+      if (byId) return byId;
+    }
+    return findPeriodForSemester(course.semester);
+  }, [adminSettings.registrationPeriods, findPeriodForSemester]);
+
+  // Ambil mata kuliah aktif: utamakan courses dari tiap periode yang dibuka dan tampil di halaman utama
+  const activeYearCourses = useMemo(() => {
+    const courseMap = new Map<string, CourseItem>();
+
+    if (openVisiblePeriods.length > 0) {
+      openVisiblePeriods.forEach((period) => {
+        // Jika periode memiliki daftar mata kuliah mandiri (per record semester & TA)
+        if (Array.isArray(period.courses) && period.courses.length > 0) {
+          period.courses.forEach((c) => {
+            courseMap.set(c.id, {
+              ...c,
+              periodId: period.id,
+              academicYear: period.academicYear || activeAcademicYear,
+              semester: period.semester
+            });
+          });
+        } else {
+          // Ambil dari courses global yang cocok dengan semester dan TA periode ini
+          const matched = courses.filter((c) => {
+            if (c.periodId && c.periodId === period.id) return true;
+            const sameSem = Number(c.semester) === Number(period.semester);
+            const sameYear = !c.academicYear || c.academicYear === period.academicYear;
+            const isOffered = !Array.isArray(period.offeredCourseIds) || period.offeredCourseIds.length === 0 || period.offeredCourseIds.includes(c.id);
+            return sameSem && sameYear && isOffered;
+          });
+          matched.forEach((c) => courseMap.set(c.id, c));
+        }
+      });
+      return Array.from(courseMap.values());
+    }
+
+    // Jika belum ada periode sama sekali, tampilkan courses sesuai TA aktif
+    return courses.filter((c) => !c.academicYear || c.academicYear === activeAcademicYear);
+  }, [openVisiblePeriods, courses, activeAcademicYear]);
 
   // Semester Portal Selection: 'all' atau nomor semester tertentu (misal '1', '3', '5')
   const [selectedSemester, setSelectedSemester] = useState<string>('all');
@@ -195,12 +243,30 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
 
     // 2. Jika dipilih "Semua Semester" (Gabungan)
-    const semKeys = activeSemesters.length > 0 ? activeSemesters.map(String) : ['3', '5'];
-    const statuses = semKeys.map(k => ({
-      semKey: k,
-      status: getSemesterStatus(k, adminSettings),
-      schedule: adminSettings.semesterSchedules?.[k]
-    }));
+    if (activeSemesters.length === 0) {
+      return {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        isClosed: true,
+        statusLabel: 'Pendaftaran Belum Dibuka',
+        detailMessage: 'Saat ini belum ada periode pendaftaran mengulang yang dibuka atau diaktifkan oleh Fakultas Pertanian.',
+        semesterLabel: 'Semua Semester',
+        targetDateFormatted: '-'
+      };
+    }
+
+    const semKeys = activeSemesters.map(String);
+    const statuses = semKeys.map(k => {
+      const p = findPeriodForSemester(k);
+      return {
+        semKey: k,
+        status: getSemesterStatus(k, adminSettings, activeAcademicYear),
+        schedule: adminSettings.semesterSchedules?.[k],
+        period: p
+      };
+    });
 
     const openStatuses = statuses.filter(s => s.status.isOpen);
 
@@ -225,7 +291,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     let minSemKey = openStatuses[0].semKey;
 
     for (const item of openStatuses) {
-      const endStr = item.schedule?.endDate || '2026-11-30T23:59:59';
+      const endStr = item.period?.endDate || item.status.endDate || item.schedule?.endDate || '2026-11-30T23:59:59';
       const d = new Date(endStr);
       const validD = isNaN(d.getTime()) ? new Date('2026-11-30T23:59:59') : d;
       if (!minTargetDate || validD.getTime() < minTargetDate.getTime()) {
@@ -323,32 +389,37 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   };
 
   const getDefaultClass = (courseId: string): string => {
-    const course = courses.find(c => c.id === courseId);
+    const course = activeYearCourses.find(c => c.id === courseId) || courses.find(c => c.id === courseId);
     if (course) {
+      const period = findPeriodForCourse(course);
       const available = getAvailableClasses(course);
-      const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings));
+      const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period));
       return allowed[0] || available[0] || 'Kelas A';
     }
     return globalClassOptions[0] || 'Kelas A';
   };
 
   const getSelectedClass = (course: CourseItem): string => {
+    const period = findPeriodForCourse(course);
     const available = getAvailableClasses(course);
     const chosen = courseSelections[course.id]?.selectedClass;
-    if (chosen && available.includes(chosen) && !isClassRestrictedForRepeat(chosen, course.semester, adminSettings)) {
+    if (chosen && available.includes(chosen) && !isClassRestrictedForRepeat(chosen, course.semester, adminSettings, period)) {
       return chosen;
     }
-    const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings));
+    const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period));
     return allowed[0] || available[0] || 'Kelas A';
   };
 
-  // Check duplicate registration by NIM (hanya jika pendaftaran aktif / belum ditolak)
+  // Check duplicate registration by NIM (hanya jika pendaftaran aktif / belum ditolak pada Tahun Ajaran yang sama)
   const localDuplicate = useMemo(() => {
     if (!nim.trim()) return null;
+    const cleanNim = nim.toLowerCase().trim();
     return existingRegistrations.find(
-      (r) => r.nim.toLowerCase().trim() === nim.toLowerCase().trim() && r.status !== 'rejected'
+      (r) => r.nim.toLowerCase().trim() === cleanNim && 
+        r.status !== 'rejected' && 
+        (!r.academicYear || r.academicYear === activeAcademicYear)
     );
-  }, [nim, existingRegistrations]);
+  }, [nim, existingRegistrations, activeAcademicYear]);
 
   const [cloudDuplicate, setCloudDuplicate] = useState<SimpleRegistration | null>(null);
   const [isCheckingCloudNim, setIsCheckingCloudNim] = useState<boolean>(false);
@@ -370,7 +441,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     let isMounted = true;
     setIsCheckingCloudNim(true);
     const timer = setTimeout(() => {
-      checkNimIsRegistered(clean).then((res) => {
+      checkNimIsRegistered(clean, activeAcademicYear).then((res) => {
         if (!isMounted) return;
         setIsCheckingCloudNim(false);
         if (res.exists && res.registration) {
@@ -387,7 +458,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [nim, localDuplicate]);
+  }, [nim, localDuplicate, activeAcademicYear]);
 
   const duplicateRegistration = localDuplicate || cloudDuplicate;
 
@@ -398,17 +469,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       (r) => r.nim.toLowerCase().trim() === nim.toLowerCase().trim() && r.status === 'rejected'
     );
   }, [nim, existingRegistrations]);
-
-  // Max SKS for selected Angkatan
-  const currentMaxSks = useMemo(() => {
-    return getMaxSksForBatch(angkatan, adminSettings);
-  }, [angkatan, adminSettings]);
-
-  // Fee calculation per SKS
-  const isFeeSystemActive = adminSettings.feePerSksEnabled ?? true;
-  const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
-  const costPerSks = adminSettings.costPerSks ?? 50000;
-  const isPaidBatch = isFeeSystemActive && paidBatches.includes(angkatan);
 
   // Filter courses based on activeYearCourses, dynamic semester, prodi tab & smart similar search
   const filteredCourses = useMemo(() => {
@@ -472,15 +532,70 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return selectedList.reduce((acc, curr) => acc + curr.sks, 0);
   }, [selectedList]);
 
+  // Menentukan periode pendaftaran aktif berdasarkan pilihan semester atau mata kuliah yang dipilih
+  const currentActivePeriod = useMemo(() => {
+    if (selectedSemester !== 'all') {
+      return findPeriodForSemester(selectedSemester);
+    }
+    if (selectedList.length > 0) {
+      const firstPeriod = findPeriodForCourse(selectedList[0]);
+      if (firstPeriod) return firstPeriod;
+    }
+    return openVisiblePeriods[0];
+  }, [selectedSemester, findPeriodForSemester, selectedList, findPeriodForCourse, openVisiblePeriods]);
+
+  // Max SKS for selected Angkatan (Mendukung override per-periode semester)
+  const currentMaxSks = useMemo(() => {
+    return getMaxSksForBatch(angkatan, adminSettings, currentActivePeriod);
+  }, [angkatan, adminSettings, currentActivePeriod]);
+
+  // Fee calculation per SKS (Mendukung override per-periode semester)
+  const isFeeSystemActive = currentActivePeriod?.feePerSksEnabled !== undefined 
+    ? currentActivePeriod.feePerSksEnabled 
+    : (adminSettings.feePerSksEnabled ?? true);
+  const paidBatches = currentActivePeriod?.paidBatches ?? adminSettings.paidBatches ?? ['2020', '2021', '2022'];
+  const costPerSks = currentActivePeriod?.costPerSks ?? adminSettings.costPerSks ?? 50000;
+  const isPaidBatch = isFeeSystemActive && paidBatches.includes(angkatan);
+
+  // Total Biaya Pendaftaran Mengulang (Mendukung perhitungan akurat per periode semester)
   const totalBiaya = useMemo(() => {
-    return isPaidBatch ? totalSks * costPerSks : 0;
-  }, [isPaidBatch, totalSks, costPerSks]);
+    return selectedList.reduce((acc, c) => {
+      const p = findPeriodForCourse(c);
+      const feeActive = p?.feePerSksEnabled !== undefined ? p.feePerSksEnabled : isFeeSystemActive;
+      const pBatches = p?.paidBatches ?? paidBatches;
+      const cRate = p?.costPerSks ?? costPerSks;
+      const applies = feeActive && pBatches.includes(angkatan);
+      return acc + (applies ? c.sks * cRate : 0);
+    }, 0);
+  }, [selectedList, findPeriodForCourse, isFeeSystemActive, paidBatches, costPerSks, angkatan]);
 
   const isOverSksLimit = totalSks > currentMaxSks;
 
   // Helper: Cek apakah suatu mata kuliah berada di semester yang pendaftarannya sedang ditutup
   const isCourseClosedCheck = (course: CourseItem): { isClosed: boolean; reason: string } => {
-    // 1. Jika portal semester yang dipilih secara global saat ini ditutup
+    // 1. Cek langsung record periode dari mata kuliah ini jika ada
+    const period = findPeriodForCourse(course);
+    if (period) {
+      if (period.isOpen === false) {
+        return {
+          isClosed: true,
+          reason: period.closedMessage || `Pendaftaran Semester ${course.semester} (T.A. ${period.academicYear}) ditutup oleh Fakultas.`
+        };
+      }
+      if (period.useSchedule) {
+        const now = new Date();
+        const start = period.startDate ? new Date(period.startDate) : null;
+        const end = period.endDate ? new Date(period.endDate) : null;
+        if (start && !isNaN(start.getTime()) && now < start) {
+          return { isClosed: true, reason: `Pendaftaran Semester ${course.semester} belum dibuka (Jadwal: ${formatDateTimeId(period.startDate)}).` };
+        }
+        if (end && !isNaN(end.getTime()) && now > end) {
+          return { isClosed: true, reason: period.closedMessage || `Pendaftaran Semester ${course.semester} telah berakhir (${formatDateTimeId(period.endDate)}).` };
+        }
+      }
+    }
+
+    // 2. Jika portal semester yang dipilih secara global saat ini ditutup
     if (selectedSemester !== 'all') {
       const semStatus = getSemesterStatus(selectedSemester, adminSettings, activeAcademicYear);
       if (!semStatus.isOpen) {
@@ -491,7 +606,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     }
 
-    // 2. Cek status spesifik semester mata kuliah tersebut
+    // 3. Fallback cek status spesifik semester mata kuliah tersebut
     if (typeof course.semester === 'number') {
       const semStatus = getSemesterStatus(course.semester, adminSettings, activeAcademicYear);
       if (!semStatus.isOpen) {
@@ -564,7 +679,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       activeYearCourses.forEach((c) => {
         if (next[c.id]?.checked && !isCourseClosedCheck(c).isClosed) {
           const available = getAvailableClasses(c);
-          if (available.includes(cls) && !isClassRestrictedForRepeat(cls, c.semester, adminSettings)) {
+          const p = findPeriodForCourse(c);
+          if (available.includes(cls) && !isClassRestrictedForRepeat(cls, c.semester, adminSettings, p)) {
             next[c.id] = {
               ...next[c.id],
               selectedClass: cls,
@@ -617,15 +733,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       return {
         title: `Gabungan (${activeSemestersText || 'Semua'})`,
         courseCount: `${activeYearCourses.length} Mata Kuliah Tersedia`,
-        isOpen: true,
-        scheduleText: 'Sesuai Jadwal Akademik'
+        isOpen: activeSemesters.length > 0 && activePortalStatus.isOpen,
+        scheduleText: activeSemesters.length > 0 ? 'Sesuai Jadwal Akademik' : 'Belum Ada Semester Dibuka'
       };
     }
     const semNumber = Number(sem);
     const status = !isNaN(semNumber) 
-      ? getSemesterStatus(semNumber, adminSettings) 
+      ? getSemesterStatus(semNumber, adminSettings, activeAcademicYear) 
       : { isOpen: true, message: 'Sesuai Jadwal Akademik' };
-    const count = activeYearCourses.filter((c) => c.semester === semNumber).length;
+    const count = activeYearCourses.filter((c) => Number(c.semester) === semNumber).length;
 
     return {
       title: `Semester ${semNumber}`,
@@ -635,52 +751,49 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     };
   };
 
-  // Scholarship warning summary
+  // Ringkasan peringatan kelas beasiswa
   const scholarshipAlertText = useMemo(() => {
-    const sem3Restricted = getRestrictedClassesForSemester(3, adminSettings);
-    const sem5Restricted = getRestrictedClassesForSemester(5, adminSettings);
     const parts: string[] = [];
-
-    if (sem3Restricted.length > 0) {
-      parts.push(`Semester 3: ${sem3Restricted.join(', ')}`);
-    }
-    if (sem5Restricted.length > 0) {
-      parts.push(`Semester 5: ${sem5Restricted.join(', ')}`);
-    }
+    activeSemesters.forEach((sem) => {
+      const p = findPeriodForSemester(sem);
+      const restricted = getRestrictedClassesForSemester(sem, adminSettings, p);
+      if (restricted.length > 0) {
+        parts.push(`Semester ${sem}: ${restricted.join(', ')}`);
+      }
+    });
 
     if (parts.length > 0) {
       return `Kelas Beasiswa (${parts.join('; ')}) hanya diperuntukkan bagi mahasiswa penerima beasiswa baru dan dilarang dipilih untuk mengulang. Pilihlah Kelas Reguler (A/B/C/D) atau Karyawan.`;
     }
-    return `Kelas Beasiswa dikhususkan untuk penerima beasiswa dan tidak diperkenankan untuk mengulang mata kuliah. Silakan pilih kelas reguler yang tersedia.`;
-  }, [adminSettings]);
+    return `Kelas Beasiswa dikhususkan untuk penerima beasiswa baru dan tidak diperkenankan untuk mengulang mata kuliah. Silakan pilih kelas reguler yang tersedia.`;
+  }, [activeSemesters, adminSettings, findPeriodForSemester]);
 
   // Status jadwal pembukaan portal semester (dinamis untuk semua semester aktif)
   const activePortalStatus = useMemo(() => {
+    if (activeSemesters.length === 0) {
+      return {
+        isOpen: false,
+        message: 'Saat ini belum ada periode pendaftaran mengulang yang dibuka atau diaktifkan oleh pihak Fakultas.'
+      };
+    }
     if (selectedSemester !== 'all') {
       const semNum = Number(selectedSemester);
       if (!isNaN(semNum)) {
-        return getSemesterStatus(semNum, adminSettings);
+        return getSemesterStatus(semNum, adminSettings, activeAcademicYear);
       }
     }
-    const semesters = activeSemesters.length > 0 ? activeSemesters : [3, 5];
-    const statuses = semesters.map(s => getSemesterStatus(s, adminSettings));
+    const statuses = activeSemesters.map(s => getSemesterStatus(s, adminSettings, activeAcademicYear));
     const anyOpen = statuses.some(s => s.isOpen);
     return {
       isOpen: anyOpen,
       message: anyOpen ? 'Portal Gabungan Pendaftaran Mengulang' : 'Seluruh jadwal pendaftaran semester saat ini ditutup'
     };
-  }, [selectedSemester, activeSemesters, adminSettings]);
+  }, [selectedSemester, activeSemesters, adminSettings, activeAcademicYear]);
 
   // Cek apakah ada matakuliah yang dipilih berada di semester yang sedang ditutup
   const closedCourseSelected = useMemo(() => {
-    return selectedList.find(c => {
-      if (typeof c.semester === 'number') {
-        const s = getSemesterStatus(c.semester, adminSettings);
-        return !s.isOpen;
-      }
-      return false;
-    });
-  }, [selectedList, adminSettings]);
+    return selectedList.find(c => isCourseClosedCheck(c).isClosed);
+  }, [selectedList, isCourseClosedCheck]);
 
   // Validation before submission
   const canSubmit = useMemo(() => {
@@ -728,8 +841,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       return;
     }
 
+    const targetPeriod = selectedList.length > 0 ? findPeriodForCourse(selectedList[0]) : currentActivePeriod;
+    const finalAcademicYear = targetPeriod?.academicYear || activeAcademicYear;
+
     // Build final selected courses
     const finalSelectedCourses: SelectedCourseItem[] = selectedList.map((c) => {
+      const cPeriod = findPeriodForCourse(c);
       return {
         courseId: c.id,
         name: c.name,
@@ -737,7 +854,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         prodi: c.prodi,
         semester: c.semester,
         selectedClass: getSelectedClass(c),
-        academicYear: c.academicYear || activeAcademicYear,
+        academicYear: c.academicYear || cPeriod?.academicYear || finalAcademicYear,
       };
     });
 
@@ -765,7 +882,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       selectedCourses: finalSelectedCourses,
       totalSks,
       registrationDate: autoDate,
-      academicYear: activeAcademicYear,
+      academicYear: finalAcademicYear,
       academicTerm: activeTerm,
       status: 'pending',
       paymentStatus: 'pending',
@@ -1132,10 +1249,22 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       {activePortalStatus.isOpen ? 'Dibuka' : 'Ditutup'}
                     </span>
                     <span className="text-slate-400 text-[10px] truncate max-w-[130px]">
-                      {activeSemesters.length > 0 ? activeSemesters.map(s => `Sem ${s}`).join(', ') : 'Semua'}
+                      {activeSemesters.length > 0 ? activeSemesters.map(s => `Sem ${s}`).join(', ') : 'Belum Ada'}
                     </span>
                   </div>
                 </button>
+
+                {/* Notifikasi jika belum ada semester yang dibuka/ditampilkan */}
+                {activeSemesters.length === 0 && (
+                  <div className="col-span-1 sm:col-span-2 lg:col-span-3 p-4 rounded-xl border border-dashed border-amber-300 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/20 flex flex-col justify-center items-center text-center">
+                    <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                      Belum ada semester pendaftaran yang dibuka atau diaktifkan oleh Admin untuk tampil di formulir utama.
+                    </p>
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                      Silakan hubungi admin akademik atau tunggu jadwal pembukaan pendaftaran mengulang mata kuliah.
+                    </p>
+                  </div>
+                )}
 
                 {/* Kartu per Semester yang benar-benar ada di TA Aktif */}
                 {activeSemesters.map((sem) => {
@@ -1452,7 +1581,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
                 <div className="flex flex-wrap items-center gap-1.5">
                   {globalClassOptions.map((cls) => {
-                    const isScholarship = isClassRestrictedForRepeat(cls, selectedSemester === '5' ? 5 : 3, adminSettings);
+                    const activeSemNum = selectedSemester !== 'all' ? Number(selectedSemester) : (activeSemesters[0] || 3);
+                    const isScholarship = isClassRestrictedForRepeat(cls, activeSemNum, adminSettings, currentActivePeriod);
 
                     return (
                       <button
@@ -1741,7 +1871,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             }`}
                           >
                             {availableClasses.map((cls) => {
-                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
+                              const coursePeriod = findPeriodForCourse(course);
+                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod);
                               return (
                                 <option 
                                   key={cls} 

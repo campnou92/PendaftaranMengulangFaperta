@@ -28,9 +28,10 @@ export interface CourseItem {
   name: string;
   sks: number;
   prodi: 'agroteknologi' | 'agribisnis' | string;
-  semester: number; // e.g. 1, 3, 5
+  semester: number | string; // e.g. 1, 3, 5 or 'Antara'
   availableClasses?: string[];
   academicYear?: string; // e.g. '2024/2025', '2025/2026'
+  periodId?: string; // ID record periode pendaftaran
 }
 
 export interface SelectedCourseItem {
@@ -38,7 +39,7 @@ export interface SelectedCourseItem {
   name: string;
   sks: number;
   prodi: string;
-  semester?: number;
+  semester?: number | string;
   selectedClass: string;
   academicYear?: string;
 }
@@ -123,16 +124,36 @@ export interface AdminSettings {
 
 export interface RegistrationPeriod {
   id: string;
-  semester: number; // e.g. 1, 3, 5
+  semester: number | string; // e.g. 1, 2, 3, 4, 5, 6, 7, 8 or 'Antara'
   academicYear: string; // e.g. '2026/2027'
   title: string;
-  isOpen: boolean;
+  isOpen: boolean; // Master status buka/tutup pendaftaran
+  showOnMainForm?: boolean; // Tampilkan di pilihan semester formulir utama mahasiswa (default true jika isOpen)
   useSchedule: boolean;
   startDate: string; // ISO datetime "2026-10-01T08:00"
   endDate: string; // ISO datetime "2026-11-30T23:59"
   closedMessage?: string;
+  
+  // Daftar mata kuliah & kelas yang dibuka khusus untuk periode ini
   offeredCourseIds: string[]; // List of CourseItem IDs offered
+  courses?: CourseItem[]; // Embedded / full list of CourseItem for this period
   offeredClasses?: Record<string, string[]>; // Custom classes offered per course (optional override)
+  
+  // Pengaturan Biaya SKS Khusus Periode Ini
+  feePerSksEnabled?: boolean;
+  costPerSks?: number;
+  paidBatches?: string[];
+  paymentInstructions?: string;
+  paymentAccountInfo?: string;
+
+  // Pengaturan Batas Maksimal SKS Khusus Periode Ini
+  defaultMaxSks?: number;
+  batchMaxSks?: Record<string, number>;
+
+  // Pengaturan Kelas Beasiswa (Larangan Mengulang) Khusus Periode Ini
+  restrictedRepeatClasses?: string[];
+  restrictedRepeatClassReason?: string;
+
   createdAt: string;
   updatedAt?: string;
   notes?: string;
@@ -337,7 +358,15 @@ export function getSemesterStatus(
   };
 }
 
-export function getMaxSksForBatch(angkatan?: string, settings?: AdminSettings): number {
+export function getMaxSksForBatch(angkatan?: string, settings?: AdminSettings, period?: RegistrationPeriod): number {
+  if (period) {
+    if (angkatan && period.batchMaxSks && period.batchMaxSks[angkatan] !== undefined && Number(period.batchMaxSks[angkatan]) > 0) {
+      return Number(period.batchMaxSks[angkatan]);
+    }
+    if (typeof period.defaultMaxSks === 'number' && period.defaultMaxSks > 0) {
+      return period.defaultMaxSks;
+    }
+  }
   if (!settings) return 24;
   if (angkatan && settings.batchMaxSks && settings.batchMaxSks[angkatan] !== undefined && Number(settings.batchMaxSks[angkatan]) > 0) {
     return Number(settings.batchMaxSks[angkatan]);
@@ -347,8 +376,12 @@ export function getMaxSksForBatch(angkatan?: string, settings?: AdminSettings): 
 
 export function getRestrictedClassesForSemester(
   semesterNum: number | string | undefined | null,
-  settings?: AdminSettings
+  settings?: AdminSettings,
+  period?: RegistrationPeriod
 ): string[] {
+  if (period && Array.isArray(period.restrictedRepeatClasses) && period.restrictedRepeatClasses.length > 0) {
+    return period.restrictedRepeatClasses;
+  }
   if (!settings || !settings.restrictedRepeatClasses || !semesterNum) {
     return [];
   }
@@ -360,17 +393,22 @@ export function getRestrictedClassesForSemester(
 export function isClassRestrictedForRepeat(
   className: string,
   semesterNum: number | string | undefined | null,
-  settings?: AdminSettings
+  settings?: AdminSettings,
+  period?: RegistrationPeriod
 ): boolean {
-  if (!className || !semesterNum || !settings) return false;
-  const restrictedList = getRestrictedClassesForSemester(semesterNum, settings);
+  if (!className) return false;
+  const restrictedList = getRestrictedClassesForSemester(semesterNum, settings, period);
   return restrictedList.includes(className);
 }
 
 export function getRestrictedClassReason(
   semesterNum: number | string | undefined | null,
-  settings?: AdminSettings
+  settings?: AdminSettings,
+  period?: RegistrationPeriod
 ): string {
+  if (period?.restrictedRepeatClassReason) {
+    return period.restrictedRepeatClassReason;
+  }
   const semKey = semesterNum ? String(semesterNum) : '3';
   return (
     settings?.restrictedRepeatClassReason?.[semKey] ||

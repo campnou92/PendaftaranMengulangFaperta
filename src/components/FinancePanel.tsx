@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { SimpleRegistration, AdminSettings, AuthUser, PaymentStatus } from '../types';
 import {
@@ -41,7 +41,8 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   // Filter states
   const [onlyPaidBatches, setOnlyPaidBatches] = useState<boolean>(true);
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<'all' | 'pending' | 'paid' | 'verified'>('all');
-  const [filterSemester, setFilterSemester] = useState<'all' | 'Semester 3' | 'Semester 5' | 'gabungan'>('all');
+  const [filterSemester, setFilterSemester] = useState<string>('all');
+  const [filterAcademicYear, setFilterAcademicYear] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Note dialog state
@@ -52,6 +53,26 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   const isFeeActive = adminSettings.feePerSksEnabled ?? true;
   const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
   const costPerSks = adminSettings.costPerSks ?? 50000;
+
+  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
+  const financeSemesters = useMemo(() => {
+    const semSet = new Set<string>();
+    (adminSettings.registrationPeriods || []).forEach(p => {
+      if (p.semester) semSet.add(String(p.semester));
+    });
+    registrations.forEach(r => {
+      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
+      if (match) semSet.add(match[1]);
+      r.selectedCourses?.forEach(c => {
+        if (c.semester) semSet.add(String(c.semester));
+      });
+    });
+    if (semSet.size === 0) {
+      semSet.add('3');
+      semSet.add('5');
+    }
+    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [adminSettings.registrationPeriods, registrations]);
 
   // Helper check
   const isChargedPerSks = (reg: SimpleRegistration) => {
@@ -79,16 +100,22 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       }
     }
 
+    // Filter by academic year
+    if (filterAcademicYear !== 'all') {
+      const regYear = reg.academicYear || adminSettings.activeAcademicYear || '2025/2026';
+      if (regYear !== filterAcademicYear) return false;
+    }
+
     // Filter by semester
-    if (filterSemester === 'Semester 3' && reg.targetSemester !== 'Semester 3') {
-      return false;
-    }
-    if (filterSemester === 'Semester 5' && reg.targetSemester !== 'Semester 5') {
-      return false;
-    }
-    if (filterSemester === 'gabungan') {
-      const isGab = reg.targetSemester?.toLowerCase().includes('gabungan') || reg.targetSemester?.toLowerCase().includes('lintas');
-      if (!isGab) return false;
+    if (filterSemester !== 'all') {
+      if (filterSemester === 'gabungan') {
+        const isGab = reg.targetSemester?.toLowerCase().includes('gabungan') || reg.targetSemester?.toLowerCase().includes('lintas');
+        if (!isGab) return false;
+      } else {
+        const matchesTarget = reg.targetSemester === filterSemester || reg.targetSemester === `Semester ${filterSemester}`;
+        const matchesCourse = reg.selectedCourses?.some(c => String(c.semester) === String(filterSemester));
+        if (!matchesTarget && !matchesCourse) return false;
+      }
     }
 
     // Search query
@@ -139,6 +166,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
       return {
         'No': idx + 1,
         'ID Registrasi': reg.id,
+        'Tahun Akademik': reg.academicYear || adminSettings.activeAcademicYear || '2025/2026',
         'Tanggal Daftar': reg.registrationDate,
         'NIM': reg.nim,
         'Nama Mahasiswa': reg.nama,
@@ -385,17 +413,17 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             </button>
           </div>
 
-          {/* Sub Filters: Status Pembayaran, Semester, Search */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+          {/* Sub Filters: Status Pembayaran, Semester, Tahun Ajaran, Search */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
             {/* Status Pembayaran */}
-            <div className="md:col-span-4">
+            <div className="lg:col-span-3">
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                 Status Pembayaran:
               </label>
               <select
                 value={filterPaymentStatus}
                 onChange={(e) => setFilterPaymentStatus(e.target.value as any)}
-                className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
                 <option value="all">Semua Status Pembayaran</option>
                 <option value="pending">⏳ Menunggu Pembayaran (Belum Lunas)</option>
@@ -405,19 +433,37 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             </div>
 
             {/* Filter Semester */}
-            <div className="md:col-span-3">
+            <div className="lg:col-span-2">
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                 Semester:
               </label>
               <select
                 value={filterSemester}
-                onChange={(e) => setFilterSemester(e.target.value as any)}
-                className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                onChange={(e) => setFilterSemester(e.target.value)}
+                className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
               >
                 <option value="all">Semua Semester</option>
-                <option value="Semester 3">🌿 Semester 3</option>
-                <option value="Semester 5">🌾 Semester 5</option>
-                <option value="gabungan">📑 Gabungan</option>
+                {financeSemesters.map((sem) => (
+                  <option key={sem} value={sem}>Semester {sem}</option>
+                ))}
+                <option value="gabungan">📑 Lintas / Gabungan</option>
+              </select>
+            </div>
+
+            {/* Filter Tahun Ajaran */}
+            <div className="lg:col-span-3">
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                Tahun Ajaran:
+              </label>
+              <select
+                value={filterAcademicYear}
+                onChange={(e) => setFilterAcademicYear(e.target.value)}
+                className="w-full px-2.5 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+              >
+                <option value="all">Semua Tahun Ajaran</option>
+                {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
+                  <option key={yr} value={yr}>T.A. {yr}</option>
+                ))}
               </select>
             </div>
 

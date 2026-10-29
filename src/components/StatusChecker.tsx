@@ -139,8 +139,9 @@ export const StatusChecker: React.FC<StatusCheckerProps> = ({
                         <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
                           {reg.id}
                         </span>
-                        <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs font-bold text-[#166534] dark:text-emerald-400">{reg.targetSemester || 'Semester 3/5'}</span>
+                        <span className="text-xs font-bold text-[#166534] dark:text-emerald-400">
+                          {reg.targetSemester || 'Pendaftaran Mengulang'} {reg.academicYear ? `• T.A. ${reg.academicYear}` : ''}
+                        </span>
                       </div>
                       <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-1">
                         {reg.nama} <span className="font-mono text-slate-500 font-medium">({reg.nim})</span>

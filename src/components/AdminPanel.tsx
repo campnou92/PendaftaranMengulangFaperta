@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { 
   CourseItem, 
@@ -88,6 +88,7 @@ interface AdminPanelProps {
   onUpdateCourses: (newCourses: CourseItem[]) => void;
   onDeleteCourse?: (courseId: string) => Promise<void> | void;
   onDeleteBatchCourses?: (courseIds: string[]) => Promise<void> | void;
+  onClearAllCourses?: () => Promise<void> | void;
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onDeleteRegistration: (id: string) => void;
   onUpdateRegistrationStatus?: (id: string, status: RegistrationStatus, rejectionReason?: string) => void;
@@ -105,6 +106,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdateCourses,
   onDeleteCourse,
   onDeleteBatchCourses,
+  onClearAllCourses,
   onUpdateSettings,
   onDeleteRegistration,
   onUpdateRegistrationStatus,
@@ -246,7 +248,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [filterCourseSemester, setFilterCourseSemester] = useState<string>('all');
 
   // Filter registrations by semester and class
-  const [filterRegSemester, setFilterRegSemester] = useState<'all' | 'Semester 3' | 'Semester 5' | 'gabungan'>('all');
+  const [filterRegSemester, setFilterRegSemester] = useState<string>('all');
   const [filterRegClass, setFilterRegClass] = useState<string>('all');
 
   // Exam Attendance Print Modal State (UTS & UAS - Format Standar A4)
@@ -269,6 +271,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
   const [isResetCoursesModalOpen, setIsResetCoursesModalOpen] = useState(false);
+  const [isClearAllCoursesModalOpen, setIsClearAllCoursesModalOpen] = useState(false);
+  const [isClearingAllCourses, setIsClearingAllCourses] = useState(false);
   const [courseFeedback, setCourseFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isDeletingCourse, setIsDeletingCourse] = useState(false);
 
@@ -407,7 +411,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditName(course.name);
     setEditSks(course.sks);
     setEditProdi(course.prodi as any);
-    setEditSemester(course.semester || 3);
+    setEditSemester(Number(course.semester) || 3);
     setEditAcademicYear(course.academicYear || currentActiveAcademicYear);
     setEditClasses(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions);
     setCourseFeedback(null);
@@ -605,6 +609,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       message: 'Daftar mata kuliah berhasil dikembalikan ke 18 mata kuliah bawaan FP INSTIPER.'
     });
     setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
+  // Confirm clear ALL courses across all academic years
+  const handleConfirmClearAllCourses = async () => {
+    setIsClearingAllCourses(true);
+    try {
+      if (onClearAllCourses) {
+        await onClearAllCourses();
+      } else {
+        onUpdateCourses([]);
+      }
+      setSelectedCourseIds([]);
+      setIsClearAllCoursesModalOpen(false);
+      setCourseFeedback({
+        type: 'success',
+        message: 'Seluruh katalog mata kuliah berhasil dikosongkan secara permanen dari sistem & Cloud.'
+      });
+    } catch (err) {
+      console.error('Failed to clear all courses:', err);
+      setCourseFeedback({
+        type: 'error',
+        message: 'Gagal mengosongkan seluruh mata kuliah. Silakan coba kembali.'
+      });
+    } finally {
+      setIsClearingAllCourses(false);
+      setTimeout(() => setCourseFeedback(null), 3500);
+    }
   };
 
   // ==========================================
@@ -1353,6 +1384,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     document.body.removeChild(link);
   };
 
+  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
+  const availableRegSemesters = useMemo(() => {
+    const semSet = new Set<string>();
+    (adminSettings.registrationPeriods || []).forEach(p => {
+      if (p.semester) semSet.add(String(p.semester));
+    });
+    registrations.forEach(r => {
+      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
+      if (match) semSet.add(match[1]);
+      r.selectedCourses?.forEach(c => {
+        if (c.semester) semSet.add(String(c.semester));
+      });
+    });
+    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [adminSettings.registrationPeriods, registrations]);
+
   const filteredRegistrations = registrations.filter(r => {
     const matchesSearch =
       r.nama.toLowerCase().includes(searchReg.toLowerCase()) ||
@@ -1366,17 +1413,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       if (regYear !== filterRegAcademicYear) return false;
     }
 
-    if (filterRegSemester === 'Semester 3') {
-      return r.targetSemester === 'Semester 3';
-    }
-    if (filterRegSemester === 'Semester 5') {
-      return r.targetSemester === 'Semester 5';
-    }
-    if (filterRegSemester === 'gabungan') {
-      return (
-        r.targetSemester?.toLowerCase().includes('gabungan') ||
-        r.targetSemester?.toLowerCase().includes('lintas')
-      );
+    if (filterRegSemester !== 'all') {
+      if (filterRegSemester === 'gabungan') {
+        const isGab = r.targetSemester?.toLowerCase().includes('gabungan') || r.targetSemester?.toLowerCase().includes('lintas');
+        if (!isGab) return false;
+      } else {
+        const matchesTarget = r.targetSemester === filterRegSemester || r.targetSemester === `Semester ${filterRegSemester}`;
+        const matchesCourse = r.selectedCourses?.some(c => String(c.semester) === String(filterRegSemester));
+        if (!matchesTarget && !matchesCourse) return false;
+      }
     }
 
     if (filterRegClass !== 'all') {
@@ -2005,6 +2050,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Bawaan</span>
                 </button>
+
+                {courses.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsClearAllCoursesModalOpen(true)}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-[#E4202A] dark:text-rose-300 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-rose-200 dark:border-rose-800 shadow-2xs transition-colors cursor-pointer"
+                    title="Kosongkan seluruh mata kuliah di semua tahun ajaran dan semester"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Kosongkan Semua MK ({courses.length})</span>
+                  </button>
+                )}
 
                 {selectedCourseIds.length > 0 && (
                   <button
@@ -3850,6 +3907,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             courses={courses}
             registrations={registrations}
             onUpdateSettings={onUpdateSettings}
+            onUpdateCourses={onUpdateCourses}
             currentUser={currentUser}
             onOpenCourseTab={() => setActiveTab('courses')}
           />
@@ -4063,29 +4121,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     Semua ({registrations.length})
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setFilterRegSemester('Semester 3')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      filterRegSemester === 'Semester 3'
-                        ? 'bg-[#008744] text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    🌿 Sem 3 ({registrations.filter(r => r.targetSemester === 'Semester 3').length})
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFilterRegSemester('Semester 5')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      filterRegSemester === 'Semester 5'
-                        ? 'bg-[#008744] text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    🌾 Sem 5 ({registrations.filter(r => r.targetSemester === 'Semester 5').length})
-                  </button>
+                  {availableRegSemesters.map((sem: string) => {
+                    const count = registrations.filter(r => 
+                      r.targetSemester === `Semester ${sem}` || 
+                      r.targetSemester === sem || 
+                      r.selectedCourses?.some(c => String(c.semester) === String(sem))
+                    ).length;
+                    return (
+                      <button
+                        key={sem}
+                        type="button"
+                        onClick={() => setFilterRegSemester(sem)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          filterRegSemester === sem
+                            ? 'bg-[#008744] text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        Sem {sem} ({count})
+                      </button>
+                    );
+                  })}
 
                   <button
                     type="button"
@@ -5504,6 +5560,58 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Ya, Reset</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 3B: KONFIRMASI KOSONGKAN SELURUH MATA KULIAH */}
+      {/* ============================================================== */}
+      {isClearAllCoursesModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/60 text-[#E4202A] dark:text-rose-400 flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-800 shadow-xs">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1">
+                Kosongkan Seluruh Katalog Mata Kuliah?
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Anda akan menghapus seluruh <strong>{courses.length} mata kuliah</strong> di semua tahun ajaran dan semester secara permanen dari sistem &amp; Cloud.
+              </p>
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl text-[11px] text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-left mb-5">
+                ⚠️ <strong>Peringatan:</strong> Seluruh mata kuliah akan dikosongkan total dan tidak akan muncul kembali sampai Anda menambahkan atau mengimpor mata kuliah baru.
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={isClearingAllCourses}
+                  onClick={() => setIsClearAllCoursesModalOpen(false)}
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isClearingAllCourses}
+                  onClick={handleConfirmClearAllCourses}
+                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {isClearingAllCourses ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mengosongkan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Ya, Kosongkan Semua</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

@@ -77,7 +77,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
   React.useEffect(() => {
     if (currentCourse) {
       // Semester: Ganjil / Genap or Semester number
-      const semNum = currentCourse.semester || 3;
+      const semNum = Number(currentCourse.semester) || 3;
       const isGanjil = semNum % 2 !== 0;
       setSemesterText(`${isGanjil ? 'Ganjil' : 'Genap'} / Semester ${semNum}`);
 

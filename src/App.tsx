@@ -127,10 +127,7 @@ export default function App() {
     } catch (e) {
       console.error('Failed to load courses', e);
     }
-    return INITIAL_COURSES.map(c => ({
-      ...c,
-      academicYear: c.academicYear || '2025/2026'
-    }));
+    return [];
   });
 
   // Admin Settings: Class options & editable Note for Superadmin
@@ -356,7 +353,8 @@ export default function App() {
       if (!prev.registrationPeriods || prev.registrationPeriods.length === 0) return prev;
       const updatedPeriods = prev.registrationPeriods.map(p => ({
         ...p,
-        offeredCourseIds: p.offeredCourseIds.filter(id => id !== courseId)
+        offeredCourseIds: (p.offeredCourseIds || []).filter(id => id !== courseId),
+        courses: Array.isArray(p.courses) ? p.courses.filter(c => c.id !== courseId) : p.courses
       }));
       const updatedSettings = { ...prev, registrationPeriods: updatedPeriods };
       saveCloudSettings(updatedSettings).catch(() => {});
@@ -392,7 +390,8 @@ export default function App() {
       if (!prev.registrationPeriods || prev.registrationPeriods.length === 0) return prev;
       const updatedPeriods = prev.registrationPeriods.map(p => ({
         ...p,
-        offeredCourseIds: p.offeredCourseIds.filter(id => !toDeleteSet.has(id))
+        offeredCourseIds: (p.offeredCourseIds || []).filter(id => !toDeleteSet.has(id)),
+        courses: Array.isArray(p.courses) ? p.courses.filter(c => !toDeleteSet.has(c.id)) : p.courses
       }));
       const updatedSettings = { ...prev, registrationPeriods: updatedPeriods };
       saveCloudSettings(updatedSettings).catch(() => {});
@@ -405,6 +404,37 @@ export default function App() {
     } catch (err) {
       console.error('Failed to batch delete courses from cloud:', err);
       showToast('Peringatan: Gagal menghapus sebagian mata kuliah dari Cloud.');
+      throw err;
+    }
+  };
+
+  // Admin clears all courses across all academic years with Cloud sync
+  const handleClearAllCourses = async () => {
+    setCourses([]);
+    try {
+      localStorage.setItem(STORAGE_COURSES_KEY, JSON.stringify([]));
+    } catch (e) {
+      console.warn('Failed to update localStorage', e);
+    }
+
+    setAdminSettings(prev => {
+      if (!prev.registrationPeriods || prev.registrationPeriods.length === 0) return prev;
+      const updatedPeriods = prev.registrationPeriods.map(p => ({
+        ...p,
+        offeredCourseIds: [],
+        courses: []
+      }));
+      const updatedSettings = { ...prev, registrationPeriods: updatedPeriods };
+      saveCloudSettings(updatedSettings).catch(() => {});
+      return updatedSettings;
+    });
+
+    try {
+      await syncAllCoursesToCloud([]);
+      showToast('Seluruh katalog mata kuliah berhasil dikosongkan dari Cloud & lokal!');
+    } catch (err) {
+      console.error('Failed to clear courses from cloud:', err);
+      showToast('Peringatan: Gagal mengosongkan mata kuliah dari Cloud.');
       throw err;
     }
   };
@@ -618,6 +648,7 @@ export default function App() {
                   onUpdateCourses={handleUpdateCourses}
                   onDeleteCourse={handleDeleteCourse}
                   onDeleteBatchCourses={handleDeleteBatchCourses}
+                  onClearAllCourses={handleClearAllCourses}
                   onUpdateSettings={handleUpdateSettings}
                   onDeleteRegistration={handleDeleteRegistration}
                   onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
