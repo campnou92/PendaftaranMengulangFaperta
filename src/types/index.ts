@@ -113,9 +113,29 @@ export interface AdminSettings {
   // Pengaturan Buka / Tutup Pendaftaran Berdasarkan Semester & Jadwal Periode (Superadmin)
   semesterSchedules?: Record<string, SemesterSchedule>;
 
+  // Daftar Record Periode Pendaftaran (Superadmin / Admin Buka Periode Semester & Jadwal)
+  registrationPeriods?: RegistrationPeriod[];
+
   // Pengaturan Kelas Beasiswa (Tidak Boleh untuk Kelas Mengulang) Per Semester (Superadmin)
   restrictedRepeatClasses?: Record<string, string[]>; // Mapping per semester: misal { '3': ['Kelas Beasiswa'], '5': ['Kelas Beasiswa', 'Kelas D'] }
   restrictedRepeatClassReason?: Record<string, string>; // Keterangan / alasan per semester
+}
+
+export interface RegistrationPeriod {
+  id: string;
+  semester: number; // e.g. 1, 3, 5
+  academicYear: string; // e.g. '2026/2027'
+  title: string;
+  isOpen: boolean;
+  useSchedule: boolean;
+  startDate: string; // ISO datetime "2026-10-01T08:00"
+  endDate: string; // ISO datetime "2026-11-30T23:59"
+  closedMessage?: string;
+  offeredCourseIds: string[]; // List of CourseItem IDs offered
+  offeredClasses?: Record<string, string[]>; // Custom classes offered per course (optional override)
+  createdAt: string;
+  updatedAt?: string;
+  notes?: string;
 }
 
 export interface SemesterSchedule {
@@ -135,6 +155,7 @@ export interface SemesterStatusResult {
   message: string;
   startDate?: string;
   endDate?: string;
+  period?: RegistrationPeriod;
 }
 
 export function formatDateTimeId(dateStr?: string): string {
@@ -155,8 +176,89 @@ export function formatDateTimeId(dateStr?: string): string {
   }
 }
 
-export function getSemesterStatus(semesterNum: number | string, settings?: AdminSettings): SemesterStatusResult {
+export function getSemesterStatus(
+  semesterNum: number | string, 
+  settings?: AdminSettings,
+  targetAcademicYear?: string
+): SemesterStatusResult {
   const semKey = String(semesterNum);
+  const activeYear = targetAcademicYear || settings?.activeAcademicYear || '2025/2026';
+
+  // 1. Prioritas Utama: Cek apakah ada record RegistrationPeriod yang cocok
+  if (settings?.registrationPeriods && settings.registrationPeriods.length > 0) {
+    const period = settings.registrationPeriods.find(
+      p => String(p.semester) === semKey && (p.academicYear === activeYear || !p.academicYear)
+    );
+
+    if (period) {
+      if (period.isOpen === false) {
+        return {
+          isOpen: false,
+          state: 'manual_closed',
+          label: 'DITUTUP MANUAL',
+          badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+          message: period.closedMessage || `Pendaftaran Semester ${semKey} (T.A. ${period.academicYear}) ditutup oleh pihak Fakultas Pertanian.`,
+          period
+        };
+      }
+
+      if (period.useSchedule) {
+        const now = new Date();
+        const hasStart = Boolean(period.startDate);
+        const hasEnd = Boolean(period.endDate);
+        const start = hasStart ? new Date(period.startDate) : null;
+        const end = hasEnd ? new Date(period.endDate) : null;
+
+        if (start && !isNaN(start.getTime()) && now < start) {
+          return {
+            isOpen: false,
+            state: 'upcoming',
+            label: 'BELUM DIBUKA',
+            badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+            message: `Pendaftaran Semester ${semKey} belum dibuka. Pendaftaran akan dibuka mulai ${formatDateTimeId(period.startDate)}.`,
+            startDate: period.startDate,
+            endDate: period.endDate,
+            period
+          };
+        }
+
+        if (end && !isNaN(end.getTime()) && now > end) {
+          return {
+            isOpen: false,
+            state: 'expired',
+            label: 'SUDAH DITUTUP',
+            badgeClass: 'bg-slate-200 text-slate-800 border-slate-400',
+            message: period.closedMessage || `Pendaftaran Semester ${semKey} telah berakhir pada ${formatDateTimeId(period.endDate)}.`,
+            startDate: period.startDate,
+            endDate: period.endDate,
+            period
+          };
+        }
+
+        return {
+          isOpen: true,
+          state: 'open',
+          label: 'DIBUKA (JADWAL)',
+          badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+          message: end ? `Pendaftaran Semester ${semKey} dibuka s/d ${formatDateTimeId(period.endDate)}.` : `Pendaftaran Semester ${semKey} sedang dibuka.`,
+          startDate: period.startDate,
+          endDate: period.endDate,
+          period
+        };
+      }
+
+      return {
+        isOpen: true,
+        state: 'open',
+        label: 'DIBUKA',
+        badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        message: `Pendaftaran Semester ${semKey} (T.A. ${period.academicYear}) saat ini aktif dan dibuka.`,
+        period
+      };
+    }
+  }
+
+  // 2. Fallback: Cek semesterSchedules lama
   const schedule = settings?.semesterSchedules?.[semKey];
 
   // Default jika belum disetel: Pendaftaran terbuka

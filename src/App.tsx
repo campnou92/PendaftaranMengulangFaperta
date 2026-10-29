@@ -111,12 +111,13 @@ export default function App() {
   }, []);
 
   // Courses state (Admin can add/edit/delete courses & SKS - FITUR 1)
+  // Courses state (Admin can add/edit/delete courses & SKS - FITUR 1)
   const [courses, setCourses] = useState<CourseItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_COURSES_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed.map((c: CourseItem) => ({
             ...c,
             academicYear: c.academicYear || '2025/2026'
@@ -155,6 +156,7 @@ export default function App() {
             defaultMaxSks: typeof parsed.defaultMaxSks === 'number' && parsed.defaultMaxSks > 0 ? parsed.defaultMaxSks : DEFAULT_ADMIN_SETTINGS.defaultMaxSks,
             batchMaxSks: parsed.batchMaxSks && typeof parsed.batchMaxSks === 'object' && !Array.isArray(parsed.batchMaxSks) ? parsed.batchMaxSks : (DEFAULT_ADMIN_SETTINGS.batchMaxSks || {}),
             semesterSchedules: parsed.semesterSchedules && typeof parsed.semesterSchedules === 'object' && !Array.isArray(parsed.semesterSchedules) ? parsed.semesterSchedules : (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
+            registrationPeriods: Array.isArray(parsed.registrationPeriods) && parsed.registrationPeriods.length > 0 ? parsed.registrationPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
             restrictedRepeatClasses: parsed.restrictedRepeatClasses && typeof parsed.restrictedRepeatClasses === 'object' && !Array.isArray(parsed.restrictedRepeatClasses) ? parsed.restrictedRepeatClasses : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses,
             restrictedRepeatClassReason: parsed.restrictedRepeatClassReason && typeof parsed.restrictedRepeatClassReason === 'object' && !Array.isArray(parsed.restrictedRepeatClassReason) ? parsed.restrictedRepeatClassReason : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason,
             kelasAsalMode: parsed.kelasAsalMode || DEFAULT_ADMIN_SETTINGS.kelasAsalMode || 'input_with_chips',
@@ -338,9 +340,30 @@ export default function App() {
 
   // Admin deletes a single course with direct atomic Cloud deletion
   const handleDeleteCourse = async (courseId: string) => {
-    // 1. Immediately update state
-    setCourses(prev => prev.filter(c => c.id !== courseId));
-    // 2. Perform direct Cloud delete
+    // 1. Immediately update state and localStorage
+    setCourses(prev => {
+      const updated = prev.filter(c => c.id !== courseId);
+      try {
+        localStorage.setItem(STORAGE_COURSES_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update localStorage', e);
+      }
+      return updated;
+    });
+
+    // 2. Remove deleted course from any active registrationPeriods
+    setAdminSettings(prev => {
+      if (!prev.registrationPeriods || prev.registrationPeriods.length === 0) return prev;
+      const updatedPeriods = prev.registrationPeriods.map(p => ({
+        ...p,
+        offeredCourseIds: p.offeredCourseIds.filter(id => id !== courseId)
+      }));
+      const updatedSettings = { ...prev, registrationPeriods: updatedPeriods };
+      saveCloudSettings(updatedSettings).catch(() => {});
+      return updatedSettings;
+    });
+
+    // 3. Perform direct Cloud delete
     try {
       await deleteCloudCourse(courseId);
       showToast('Mata kuliah berhasil dihapus permanen dari sistem & Cloud!');
@@ -354,7 +377,28 @@ export default function App() {
   // Admin deletes multiple courses with batch Cloud deletion
   const handleDeleteBatchCourses = async (courseIds: string[]) => {
     if (!courseIds || courseIds.length === 0) return;
-    setCourses(prev => prev.filter(c => !courseIds.includes(c.id)));
+    const toDeleteSet = new Set(courseIds);
+    setCourses(prev => {
+      const updated = prev.filter(c => !toDeleteSet.has(c.id));
+      try {
+        localStorage.setItem(STORAGE_COURSES_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update localStorage', e);
+      }
+      return updated;
+    });
+
+    setAdminSettings(prev => {
+      if (!prev.registrationPeriods || prev.registrationPeriods.length === 0) return prev;
+      const updatedPeriods = prev.registrationPeriods.map(p => ({
+        ...p,
+        offeredCourseIds: p.offeredCourseIds.filter(id => !toDeleteSet.has(id))
+      }));
+      const updatedSettings = { ...prev, registrationPeriods: updatedPeriods };
+      saveCloudSettings(updatedSettings).catch(() => {});
+      return updatedSettings;
+    });
+
     try {
       await deleteBatchCloudCourses(courseIds);
       showToast(`${courseIds.length} mata kuliah berhasil dihapus permanen dari Cloud!`);

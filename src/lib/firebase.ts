@@ -175,7 +175,11 @@ export function subscribeCloudCourses(
     (snapshot) => {
       const items: CourseItem[] = [];
       snapshot.forEach((d) => {
-        items.push(d.data() as CourseItem);
+        const data = d.data() as CourseItem;
+        items.push({
+          ...data,
+          id: data.id || d.id
+        });
       });
       onUpdate(items);
     },

@@ -6,6 +6,7 @@ import {
   SelectedCourseItem,
   RegistrationStatus,
   AdminSettings, 
+  RegistrationPeriod,
   AuthUser,
   ManagedUser,
   UserRole,
@@ -68,6 +69,7 @@ import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/
 import { InstiperLogo } from './InstiperLogo';
 import { ExamAttendanceModal } from './ExamAttendanceModal';
 import { RichNoteEditor } from './RichNoteEditor';
+import { RegistrationPeriodsManager } from './RegistrationPeriodsManager';
 import { renderFormattedNote } from '../utils/textFormatting';
 import { 
   getStoredUsers, 
@@ -111,7 +113,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSwitchToFinance,
   onLogout
 }) => {
-  const [activeTab, setActiveTab] = useState<'courses' | 'superadmin' | 'registrations' | 'users'>('registrations');
+  const [activeTab, setActiveTab] = useState<'courses' | 'superadmin' | 'registrations' | 'users' | 'periods'>('registrations');
 
   // Proteksi hak akses kredensial: Jika staf non-superadmin mencoba membuka tab users, otomatis alihkan ke registrations
   useEffect(() => {
@@ -1445,6 +1447,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   )}
                 </button>
 
+                {/* Menu: Periode Pendaftaran (Buka Periode & Record Semester) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('periods')}
+                  className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+                    activeTab === 'periods'
+                      ? 'bg-[#008744] text-white font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Calendar className={`w-4 h-4 shrink-0 ${activeTab === 'periods' ? 'text-white' : 'text-[#008744]'}`} />
+                    <span className="truncate">Periode Pendaftaran</span>
+                  </div>
+                  {activeTab === 'periods' ? (
+                    <ChevronRight className="w-4 h-4 text-white shrink-0 ml-1" />
+                  ) : (
+                    <span className="px-2 py-0.5 text-[9px] rounded-full font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      Buka
+                    </span>
+                  )}
+                </button>
+
                 {/* Menu: Jadwal & Kuota SKS */}
                 <button
                   type="button"
@@ -1679,6 +1704,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   {activeTab === 'registrations' && 'Rekap & Data Pendaftar'}
+                  {activeTab === 'periods' && 'Periode Pendaftaran & Penawaran MK'}
                   {activeTab === 'courses' && 'Mata Kuliah & SKS'}
                   {activeTab === 'superadmin' && 'Jadwal & Kuota SKS'}
                   {activeTab === 'users' && 'Kelola Kredensial Pengelola'}
@@ -3815,7 +3841,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         )}
 
-        {/* TAB 3: DATA PENDAFTAR MAHASISWA */}
+        {/* ============================================================== */}
+        {/* TAB PERIODE PENDAFTARAN: BUKA PERIODE & RECORD JADWAL SEMESTER */}
+        {/* ============================================================== */}
+        {activeTab === 'periods' && (
+          <RegistrationPeriodsManager
+            adminSettings={adminSettings}
+            courses={courses}
+            registrations={registrations}
+            onUpdateSettings={onUpdateSettings}
+            currentUser={currentUser}
+            onOpenCourseTab={() => setActiveTab('courses')}
+          />
+        )}
+
         {/* ============================================================== */}
         {/* TAB 3: REKAPITULASI & DATA PENDAFTAR MAHASISWA */}
         {/* ============================================================== */}

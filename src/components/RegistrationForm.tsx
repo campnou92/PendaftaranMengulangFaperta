@@ -54,19 +54,42 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const activeAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
   const activeTerm = adminSettings.activeTerm || 'Ganjil';
 
-  // HANYA ambil mata kuliah yang terdaftar pada Tahun Ajaran Aktif (atau tanpa academicYear sebagai fallback aman)
+  // HANYA ambil mata kuliah yang terdaftar pada Tahun Ajaran Aktif dan periode yang dibuka
   const activeYearCourses = useMemo(() => {
-    return courses.filter((c) => !c.academicYear || c.academicYear === activeAcademicYear);
-  }, [courses, activeAcademicYear]);
+    const periods = adminSettings.registrationPeriods || [];
+    const activeYearPeriods = periods.filter(p => p.academicYear === activeAcademicYear || !p.academicYear);
 
-  // Ekstrak secara dinamis semester apa saja yang memang memiliki mata kuliah di TA aktif (misal [1, 3, 5])
+    return courses.filter((c) => {
+      // Jika ada periode khusus di TA aktif untuk semester ini, pastikan ID mata kuliah ditawarkan
+      if (activeYearPeriods.length > 0) {
+        const semPeriod = activeYearPeriods.find(p => p.semester === c.semester);
+        if (semPeriod && Array.isArray(semPeriod.offeredCourseIds) && semPeriod.offeredCourseIds.length > 0) {
+          return semPeriod.offeredCourseIds.includes(c.id);
+        }
+      }
+      return !c.academicYear || c.academicYear === activeAcademicYear;
+    });
+  }, [courses, activeAcademicYear, adminSettings.registrationPeriods]);
+
+  // Ekstrak secara dinamis semester apa saja yang memang dibuka atau memiliki mata kuliah di TA aktif (misal [1, 3, 5])
   const activeSemesters = useMemo(() => {
     const semSet = new Set<number>();
+    // Dari registrationPeriods
+    (adminSettings.registrationPeriods || []).forEach((p) => {
+      if (p.academicYear === activeAcademicYear || !p.academicYear) {
+        semSet.add(p.semester);
+      }
+    });
+    // Dari courses
     activeYearCourses.forEach((c) => {
       if (typeof c.semester === 'number') semSet.add(c.semester);
     });
+    // Default fallback
+    if (semSet.size === 0) {
+      [1, 3, 5].forEach(s => semSet.add(s));
+    }
     return Array.from(semSet).sort((a, b) => a - b);
-  }, [activeYearCourses]);
+  }, [activeYearCourses, adminSettings.registrationPeriods, activeAcademicYear]);
 
   // Semester Portal Selection: 'all' atau nomor semester tertentu (misal '1', '3', '5')
   const [selectedSemester, setSelectedSemester] = useState<string>('all');
@@ -104,12 +127,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const calculateTimeLeft = () => {
     const now = new Date();
 
-    // 1. Jika pengguna memilih semester tertentu (misal Semester 3 atau Semester 5)
+    // 1. Jika pengguna memilih semester tertentu (misal Semester 1, Semester 3 atau Semester 5)
     if (selectedSemester !== 'all') {
       const semNum = Number(selectedSemester);
       const semStatus = !isNaN(semNum) 
-        ? getSemesterStatus(semNum, adminSettings) 
-        : { isOpen: true, state: 'open', message: 'Sesuai Jadwal Akademik' };
+        ? getSemesterStatus(semNum, adminSettings, activeAcademicYear) 
+        : { isOpen: true, state: 'open' as const, message: 'Sesuai Jadwal Akademik', label: 'DIBUKA', badgeClass: '' };
       const schedule = adminSettings.semesterSchedules?.[selectedSemester];
       const semTitle = `Semester ${selectedSemester}`;
 
@@ -129,7 +152,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
 
       // Jika dibuka, hitung waktu mundur terhadap endDate
-      const endDateStr = schedule?.endDate || '2026-11-30T23:59:59';
+      const endDateStr = semStatus.period?.endDate || semStatus.endDate || schedule?.endDate || '2026-11-30T23:59:59';
       const targetDate = new Date(endDateStr);
       const validTarget = isNaN(targetDate.getTime()) ? new Date('2026-11-30T23:59:59') : targetDate;
       const formatted = validTarget.toLocaleDateString('id-ID', {
@@ -459,7 +482,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const isCourseClosedCheck = (course: CourseItem): { isClosed: boolean; reason: string } => {
     // 1. Jika portal semester yang dipilih secara global saat ini ditutup
     if (selectedSemester !== 'all') {
-      const semStatus = getSemesterStatus(selectedSemester, adminSettings);
+      const semStatus = getSemesterStatus(selectedSemester, adminSettings, activeAcademicYear);
       if (!semStatus.isOpen) {
         return {
           isClosed: true,
@@ -470,7 +493,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
     // 2. Cek status spesifik semester mata kuliah tersebut
     if (typeof course.semester === 'number') {
-      const semStatus = getSemesterStatus(course.semester, adminSettings);
+      const semStatus = getSemesterStatus(course.semester, adminSettings, activeAcademicYear);
       if (!semStatus.isOpen) {
         return {
           isClosed: true,
@@ -498,7 +521,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       });
       return changed ? next : prev;
     });
-  }, [adminSettings.semesterSchedules, selectedSemester]);
+  }, [adminSettings.semesterSchedules, adminSettings.registrationPeriods, selectedSemester, activeAcademicYear]);
 
   // Toggle single course selection
   const handleToggleCourse = (course: CourseItem) => {

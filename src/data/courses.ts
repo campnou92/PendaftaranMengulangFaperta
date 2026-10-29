@@ -46,6 +46,19 @@ export const INITIAL_COURSES: CourseItem[] = [
   { id: 'agri-5b', name: 'Manajemen Pemasaran Hasil Pertanian', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
   { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
+  // ==========================================
+  // PRODI AGROTEKNOLOGI - SEMESTER 1
+  // ==========================================
+  { id: 'agro-s1-1', name: 'Pancasila & Kewarganegaraan', sks: 2, prodi: 'agroteknologi', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-s1-2', name: 'Biologi Pertanian Terapan', sks: 3, prodi: 'agroteknologi', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agro-s1-3', name: 'Kimia Dasar Pertanian', sks: 3, prodi: 'agroteknologi', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+
+  // ==========================================
+  // PRODI AGRIBISNIS - SEMESTER 1
+  // ==========================================
+  { id: 'agri-s1-1', name: 'Pengantar Ilmu Ekonomi Pertanian', sks: 3, prodi: 'agribisnis', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-s1-2', name: 'Pengantar Sosiologi Pedesaan', sks: 2, prodi: 'agribisnis', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-s1-3', name: 'Matematika Ekonomi Terapan', sks: 3, prodi: 'agribisnis', semester: 1, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
 ];
 
 // Pastikan semua INITIAL_COURSES default memiliki academicYear: '2025/2026'
@@ -81,7 +94,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   kelasAsalMode: 'input_with_chips',
   kelasAsalPlaceholder: 'Contoh: Kelas A (atau pilih opsi kelas di bawah)',
   kelasAsalCustomOptions: [],
-  classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 3 atau Semester 5 sesuai kebutuhan.
+  classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 1, 3, atau 5 sesuai jadwal periode yang dibuka.
 2. Admin Fakultas dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel Admin Fakultas).
 3. NIM yang sudah dipakai untuk melakukan pendaftaran tidak bisa dipakai lagi (ada notifikasi peringatan).
 4. Setelah berhasil mendaftar, pendaftar dapat mencetak hasil matakuliah yang dipilih. Batas maksimal pengambilan adalah 24 SKS.
@@ -97,7 +110,65 @@ Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_insti
     '2020': 20, // Angkatan 2020 batas maksimal 20 SKS
     '2021': 22  // Angkatan 2021 batas maksimal 22 SKS
   },
+  registrationPeriods: [
+    {
+      id: 'period-2025-2026-sem-1',
+      semester: 1,
+      academicYear: '2025/2026',
+      title: 'Pendaftaran Mengulang Semester 1 — T.A. 2025/2026',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-20T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 1 saat ini telah ditutup. Silakan hubungi loket Admin BAAK FP INSTIPER jika memerlukan dispensasi.',
+      offeredCourseIds: ['agro-s1-1', 'agro-s1-2', 'agro-s1-3', 'agri-s1-1', 'agri-s1-2', 'agri-s1-3'],
+      createdAt: '2026-10-01T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang khusus Semester 1.'
+    },
+    {
+      id: 'period-2025-2026-sem-3',
+      semester: 3,
+      academicYear: '2025/2026',
+      title: 'Pendaftaran Mengulang Semester 3 — T.A. 2025/2026',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-30T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 3 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.',
+      offeredCourseIds: [
+        'agro-1', 'agro-2', 'agro-3', 'agro-4', 'agro-5', 'agro-6', 'agro-7', 'agro-3a', 'agro-3b',
+        'agri-10', 'agri-11', 'agri-12', 'agri-13', 'agri-14', 'agri-15', 'agri-3a', 'agri-3b'
+      ],
+      createdAt: '2026-10-01T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang Semester 3.'
+    },
+    {
+      id: 'period-2025-2026-sem-5',
+      semester: 5,
+      academicYear: '2025/2026',
+      title: 'Pendaftaran Mengulang Semester 5 — T.A. 2025/2026',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-05T08:00',
+      endDate: '2026-12-15T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.',
+      offeredCourseIds: [
+        'agro-8', 'agro-9', 'agro-5a', 'agro-5b', 'agro-5c', 'agro-5d',
+        'agri-16', 'agri-17', 'agri-18', 'agri-5a', 'agri-5b', 'agri-5c', 'agri-5d'
+      ],
+      createdAt: '2026-10-05T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang Semester 5.'
+    }
+  ],
   semesterSchedules: {
+    '1': {
+      semester: 1,
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-20T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 1 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.'
+    },
     '3': {
       semester: 3,
       isOpen: true,
@@ -110,8 +181,8 @@ Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_insti
       semester: 5,
       isOpen: true,
       useSchedule: true,
-      startDate: '2026-10-01T08:00',
-      endDate: '2026-11-30T23:59',
+      startDate: '2026-10-05T08:00',
+      endDate: '2026-12-15T23:59',
       closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian. Silakan hubungi bagian akademik jika membutuhkan dispensasi keterlambatan.'
     }
   },
