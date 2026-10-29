@@ -20,6 +20,8 @@ import {
   deleteCloudRegistration, 
   subscribeCloudCourses, 
   syncAllCoursesToCloud, 
+  deleteCloudCourse,
+  deleteBatchCloudCourses,
   subscribeCloudSettings, 
   saveCloudSettings,
   subscribeCloudUsers
@@ -245,7 +247,7 @@ export default function App() {
 
     // 3. Real-time courses sync from Firestore (Katalog MK)
     const unsubCourses = subscribeCloudCourses((cloudCourses) => {
-      if (cloudCourses && cloudCourses.length > 0) {
+      if (Array.isArray(cloudCourses)) {
         setCourses(cloudCourses);
       }
     });
@@ -332,6 +334,35 @@ export default function App() {
       console.warn('Cloud sync courses warning:', err);
     });
     showToast('Daftar mata kuliah dan SKS berhasil disinkronkan ke Cloud!');
+  };
+
+  // Admin deletes a single course with direct atomic Cloud deletion
+  const handleDeleteCourse = async (courseId: string) => {
+    // 1. Immediately update state
+    setCourses(prev => prev.filter(c => c.id !== courseId));
+    // 2. Perform direct Cloud delete
+    try {
+      await deleteCloudCourse(courseId);
+      showToast('Mata kuliah berhasil dihapus permanen dari sistem & Cloud!');
+    } catch (err) {
+      console.error('Failed to delete course from cloud:', err);
+      showToast('Peringatan: Gagal menghapus mata kuliah dari Cloud.');
+      throw err;
+    }
+  };
+
+  // Admin deletes multiple courses with batch Cloud deletion
+  const handleDeleteBatchCourses = async (courseIds: string[]) => {
+    if (!courseIds || courseIds.length === 0) return;
+    setCourses(prev => prev.filter(c => !courseIds.includes(c.id)));
+    try {
+      await deleteBatchCloudCourses(courseIds);
+      showToast(`${courseIds.length} mata kuliah berhasil dihapus permanen dari Cloud!`);
+    } catch (err) {
+      console.error('Failed to batch delete courses from cloud:', err);
+      showToast('Peringatan: Gagal menghapus sebagian mata kuliah dari Cloud.');
+      throw err;
+    }
   };
 
   // Superadmin updates settings with Cloud sync
@@ -541,6 +572,8 @@ export default function App() {
                   adminSettings={adminSettings}
                   currentUser={currentUser}
                   onUpdateCourses={handleUpdateCourses}
+                  onDeleteCourse={handleDeleteCourse}
+                  onDeleteBatchCourses={handleDeleteBatchCourses}
                   onUpdateSettings={handleUpdateSettings}
                   onDeleteRegistration={handleDeleteRegistration}
                   onUpdateRegistrationStatus={handleUpdateRegistrationStatus}

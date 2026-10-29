@@ -172,18 +172,7 @@ export function subscribeCloudCourses(
   const colRef = collection(db, 'courses');
   return onSnapshot(
     colRef,
-    async (snapshot) => {
-      if (snapshot.empty) {
-        // Seed initial courses if Firestore collection is brand new
-        try {
-          await seedInitialCourses(INITIAL_COURSES);
-        } catch (e) {
-          console.warn('Auto-seed courses skipped:', e);
-        }
-        onUpdate(INITIAL_COURSES);
-        return;
-      }
-
+    (snapshot) => {
       const items: CourseItem[] = [];
       snapshot.forEach((d) => {
         items.push(d.data() as CourseItem);
@@ -217,6 +206,20 @@ export async function deleteCloudCourse(courseId: string): Promise<void> {
   }
 }
 
+export async function deleteBatchCloudCourses(courseIds: string[]): Promise<void> {
+  if (!courseIds || courseIds.length === 0) return;
+  try {
+    const batch = writeBatch(db);
+    courseIds.forEach((id) => {
+      batch.delete(doc(db, 'courses', id));
+    });
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, 'courses/batch');
+    throw error;
+  }
+}
+
 export async function seedInitialCourses(courses: CourseItem[]): Promise<void> {
   try {
     const batch = writeBatch(db);
@@ -232,15 +235,24 @@ export async function seedInitialCourses(courses: CourseItem[]): Promise<void> {
 
 export async function syncAllCoursesToCloud(courses: CourseItem[]): Promise<void> {
   try {
-    // Delete existing and insert new
+    // Diff-based synchronization: only delete courses that are no longer in the list,
+    // and set/update all incoming courses. NEVER wipe the entire collection!
     const existing = await getDocs(collection(db, 'courses'));
+    const incomingIds = new Set(courses.map(c => c.id));
+    
     const batch = writeBatch(db);
+    // 1. Delete documents that exist in Firestore but are NOT in the incoming list
     existing.forEach((d) => {
-      batch.delete(d.ref);
+      if (!incomingIds.has(d.id)) {
+        batch.delete(d.ref);
+      }
     });
+
+    // 2. Set/update all incoming courses
     courses.forEach((c) => {
       batch.set(doc(db, 'courses', c.id), c);
     });
+
     await batch.commit();
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, 'courses');

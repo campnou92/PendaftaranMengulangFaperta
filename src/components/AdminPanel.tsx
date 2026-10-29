@@ -60,7 +60,8 @@ import {
   EyeOff,
   ChevronRight,
   Database,
-  Copy
+  Copy,
+  Loader2
 } from 'lucide-react';
 import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
@@ -83,6 +84,8 @@ interface AdminPanelProps {
   adminSettings: AdminSettings;
   currentUser?: AuthUser | null;
   onUpdateCourses: (newCourses: CourseItem[]) => void;
+  onDeleteCourse?: (courseId: string) => Promise<void> | void;
+  onDeleteBatchCourses?: (courseIds: string[]) => Promise<void> | void;
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onDeleteRegistration: (id: string) => void;
   onUpdateRegistrationStatus?: (id: string, status: RegistrationStatus, rejectionReason?: string) => void;
@@ -98,6 +101,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   adminSettings,
   currentUser,
   onUpdateCourses,
+  onDeleteCourse,
+  onDeleteBatchCourses,
   onUpdateSettings,
   onDeleteRegistration,
   onUpdateRegistrationStatus,
@@ -263,6 +268,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState(false);
   const [isResetCoursesModalOpen, setIsResetCoursesModalOpen] = useState(false);
   const [courseFeedback, setCourseFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isDeletingCourse, setIsDeletingCourse] = useState(false);
 
   // In-app Confirmations for Registrations and Users (No blocked window.confirm)
   const [registrationToDelete, setRegistrationToDelete] = useState<SimpleRegistration | null>(null);
@@ -501,19 +507,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setNewAcademicYearInput('');
   };
 
-  // Confirm delete course (from Modal)
-  const handleConfirmDeleteCourse = () => {
+  // Confirm delete course (from Modal) with permanent Cloud removal
+  const handleConfirmDeleteCourse = async () => {
     if (!courseToDelete) return;
     const name = courseToDelete.name;
     const targetId = courseToDelete.id;
-    onUpdateCourses(courses.filter(c => c.id !== targetId));
-    setSelectedCourseIds(prev => prev.filter(id => id !== targetId));
-    setCourseToDelete(null);
-    setCourseFeedback({
-      type: 'success',
-      message: `Mata kuliah "${name}" berhasil dihapus dari sistem.`
-    });
-    setTimeout(() => setCourseFeedback(null), 3500);
+    setIsDeletingCourse(true);
+    try {
+      if (onDeleteCourse) {
+        await onDeleteCourse(targetId);
+      } else {
+        onUpdateCourses(courses.filter(c => c.id !== targetId));
+      }
+      setSelectedCourseIds(prev => prev.filter(id => id !== targetId));
+      setCourseToDelete(null);
+      setCourseFeedback({
+        type: 'success',
+        message: `Mata kuliah "${name}" berhasil dihapus secara permanen dari sistem.`
+      });
+    } catch (err) {
+      console.error('Failed to delete course:', err);
+      setCourseFeedback({
+        type: 'error',
+        message: `Gagal menghapus mata kuliah "${name}". Silakan coba kembali.`
+      });
+    } finally {
+      setIsDeletingCourse(false);
+      setTimeout(() => setCourseFeedback(null), 3500);
+    }
   };
 
   // Toggle select all visible courses
@@ -541,19 +562,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setSelectedCourseIds([]);
   };
 
-  // Confirm batch delete courses
-  const handleConfirmBatchDeleteCourses = () => {
+  // Confirm batch delete courses with permanent Cloud removal
+  const handleConfirmBatchDeleteCourses = async () => {
     if (selectedCourseIds.length === 0) return;
     const count = selectedCourseIds.length;
-    const remaining = courses.filter(c => !selectedCourseIds.includes(c.id));
-    onUpdateCourses(remaining);
-    setSelectedCourseIds([]);
-    setIsBatchDeleteModalOpen(false);
-    setCourseFeedback({
-      type: 'success',
-      message: `Berhasil menghapus ${count} mata kuliah terpilih dari katalog kurikulum.`
-    });
-    setTimeout(() => setCourseFeedback(null), 3500);
+    const idsToDelete = [...selectedCourseIds];
+    setIsDeletingCourse(true);
+    try {
+      if (onDeleteBatchCourses) {
+        await onDeleteBatchCourses(idsToDelete);
+      } else {
+        const remaining = courses.filter(c => !idsToDelete.includes(c.id));
+        onUpdateCourses(remaining);
+      }
+      setSelectedCourseIds([]);
+      setIsBatchDeleteModalOpen(false);
+      setCourseFeedback({
+        type: 'success',
+        message: `Berhasil menghapus ${count} mata kuliah terpilih dari katalog kurikulum.`
+      });
+    } catch (err) {
+      console.error('Failed to batch delete courses:', err);
+      setCourseFeedback({
+        type: 'error',
+        message: `Gagal menghapus mata kuliah terpilih. Silakan coba kembali.`
+      });
+    } finally {
+      setIsDeletingCourse(false);
+      setTimeout(() => setCourseFeedback(null), 3500);
+    }
   };
 
   // Confirm reset to default 18 courses (from Modal)
@@ -5279,18 +5316,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex items-center justify-center gap-3">
                 <button
                   type="button"
+                  disabled={isDeletingCourse}
                   onClick={() => setCourseToDelete(null)}
-                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
+                  disabled={isDeletingCourse}
                   onClick={handleConfirmDeleteCourse}
-                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-500/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Ya, Hapus</span>
+                  {isDeletingCourse ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Ya, Hapus</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -5356,18 +5404,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex items-center justify-center gap-3">
                 <button
                   type="button"
+                  disabled={isDeletingCourse}
                   onClick={() => setIsBatchDeleteModalOpen(false)}
-                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 bg-white hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
+                  disabled={isDeletingCourse}
                   onClick={handleConfirmBatchDeleteCourses}
-                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-500/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Ya, Hapus {selectedCourseIds.length} MK</span>
+                  {isDeletingCourse ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Ya, Hapus {selectedCourseIds.length} MK</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
