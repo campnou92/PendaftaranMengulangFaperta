@@ -1609,6 +1609,115 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
   }, [courses, adminSettings.registrationPeriods, registrations]);
 
+  // Dynamic Semester Cards for Rekapitulasi Dashboard
+  const rekapSemesterStats = useMemo(() => {
+    const semSet = new Set<string>();
+
+    // 1. Semester dari seluruh pendaftar saat ini (prioritas tertinggi)
+    registrations.forEach(r => {
+      const match = r.targetSemester?.match(/\d+/g);
+      if (match) match.forEach(m => semSet.add(m));
+      r.selectedCourses?.forEach(c => {
+        if (c.semester !== undefined && c.semester !== null) semSet.add(String(c.semester).trim());
+      });
+    });
+
+    // 2. Semester dari periode pendaftaran yang dibuat / dibuka
+    (adminSettings.registrationPeriods || []).forEach(p => {
+      if (p.semester !== undefined && p.semester !== null) semSet.add(String(p.semester).trim());
+    });
+
+    // 3. Fallback jika masih sedikit
+    availableRegSemesters.forEach(s => semSet.add(s));
+
+    if (semSet.size === 0) {
+      semSet.add('1');
+      semSet.add('3');
+      semSet.add('5');
+    }
+
+    const sortedSemesters = Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+
+    return sortedSemesters.map(sem => {
+      const matchingRegs = registrations.filter(r => 
+        r.targetSemester === `Semester ${sem}` || 
+        r.targetSemester === sem || 
+        r.selectedCourses?.some(c => String(c.semester) === String(sem))
+      );
+
+      const totalSksForSem = matchingRegs.reduce((acc, r) => {
+        const semCourses = r.selectedCourses?.filter(c => String(c.semester) === String(sem));
+        if (semCourses && semCourses.length > 0) {
+          return acc + semCourses.reduce((sum, c) => sum + (c.sks || 0), 0);
+        }
+        return acc + (r.totalSks || 0);
+      }, 0);
+
+      const period = (adminSettings.registrationPeriods || []).find(p => String(p.semester) === String(sem));
+      const isOpen = period ? period.isOpen : true;
+      const semNum = Number(sem);
+      const isGanjil = isNaN(semNum) ? false : semNum % 2 !== 0;
+
+      const theme = isGanjil 
+        ? {
+            border: 'border-emerald-200/90 dark:border-emerald-800/60',
+            bgIcon: 'bg-emerald-100/60 dark:bg-emerald-950/80 text-[#166534] dark:text-emerald-400',
+            textTitle: 'text-[#166534] dark:text-emerald-400',
+            textNumber: 'text-[#166534] dark:text-emerald-300',
+            badgeBg: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300',
+            badgeText: 'GANJIL',
+            icon: sem === '1' ? '🌱' : sem === '3' ? '🌿' : '🌾'
+          }
+        : {
+            border: 'border-blue-200/90 dark:border-blue-800/60',
+            bgIcon: 'bg-blue-100/60 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400',
+            textTitle: 'text-blue-700 dark:text-blue-400',
+            textNumber: 'text-blue-800 dark:text-blue-300',
+            badgeBg: 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300',
+            badgeText: 'GENAP',
+            icon: sem === '2' ? '🌴' : sem === '4' ? '🌳' : '🪴'
+          };
+
+      return {
+        semester: sem,
+        count: matchingRegs.length,
+        totalSks: totalSksForSem,
+        period,
+        isOpen,
+        isGanjil,
+        theme
+      };
+    });
+  }, [registrations, adminSettings.registrationPeriods, availableRegSemesters]);
+
+  const lintasRegistrations = useMemo(() => {
+    return registrations.filter(r => 
+      r.targetSemester?.toLowerCase().includes('gabungan') || 
+      r.targetSemester?.toLowerCase().includes('lintas')
+    );
+  }, [registrations]);
+
+  const getSemesterBadgeStyle = (semText?: string) => {
+    if (!semText) return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300';
+    const clean = semText.toLowerCase();
+    if (clean.includes('gabungan') || clean.includes('lintas')) {
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-300';
+    }
+    const match = semText.match(/\d+/);
+    if (match) {
+      const num = Number(match[0]);
+      if (num === 1) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300';
+      if (num === 2) return 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300';
+      if (num === 3) return 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300 border border-green-300';
+      if (num === 4) return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 border border-cyan-300';
+      if (num === 5) return 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300';
+      if (num === 6) return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300';
+      if (num === 7) return 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 border border-violet-300';
+      if (num === 8) return 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-300 border border-fuchsia-300';
+    }
+    return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300';
+  };
+
   const filteredRegistrations = registrations.filter(r => {
     const matchesSearch =
       r.nama.toLowerCase().includes(searchReg.toLowerCase()) ||
@@ -3784,14 +3893,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* Quick Stats per Semester - Executive Monitor Cards (Format Gaya CBT INSTIPER) */}
+            {/* Quick Stats per Semester - Executive Monitor Cards (Dinamis Berdasarkan Data yang Ada di Sistem) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Semua Pendaftar */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
+              <div 
+                onClick={() => setFilterRegSemester('all')}
+                className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all hover:shadow-md ${
+                  filterRegSemester === 'all'
+                    ? 'border-[#008744] ring-2 ring-[#008744]/20'
+                    : 'border-slate-200/90 dark:border-slate-800'
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Total Mahasiswa
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Total Mahasiswa
+                    </span>
+                    <span className="text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.2 rounded">
+                      SEMUA
+                    </span>
+                  </div>
                   <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#008744] dark:text-emerald-400 flex items-center justify-center font-bold">
                     <Users className="w-4 h-4" />
                   </div>
@@ -3802,64 +3923,96 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <span className="text-xs font-semibold text-slate-400 ml-1.5">Mahasiswa</span>
                   </div>
                   <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    {registrations.reduce((s, r) => s + r.totalSks, 0)} Total SKS Terambil
+                    {registrations.reduce((s, r) => s + (r.totalSks || 0), 0)} Total SKS Terambil
                   </div>
                 </div>
               </div>
 
-              {/* Card 2: Semester 3 */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 p-5 shadow-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-[#166534] dark:text-emerald-400 uppercase tracking-wider">
-                      Semester 3
-                    </span>
-                    <span className="text-[9px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.2 rounded">
-                      GANJIL
-                    </span>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100/60 dark:bg-emerald-950/80 text-[#166534] dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <span>🌿</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl font-black text-[#166534] dark:text-emerald-300 tracking-tight">
-                    {registrations.filter(r => r.targetSemester === 'Semester 3').length}
-                    <span className="text-xs font-semibold text-emerald-600/70 ml-1.5">Mahasiswa</span>
-                  </div>
-                  <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    {registrations.filter(r => r.targetSemester === 'Semester 3').reduce((s, r) => s + r.totalSks, 0)} Beban SKS Semester 3
-                  </div>
-                </div>
-              </div>
+              {/* Dynamic Semester Cards */}
+              {rekapSemesterStats.map((stat) => {
+                const isFilterActive = filterRegSemester === stat.semester;
 
-              {/* Card 3: Semester 5 */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 p-5 shadow-xs flex flex-col justify-between">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
-                      Semester 5
-                    </span>
-                    <span className="text-[9px] font-black bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-1.5 py-0.2 rounded">
-                      GANJIL
-                    </span>
+                return (
+                  <div 
+                    key={stat.semester}
+                    onClick={() => setFilterRegSemester(isFilterActive ? 'all' : stat.semester)}
+                    className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all hover:shadow-md ${
+                      isFilterActive
+                        ? `${stat.theme.border} ring-2 ring-[#008744]/30 shadow-sm`
+                        : `${stat.theme.border}`
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-xs font-bold uppercase tracking-wider ${stat.theme.textTitle}`}>
+                          Semester {stat.semester}
+                        </span>
+                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded ${stat.theme.badgeBg}`}>
+                          {stat.theme.badgeText}
+                        </span>
+                        {stat.period && (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                            stat.isOpen 
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' 
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                          }`}>
+                            {stat.isOpen ? 'BUKA' : 'TUTUP'}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${stat.theme.bgIcon}`}>
+                        <span>{stat.theme.icon}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className={`text-3xl font-black tracking-tight ${stat.theme.textNumber}`}>
+                        {stat.count}
+                        <span className="text-xs font-semibold opacity-70 ml-1.5">Mahasiswa</span>
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        {stat.totalSks} Beban SKS Semester {stat.semester}
+                      </div>
+                    </div>
                   </div>
-                  <div className="w-8 h-8 rounded-lg bg-blue-100/60 dark:bg-blue-950/80 text-blue-700 dark:text-blue-400 flex items-center justify-center font-bold">
-                    <span>🌾</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-3xl font-black text-blue-800 dark:text-blue-300 tracking-tight">
-                    {registrations.filter(r => r.targetSemester === 'Semester 5').length}
-                    <span className="text-xs font-semibold text-blue-600/70 ml-1.5">Mahasiswa</span>
-                  </div>
-                  <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    {registrations.filter(r => r.targetSemester === 'Semester 5').reduce((s, r) => s + r.totalSks, 0)} Beban SKS Semester 5
-                  </div>
-                </div>
-              </div>
+                );
+              })}
 
-              {/* Card 4: SKS & Keuangan */}
+              {/* Card Lintas / Gabungan jika ada pendaftar lintas semester */}
+              {lintasRegistrations.length > 0 && (
+                <div 
+                  onClick={() => setFilterRegSemester(filterRegSemester === 'gabungan' ? 'all' : 'gabungan')}
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all hover:shadow-md ${
+                    filterRegSemester === 'gabungan'
+                      ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-sm'
+                      : 'border-amber-200/80 dark:border-amber-800/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
+                        Lintas / Gabungan
+                      </span>
+                      <span className="text-[9px] font-black bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded">
+                        CAMPUR
+                      </span>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-amber-100/60 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold">
+                      <span>📑</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-black text-amber-900 dark:text-amber-300 tracking-tight">
+                      {lintasRegistrations.length}
+                      <span className="text-xs font-semibold text-amber-600/70 ml-1.5">Mahasiswa</span>
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      {lintasRegistrations.reduce((s, r) => s + (r.totalSks || 0), 0)} Beban SKS Gabungan
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Card Akumulasi SKS & Keuangan */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 p-5 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
@@ -3871,7 +4024,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
                 <div>
                   <div className="text-3xl font-black text-amber-900 dark:text-amber-300 tracking-tight">
-                    {registrations.reduce((s, r) => s + r.totalSks, 0)}
+                    {registrations.reduce((s, r) => s + (r.totalSks || 0), 0)}
                     <span className="text-xs font-semibold text-amber-600/70 ml-1.5">SKS</span>
                   </div>
                   <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -4063,14 +4216,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="py-3 px-4 align-top">
                             <span className="font-mono font-bold text-blue-900 dark:text-blue-300 block text-xs">{r.id}</span>
                             <div className="flex flex-wrap items-center gap-1 mt-1">
-                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                r.targetSemester === 'Semester 3'
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
-                                  : r.targetSemester === 'Semester 5'
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300'
-                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'
-                              }`}>
-                                {r.targetSemester || 'Semester 3'}
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${getSemesterBadgeStyle(r.targetSemester)}`}>
+                                {r.targetSemester || (r.selectedCourses?.[0]?.semester ? `Semester ${r.selectedCourses[0].semester}` : 'Semester 1')}
                               </span>
                               {r.status === 'approved' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
@@ -4202,8 +4349,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <div>
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="font-mono text-xs font-bold text-blue-900">{r.id}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#009A44]/15 text-[#009A44]">
-                              {r.targetSemester || 'Semester 3'}
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${getSemesterBadgeStyle(r.targetSemester)}`}>
+                              {r.targetSemester || (r.selectedCourses?.[0]?.semester ? `Semester ${r.selectedCourses[0].semester}` : 'Semester 1')}
                             </span>
                             {r.status === 'approved' && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
