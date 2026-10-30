@@ -354,6 +354,52 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
     setPeriodCourses(prev => prev.filter(c => c.id !== courseId));
   };
 
+  // Toggle kelas beasiswa / larangan untuk suatu matakuliah di periode ini
+  const handleToggleCourseClassRestrictionInPeriod = (courseId: string, className: string) => {
+    setPeriodCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        const currentRestricted = Array.isArray(c.restrictedClasses) 
+          ? c.restrictedClasses 
+          : [...restrictedRepeatClassesInput];
+        const nextRestricted = currentRestricted.includes(className)
+          ? currentRestricted.filter(cls => cls !== className)
+          : [...currentRestricted, className];
+        return { ...c, restrictedClasses: nextRestricted };
+      }
+      return c;
+    }));
+  };
+
+  // Tambah kelas ke matakuliah di periode ini
+  const handleAddClassToCourseInPeriod = (courseId: string, className: string) => {
+    setPeriodCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        const currentAvailable = c.availableClasses && c.availableClasses.length > 0
+          ? c.availableClasses
+          : (adminSettings.classOptions || DEFAULT_CLASSES);
+        if (currentAvailable.includes(className)) return c;
+        return { ...c, availableClasses: [...currentAvailable, className] };
+      }
+      return c;
+    }));
+  };
+
+  // Hapus kelas dari matakuliah di periode ini
+  const handleRemoveClassFromCourseInPeriod = (courseId: string, className: string) => {
+    setPeriodCourses(prev => prev.map(c => {
+      if (c.id === courseId) {
+        const currentAvailable = c.availableClasses && c.availableClasses.length > 0
+          ? c.availableClasses
+          : (adminSettings.classOptions || DEFAULT_CLASSES);
+        if (currentAvailable.length <= 1) return c;
+        const nextAvailable = currentAvailable.filter(cls => cls !== className);
+        const nextRestricted = (c.restrictedClasses || []).filter(cls => cls !== className);
+        return { ...c, availableClasses: nextAvailable, restrictedClasses: nextRestricted };
+      }
+      return c;
+    }));
+  };
+
   // Excel Import for Period Courses
   const handleImportExcelFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1477,28 +1523,91 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                               <th className="py-2 px-3">Nama Mata Kuliah</th>
                               <th className="py-2 px-3 w-16 text-center">SKS</th>
                               <th className="py-2 px-3 w-28">Prodi</th>
+                              <th className="py-2 px-3 min-w-[200px]">Kelas yang Dibuka &amp; Status Beasiswa (Klik untuk Ubah)</th>
                               <th className="py-2 px-3 w-12 text-center">Aksi</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {periodCourses.map((c, idx) => (
-                              <tr key={c.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                                <td className="py-2 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">{c.name}</td>
-                                <td className="py-2 px-3 text-center font-bold text-emerald-700 dark:text-emerald-400">{c.sks} SKS</td>
-                                <td className="py-2 px-3 capitalize text-slate-600 dark:text-slate-300">{c.prodi}</td>
-                                <td className="py-2 px-3 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveCourseFromPeriod(c.id)}
-                                    className="p-1 text-rose-500 hover:text-rose-700 rounded cursor-pointer"
-                                    title="Hapus dari periode ini"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                            {periodCourses.map((c, idx) => {
+                              const curAvail = (c.availableClasses && c.availableClasses.length > 0)
+                                ? c.availableClasses
+                                : (adminSettings.classOptions || DEFAULT_CLASSES);
+                              const unadded = (adminSettings.classOptions || DEFAULT_CLASSES).filter(cls => !curAvail.includes(cls));
+
+                              return (
+                                <tr key={c.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                                  <td className="py-2 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
+                                  <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">{c.name}</td>
+                                  <td className="py-2 px-3 text-center font-bold text-emerald-700 dark:text-emerald-400">{c.sks} SKS</td>
+                                  <td className="py-2 px-3 capitalize text-slate-600 dark:text-slate-300">{c.prodi}</td>
+                                  <td className="py-2 px-3">
+                                    <div className="flex flex-wrap gap-1 items-center">
+                                      {curAvail.map((cls) => {
+                                        const isRestricted = Array.isArray(c.restrictedClasses)
+                                          ? c.restrictedClasses.includes(cls)
+                                          : restrictedRepeatClassesInput.includes(cls);
+
+                                        return (
+                                          <div
+                                            key={cls}
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 select-none ${
+                                              isRestricted
+                                                ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800'
+                                                : 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                            }`}
+                                          >
+                                            <button
+                                              type="button"
+                                              onClick={() => handleToggleCourseClassRestrictionInPeriod(c.id, cls)}
+                                              className="cursor-pointer"
+                                              title={isRestricted ? "Kelas Beasiswa / Dilarang (Klik untuk jadikan boleh)" : "Kelas Reguler / Boleh (Klik untuk jadikan beasiswa/dilarang)"}
+                                            >
+                                              {cls} {isRestricted ? '🚫' : '✓'}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveClassFromCourseInPeriod(c.id, cls)}
+                                              className="hover:text-rose-600 cursor-pointer ml-0.5 text-[9px]"
+                                              title="Hapus kelas dari mata kuliah ini"
+                                            >
+                                              ×
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+
+                                      {unadded.length > 0 && (
+                                        <select
+                                          defaultValue=""
+                                          onChange={(e) => {
+                                            if (e.target.value) {
+                                              handleAddClassToCourseInPeriod(c.id, e.target.value);
+                                              e.target.value = '';
+                                            }
+                                          }}
+                                          className="h-5 px-1 text-[9px] rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-slate-500 cursor-pointer"
+                                        >
+                                          <option value="" disabled>+ Kelas</option>
+                                          {unadded.map(cls => (
+                                            <option key={cls} value={cls}>+ {cls}</option>
+                                          ))}
+                                        </select>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveCourseFromPeriod(c.id)}
+                                      className="p-1 text-rose-500 hover:text-rose-700 rounded cursor-pointer"
+                                      title="Hapus dari periode ini"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1771,6 +1880,17 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                           placeholder="Pesan larangan kelas beasiswa..."
                           className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
                         />
+                      </div>
+
+                      <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 text-[11px] text-indigo-900 dark:text-indigo-300 flex items-center justify-between gap-2 mt-2">
+                        <span>💡 <strong>Tips:</strong> Pengaturan ini merupakan standar umum. Anda juga dapat menentukan opsi kelas dan status beasiswa yang berbeda per mata kuliah secara mandiri di <strong>Tab 2 (Mata Kuliah &amp; Kelas)</strong>.</span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveModalTab('courses')}
+                          className="text-indigo-700 dark:text-indigo-400 font-bold underline cursor-pointer shrink-0"
+                        >
+                          Buka Tab 2 →
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -64,7 +64,7 @@ import {
   Copy,
   Loader2
 } from 'lucide-react';
-import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS } from '../data/courses';
+import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
 import { InstiperLogo } from './InstiperLogo';
 import { ExamAttendanceModal } from './ExamAttendanceModal';
@@ -357,9 +357,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [restrictedRepeatClassReasonDraft, setRestrictedRepeatClassReasonDraft] = useState<Record<string, string>>(
     adminSettings.restrictedRepeatClassReason ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason || {})
   );
-  const [activeScholarshipSemesterTab, setActiveScholarshipSemesterTab] = useState<'3' | '5'>('3');
+  const [activeScholarshipSemesterTab, setActiveScholarshipSemesterTab] = useState<string>('3');
   const [newCustomScholarshipClass, setNewCustomScholarshipClass] = useState<string>('');
   const [scholarshipSavedFeedback, setScholarshipSavedFeedback] = useState<boolean>(false);
+  const [scholarshipCourseSearch, setScholarshipCourseSearch] = useState<string>('');
+  const [editingCourseClassesId, setEditingCourseClassesId] = useState<string | null>(null);
 
   // BAAK: Modal & State Import Master Matakuliah
   const [isCourseImportModalOpen, setIsCourseImportModalOpen] = useState(false);
@@ -1133,25 +1135,210 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleApplyScholarshipPreset = (presetType: 'standard' | 'clear' | 'all-beasiswa') => {
-    let nextDraft: Record<string, string[]> = {};
+    let nextDraft: Record<string, string[]> = { ...restrictedRepeatClassesDraft };
     if (presetType === 'standard') {
-      nextDraft = {
-        '3': ['Kelas Beasiswa'],
-        '5': ['Kelas Beasiswa', 'Kelas D']
-      };
+      nextDraft[activeScholarshipSemesterTab] = ['Kelas Beasiswa'];
     } else if (presetType === 'clear') {
-      nextDraft = {
-        '3': [],
-        '5': []
-      };
+      nextDraft[activeScholarshipSemesterTab] = [];
     } else if (presetType === 'all-beasiswa') {
-      nextDraft = {
-        '3': ['Kelas Beasiswa'],
-        '5': ['Kelas Beasiswa']
-      };
+      nextDraft[activeScholarshipSemesterTab] = ['Kelas Beasiswa'];
     }
     setRestrictedRepeatClassesDraft(nextDraft);
     handleSaveScholarshipSettings(nextDraft);
+  };
+
+  // Semesters yang dibuka / tersedia di aplikasi (Periode Pendaftaran & Master Courses)
+  const openSemestersForScholarship = useMemo(() => {
+    const sems = new Set<string>();
+    // 1. Dari registrationPeriods (periode pendaftaran yang dibuka/ada)
+    if (adminSettings.registrationPeriods && adminSettings.registrationPeriods.length > 0) {
+      adminSettings.registrationPeriods.forEach(p => {
+        if (p.semester !== undefined && p.semester !== null) {
+          sems.add(String(p.semester));
+        }
+      });
+    }
+    // 2. Dari courses
+    courses.forEach(c => {
+      if (c.semester !== undefined && c.semester !== null) {
+        sems.add(String(c.semester));
+      }
+    });
+    // 3. Fallback jika masih kosong
+    if (sems.size === 0) {
+      sems.add('3');
+      sems.add('5');
+    }
+    return Array.from(sems).sort((a, b) => {
+      const numA = Number(a);
+      const numB = Number(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [adminSettings.registrationPeriods, courses]);
+
+  // Auto-switch jika activeScholarshipSemesterTab tidak ada di openSemestersForScholarship
+  useEffect(() => {
+    if (openSemestersForScholarship.length > 0 && !openSemestersForScholarship.includes(activeScholarshipSemesterTab)) {
+      setActiveScholarshipSemesterTab(openSemestersForScholarship[0]);
+    }
+  }, [openSemestersForScholarship, activeScholarshipSemesterTab]);
+
+  // Periode aktif untuk semester yang dipilih (jika ada)
+  const activePeriodForSelectedSem = useMemo(() => {
+    return (adminSettings.registrationPeriods || []).find(
+      p => String(p.semester) === String(activeScholarshipSemesterTab)
+    );
+  }, [adminSettings.registrationPeriods, activeScholarshipSemesterTab]);
+
+  // Daftar matakuliah untuk semester yang dipilih
+  const coursesInSelectedScholarshipSemester = useMemo(() => {
+    const map = new Map<string, CourseItem>();
+    if (activePeriodForSelectedSem?.courses) {
+      activePeriodForSelectedSem.courses.forEach(c => map.set(c.id, c));
+    }
+    courses.filter(c => String(c.semester) === String(activeScholarshipSemesterTab)).forEach(c => {
+      if (!map.has(c.id)) {
+        map.set(c.id, c);
+      }
+    });
+    const list = Array.from(map.values());
+    if (!scholarshipCourseSearch.trim()) return list;
+    const q = scholarshipCourseSearch.toLowerCase().trim();
+    return list.filter(c => c.name.toLowerCase().includes(q) || c.prodi.toLowerCase().includes(q));
+  }, [courses, activePeriodForSelectedSem, activeScholarshipSemesterTab, scholarshipCourseSearch]);
+
+  // Handler untuk mengupdate kelas & status beasiswa pada mata kuliah spesifik
+  const handleUpdateCourseClasses = (
+    courseId: string, 
+    updatedAvailable: string[], 
+    updatedRestricted?: string[]
+  ) => {
+    const updatedGlobalCourses = courses.map(c => {
+      if (c.id === courseId) {
+        return {
+          ...c,
+          availableClasses: updatedAvailable,
+          restrictedClasses: updatedRestricted !== undefined ? updatedRestricted : c.restrictedClasses
+        };
+      }
+      return c;
+    });
+    onUpdateCourses(updatedGlobalCourses);
+
+    // Sinkronkan juga ke periode pendaftaran jika ada
+    if (activePeriodForSelectedSem && adminSettings.registrationPeriods) {
+      const updatedPeriods = adminSettings.registrationPeriods.map(p => {
+        if (p.id === activePeriodForSelectedSem.id && p.courses) {
+          const newPeriodCourses = p.courses.map(c => {
+            if (c.id === courseId) {
+              return {
+                ...c,
+                availableClasses: updatedAvailable,
+                restrictedClasses: updatedRestricted !== undefined ? updatedRestricted : c.restrictedClasses
+              };
+            }
+            return c;
+          });
+          return { ...p, courses: newPeriodCourses };
+        }
+        return p;
+      });
+      onUpdateSettings({
+        ...adminSettings,
+        registrationPeriods: updatedPeriods
+      });
+    }
+
+    setScholarshipSavedFeedback(true);
+    setTimeout(() => setScholarshipSavedFeedback(false), 2000);
+  };
+
+  // Toggle status beasiswa/larangan untuk suatu kelas pada mata kuliah spesifik
+  const handleToggleCourseRestriction = (course: CourseItem, className: string) => {
+    const defaultRestricted = restrictedRepeatClassesDraft[String(course.semester)] || [];
+    const currentRestricted = Array.isArray(course.restrictedClasses) 
+      ? course.restrictedClasses 
+      : [...defaultRestricted];
+    
+    const nextRestricted = currentRestricted.includes(className)
+      ? currentRestricted.filter(c => c !== className)
+      : [...currentRestricted, className];
+
+    const currentAvailable = (course.availableClasses && course.availableClasses.length > 0)
+      ? course.availableClasses
+      : (adminSettings.classOptions || DEFAULT_CLASSES);
+
+    handleUpdateCourseClasses(course.id, currentAvailable, nextRestricted);
+  };
+
+  // Tambah kelas ke mata kuliah tertentu
+  const handleAddClassToCourse = (course: CourseItem, className: string) => {
+    const currentAvailable = (course.availableClasses && course.availableClasses.length > 0)
+      ? course.availableClasses
+      : (adminSettings.classOptions || DEFAULT_CLASSES);
+    
+    if (currentAvailable.includes(className)) return;
+    const nextAvailable = [...currentAvailable, className];
+    handleUpdateCourseClasses(course.id, nextAvailable);
+  };
+
+  // Hapus kelas dari mata kuliah tertentu
+  const handleRemoveClassFromCourse = (course: CourseItem, className: string) => {
+    const currentAvailable = (course.availableClasses && course.availableClasses.length > 0)
+      ? course.availableClasses
+      : (adminSettings.classOptions || DEFAULT_CLASSES);
+    
+    if (currentAvailable.length <= 1) return; // Sisakan minimal 1 kelas
+    const nextAvailable = currentAvailable.filter(c => c !== className);
+    const nextRestricted = (course.restrictedClasses || []).filter(c => c !== className);
+    handleUpdateCourseClasses(course.id, nextAvailable, nextRestricted);
+  };
+
+  // Reset mata kuliah ke aturan bawaan semester
+  const handleResetCourseToSemesterDefaults = (courseId: string) => {
+    const defaultClasses = adminSettings.classOptions || DEFAULT_CLASSES;
+    const defaultRestricted = restrictedRepeatClassesDraft[activeScholarshipSemesterTab] || [];
+    handleUpdateCourseClasses(courseId, [...defaultClasses], [...defaultRestricted]);
+  };
+
+  // Terapkan bawaan semester ke SEMUA mata kuliah di semester yang aktif
+  const handleApplySemesterDefaultsToAllCourses = (semKey: string) => {
+    const defaultClasses = adminSettings.classOptions || DEFAULT_CLASSES;
+    const defaultRestricted = restrictedRepeatClassesDraft[semKey] || [];
+
+    const updatedGlobalCourses = courses.map(c => {
+      if (String(c.semester) === String(semKey)) {
+        return {
+          ...c,
+          availableClasses: [...defaultClasses],
+          restrictedClasses: [...defaultRestricted]
+        };
+      }
+      return c;
+    });
+    onUpdateCourses(updatedGlobalCourses);
+
+    if (activePeriodForSelectedSem && adminSettings.registrationPeriods) {
+      const updatedPeriods = adminSettings.registrationPeriods.map(p => {
+        if (p.id === activePeriodForSelectedSem.id && p.courses) {
+          const newPeriodCourses = p.courses.map(c => ({
+            ...c,
+            availableClasses: [...defaultClasses],
+            restrictedClasses: [...defaultRestricted]
+          }));
+          return { ...p, courses: newPeriodCourses };
+        }
+        return p;
+      });
+      onUpdateSettings({
+        ...adminSettings,
+        registrationPeriods: updatedPeriods
+      });
+    }
+
+    setScholarshipSavedFeedback(true);
+    setTimeout(() => setScholarshipSavedFeedback(false), 2500);
   };
 
   // ==========================================
@@ -2910,65 +3097,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* Semester Switcher Tabs & Preset Bar */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 bg-white/80 p-2.5 rounded-lg border border-indigo-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700">Pilih Semester:</span>
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setActiveScholarshipSemesterTab('3')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        activeScholarshipSemesterTab === '3'
-                          ? 'bg-indigo-700 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span>🌿 Semester 3</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-900/30 text-white font-mono">
-                        {(restrictedRepeatClassesDraft['3'] || []).length} dilarang
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveScholarshipSemesterTab('5')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        activeScholarshipSemesterTab === '5'
-                          ? 'bg-indigo-700 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span>🌾 Semester 5</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-900/30 text-white font-mono">
-                        {(restrictedRepeatClassesDraft['5'] || []).length} dilarang
-                      </span>
-                    </button>
+              {/* Semester Switcher Tabs (Dinamis Berdasarkan Semester yang Dibuka / Tersedia) & Preset Bar */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 bg-white/90 dark:bg-slate-800/90 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Pilih Semester yang Dibuka:</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {openSemestersForScholarship.map((semKey) => {
+                      const periodForSem = (adminSettings.registrationPeriods || []).find(p => String(p.semester) === String(semKey));
+                      const isPeriodOpen = periodForSem ? periodForSem.isOpen : true;
+                      const restrictedCount = (restrictedRepeatClassesDraft[semKey] || []).length;
+                      const isSelected = activeScholarshipSemesterTab === semKey;
+
+                      return (
+                        <button
+                          key={semKey}
+                          type="button"
+                          onClick={() => setActiveScholarshipSemesterTab(semKey)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'bg-indigo-700 text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
+                          }`}
+                        >
+                          <span>Semester {semKey}</span>
+                          {periodForSem && (
+                            <span 
+                              className={`w-2 h-2 rounded-full ${isPeriodOpen ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} 
+                              title={isPeriodOpen ? 'Periode Semester Ini Sedang Dibuka' : 'Periode Semester Ini Ditutup'}
+                            />
+                          )}
+                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                            isSelected ? 'bg-indigo-950/40 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}>
+                            {restrictedCount} dilarang
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Preset Actions */}
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-slate-500">Preset Cepat:</span>
+                  <span className="text-[11px] font-semibold text-slate-500">Preset Semester Ini:</span>
                   <button
                     type="button"
                     onClick={() => handleApplyScholarshipPreset('standard')}
-                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-300 cursor-pointer shadow-2xs"
-                    title="Semester 3: Kelas Beasiswa | Semester 5: Kelas Beasiswa & Kelas D"
+                    className="px-2 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
+                    title="Larang 'Kelas Beasiswa' pada semester ini"
                   >
                     Preset Standar
                   </button>
                   <button
                     type="button"
                     onClick={() => handleApplyScholarshipPreset('all-beasiswa')}
-                    className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-300 cursor-pointer shadow-2xs"
-                    title="Larang 'Kelas Beasiswa' di semua semester"
+                    className="px-2 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs"
+                    title="Larang 'Kelas Beasiswa' di semester ini"
                   >
                     Semua 'Kelas Beasiswa'
                   </button>
                   <button
                     type="button"
                     onClick={() => handleApplyScholarshipPreset('clear')}
-                    className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 text-[10px] font-bold rounded border border-rose-200 cursor-pointer shadow-2xs"
+                    className="px-2 py-1 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-800 dark:text-rose-300 text-[10px] font-bold rounded border border-rose-200 dark:border-rose-800 cursor-pointer shadow-2xs"
                     title="Bebaskan semua kelas (Semua boleh diambil)"
                   >
                     Izinkan Semua Kelas
@@ -2977,112 +3168,301 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* Konten Semester Aktif */}
-              <div className="bg-white rounded-xl border border-indigo-200 p-4 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                      <span>Status Opsi Kelas untuk Mahasiswa Mengulang Semester {activeScholarshipSemesterTab}:</span>
-                      <span className="text-[10px] font-normal text-slate-500">
-                        (Klik kartu kelas untuk mengubah status larangan)
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-indigo-200 dark:border-indigo-800 p-4 sm:p-5 shadow-2xs space-y-6">
+                
+                {/* BAGIAN 1: ATURAN STANDAR / BAWAAN KELAS SEMESTER INI */}
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-indigo-600" />
+                        <span>1. Status Opsi Kelas Bawaan Semester {activeScholarshipSemesterTab}:</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Klik kartu kelas di bawah untuk mengubah status standar kelas (Boleh vs Dilarang Beasiswa) pada Semester {activeScholarshipSemesterTab}.
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold text-indigo-900 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-800">
+                        Terlarang Mengulang: <strong>{(restrictedRepeatClassesDraft[activeScholarshipSemesterTab] || []).length} Kelas</strong>
                       </span>
-                    </h4>
-                  </div>
-                  <span className="text-[11px] font-semibold text-indigo-900 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
-                    Terlarang Mengulang: <strong>{(restrictedRepeatClassesDraft[activeScholarshipSemesterTab] || []).length} Kelas</strong>
-                  </span>
-                </div>
-
-                {/* Grid Kelas dan Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {adminSettings.classOptions.map((className) => {
-                    const isRestricted = (restrictedRepeatClassesDraft[activeScholarshipSemesterTab] || []).includes(className);
-
-                    return (
-                      <div
-                        key={className}
-                        onClick={() => handleToggleClassRestriction(activeScholarshipSemesterTab, className)}
-                        className={`p-3 rounded-lg border-2 transition-all cursor-pointer select-none flex flex-col justify-between ${
-                          isRestricted
-                            ? 'bg-rose-50/90 border-rose-400 shadow-xs ring-1 ring-rose-400/30'
-                            : 'bg-emerald-50/60 border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => handleApplySemesterDefaultsToAllCourses(activeScholarshipSemesterTab)}
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center gap-1"
+                        title="Terapkan aturan standar kelas ini ke seluruh mata kuliah di semester ini"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs text-slate-900">{className}</span>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Terapkan Standar ke Semua MK</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grid Kelas Standar Semester */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {adminSettings.classOptions.map((className) => {
+                      const isRestricted = (restrictedRepeatClassesDraft[activeScholarshipSemesterTab] || []).includes(className);
+
+                      return (
+                        <div
+                          key={className}
+                          onClick={() => handleToggleClassRestriction(activeScholarshipSemesterTab, className)}
+                          className={`p-3 rounded-xl border-2 transition-all cursor-pointer select-none flex flex-col justify-between ${
+                            isRestricted
+                              ? 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-400 dark:border-rose-600 shadow-xs ring-1 ring-rose-400/30'
+                              : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 hover:border-emerald-400 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-xs text-slate-900 dark:text-white">{className}</span>
+                            </div>
+                            {isRestricted ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-600 text-white flex items-center gap-1">
+                                <Ban className="w-2.5 h-2.5" />
+                                Dilarang
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-600 text-white flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5" />
+                                Boleh
+                              </span>
+                            )}
                           </div>
-                          {isRestricted ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-rose-600 text-white flex items-center gap-1">
-                              <Ban className="w-2.5 h-2.5" />
-                              Dilarang
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-600 text-white flex items-center gap-1">
-                              <Check className="w-2.5 h-2.5" />
-                              Boleh
-                            </span>
-                          )}
-                        </div>
 
-                        <div className="text-[10px] leading-tight font-medium">
-                          {isRestricted ? (
-                            <span className="text-rose-800 font-semibold flex items-center gap-1">
-                              <span>🚫 Kelas Beasiswa (Tidak Boleh Mengulang)</span>
-                            </span>
-                          ) : (
-                            <span className="text-emerald-800 font-medium">
-                              ✓ Kelas Reguler (Dapat dipilih mengulang)
-                            </span>
-                          )}
+                          <div className="text-[10px] leading-tight font-medium">
+                            {isRestricted ? (
+                              <span className="text-rose-800 dark:text-rose-300 font-semibold flex items-center gap-1">
+                                <span>🚫 Kelas Beasiswa (Tidak Boleh Mengulang)</span>
+                              </span>
+                            ) : (
+                              <span className="text-emerald-800 dark:text-emerald-300 font-medium">
+                                ✓ Kelas Reguler (Dapat dipilih mengulang)
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
 
-                {/* Form Tambah Nama Kelas Khusus Beasiswa untuk Semester Ini */}
-                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2 items-center">
-                  <div className="flex-1 w-full flex gap-2">
-                    <input
-                      type="text"
-                      value={newCustomScholarshipClass}
-                      onChange={(e) => setNewCustomScholarshipClass(e.target.value)}
-                      placeholder={`Ketik nama kelas beasiswa khusus Semester ${activeScholarshipSemesterTab} (contoh: Kelas Beasiswa Kemitraan, Kelas D Khusus)...`}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  {/* Form Tambah Nama Kelas Khusus Beasiswa untuk Semester Ini */}
+                  <div className="pt-2 flex flex-col sm:flex-row gap-2 items-center">
+                    <div className="flex-1 w-full flex gap-2">
+                      <input
+                        type="text"
+                        value={newCustomScholarshipClass}
+                        onChange={(e) => setNewCustomScholarshipClass(e.target.value)}
+                        placeholder={`Ketik nama kelas beasiswa baru khusus Semester ${activeScholarshipSemesterTab} (contoh: Kelas Beasiswa Kemitraan, Kelas D Khusus)...`}
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomScholarshipClass(activeScholarshipSemesterTab)}
+                        className="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Jadikan Kelas Beasiswa</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Keterangan / Alasan Khusus yang Ditampilkan kepada Mahasiswa */}
+                  <div className="pt-2">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Pesan Alasan / Notifikasi Mahasiswa (Semester {activeScholarshipSemesterTab}):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={restrictedRepeatClassReasonDraft[activeScholarshipSemesterTab] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setRestrictedRepeatClassReasonDraft(prev => ({
+                          ...prev,
+                          [activeScholarshipSemesterTab]: val
+                        }));
+                      }}
+                      placeholder={`Contoh: Kelas Beasiswa pada Semester ${activeScholarshipSemesterTab} dikhususkan bagi mahasiswa beasiswa penuh dan tidak dibuka untuk mengulang.`}
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomScholarshipClass(activeScholarshipSemesterTab)}
-                      className="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Jadikan Kelas Beasiswa</span>
-                    </button>
                   </div>
                 </div>
 
-                {/* Keterangan / Alasan Khusus yang Ditampilkan kepada Mahasiswa */}
-                <div className="pt-3 border-t border-slate-100">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Pesan Alasan / Notifikasi Mahasiswa (Semester {activeScholarshipSemesterTab}):
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={restrictedRepeatClassReasonDraft[activeScholarshipSemesterTab] || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setRestrictedRepeatClassReasonDraft(prev => ({
-                        ...prev,
-                        [activeScholarshipSemesterTab]: val
-                      }));
-                    }}
-                    placeholder={`Contoh: Kelas Beasiswa pada Semester ${activeScholarshipSemesterTab} dikhususkan bagi mahasiswa beasiswa penuh dan tidak dibuka untuk mengulang.`}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  />
-                  <span className="text-[10px] text-slate-500 italic block mt-0.5">
-                    * Pesan ini akan muncul pada notifikasi peringatan jika ada mahasiswa yang mencoba memilih kelas beasiswa tersebut pada form pendaftaran.
-                  </span>
+                {/* BAGIAN 2: PENGATURAN KELAS MANDIRI TIAP MATA KULIAH */}
+                <div className="pt-5 border-t-2 border-indigo-100 dark:border-indigo-900/60 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-emerald-600" />
+                          <span>2. Opsi Kelas &amp; Status Beasiswa Mandiri Tiap Mata Kuliah (Semester {activeScholarshipSemesterTab})</span>
+                        </h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                          {coursesInSelectedScholarshipSemester.length} Mata Kuliah Terdaftar
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Kelas untuk tiap mata kuliah dapat disesuaikan secara berbeda (misal: MK A hanya buka Kelas A &amp; B, sedangkan MK B buka Kelas C &amp; D, dengan status beasiswa yang berbeda).
+                      </p>
+                    </div>
+
+                    {/* Search box mata kuliah */}
+                    <div className="relative w-full sm:w-64 shrink-0">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={scholarshipCourseSearch}
+                        onChange={(e) => setScholarshipCourseSearch(e.target.value)}
+                        placeholder="Cari mata kuliah..."
+                        className="w-full h-8 pl-8 pr-3 rounded-lg border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Daftar Kartu Mata Kuliah & Kelas Mandiri */}
+                  {coursesInSelectedScholarshipSemester.length === 0 ? (
+                    <div className="p-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                      <BookOpen className="w-7 h-7 text-slate-300 mx-auto mb-1.5" />
+                      <p className="text-xs text-slate-500 font-medium">
+                        Tidak ada mata kuliah yang cocok untuk Semester {activeScholarshipSemesterTab}.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {coursesInSelectedScholarshipSemester.map((course) => {
+                        const defaultClasses = adminSettings.classOptions || DEFAULT_CLASSES;
+                        const available = (course.availableClasses && course.availableClasses.length > 0)
+                          ? course.availableClasses
+                          : defaultClasses;
+                        
+                        const defaultSemesterRestricted = restrictedRepeatClassesDraft[String(course.semester)] || [];
+                        const restrictedList = Array.isArray(course.restrictedClasses)
+                          ? course.restrictedClasses
+                          : defaultSemesterRestricted;
+
+                        const unaddedClasses = adminSettings.classOptions.filter(cls => !available.includes(cls));
+
+                        return (
+                          <div
+                            key={course.id}
+                            className="p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all space-y-3"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">
+                                  {course.name}
+                                </span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                                  {course.sks} SKS
+                                </span>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 capitalize">
+                                  {course.prodi}
+                                </span>
+                                <span className="text-[10px] text-slate-500">
+                                  ({available.length} kelas dibuka, {available.filter(c => restrictedList.includes(c)).length} beasiswa)
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetCourseToSemesterDefaults(course.id)}
+                                  className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 text-[10px] font-bold rounded border border-slate-300 dark:border-slate-700 cursor-pointer shadow-2xs flex items-center gap-1"
+                                  title="Kembalikan kelas mata kuliah ini ke standar semester"
+                                >
+                                  <RotateCcw className="w-3 h-3 text-slate-500" />
+                                  <span>Reset ke Standar</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Opsi Kelas Khusus Mata Kuliah Ini */}
+                            <div>
+                              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                                <span>Kelas yang Dibuka untuk MK ini (Klik kartu kelas untuk ubah Boleh / Beasiswa):</span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 items-center">
+                                {available.map((cls) => {
+                                  const isRestricted = restrictedList.includes(cls);
+
+                                  return (
+                                    <div
+                                      key={cls}
+                                      className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all select-none flex items-center gap-2 ${
+                                        isRestricted
+                                          ? 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800 shadow-2xs'
+                                          : 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs'
+                                      }`}
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleCourseRestriction(course, cls)}
+                                        className="cursor-pointer flex items-center gap-1.5 hover:opacity-80"
+                                        title={isRestricted ? "Klik untuk mengizinkan kelas ini diambil mengulang" : "Klik untuk melarang/menandai sebagai kelas beasiswa"}
+                                      >
+                                        {isRestricted ? (
+                                          <>
+                                            <Ban className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                            <span>{cls}</span>
+                                            <span className="text-[10px] font-extrabold uppercase px-1 py-0.2 rounded bg-rose-200 dark:bg-rose-900 text-rose-950 dark:text-rose-200">
+                                              Dilarang (Beasiswa)
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                            <span>{cls}</span>
+                                            <span className="text-[10px] font-extrabold uppercase px-1 py-0.2 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-950 dark:text-emerald-200">
+                                              Boleh Mengulang
+                                            </span>
+                                          </>
+                                        )}
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveClassFromCourse(course, cls)}
+                                        className="w-4 h-4 rounded-full bg-black/10 dark:bg-white/10 hover:bg-rose-600 hover:text-white flex items-center justify-center text-[10px] cursor-pointer ml-0.5 transition-colors"
+                                        title={`Hapus kelas ${cls} dari mata kuliah ini`}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+
+                                {/* Dropdown Tambah Kelas Opsi Lain */}
+                                {unaddedClasses.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <select
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          handleAddClassToCourse(course, e.target.value);
+                                          e.target.value = '';
+                                        }
+                                      }}
+                                      defaultValue=""
+                                      className="h-8 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer"
+                                    >
+                                      <option value="" disabled>+ Tambah Kelas Opsi...</option>
+                                      {unaddedClasses.map(cls => (
+                                        <option key={cls} value={cls}>+ {cls}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
                 </div>
+
               </div>
             </div>
 

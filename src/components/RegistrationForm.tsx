@@ -380,10 +380,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Helper available classes for course
   const getAvailableClasses = (course: CourseItem): string[] => {
     if (course.availableClasses && Array.isArray(course.availableClasses) && course.availableClasses.length > 0) {
-      const valid = course.availableClasses.filter(c => globalClassOptions.includes(c));
-      if (valid.length > 0 && valid.length < globalClassOptions.length) {
-        return valid;
-      }
+      return course.availableClasses;
     }
     return globalClassOptions;
   };
@@ -393,7 +390,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (course) {
       const period = findPeriodForCourse(course);
       const available = getAvailableClasses(course);
-      const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period));
+      const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course));
       return allowed[0] || available[0] || 'Kelas A';
     }
     return globalClassOptions[0] || 'Kelas A';
@@ -403,10 +400,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const period = findPeriodForCourse(course);
     const available = getAvailableClasses(course);
     const chosen = courseSelections[course.id]?.selectedClass;
-    if (chosen && available.includes(chosen) && !isClassRestrictedForRepeat(chosen, course.semester, adminSettings, period)) {
+    if (chosen && available.includes(chosen) && !isClassRestrictedForRepeat(chosen, course.semester, adminSettings, period, course)) {
       return chosen;
     }
-    const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period));
+    const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course));
     return allowed[0] || available[0] || 'Kelas A';
   };
 
@@ -1872,7 +1869,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                           >
                             {availableClasses.map((cls) => {
                               const coursePeriod = findPeriodForCourse(course);
-                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod);
+                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
                               return (
                                 <option 
                                   key={cls} 

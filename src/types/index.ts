@@ -30,6 +30,7 @@ export interface CourseItem {
   prodi: 'agroteknologi' | 'agribisnis' | string;
   semester: number | string; // e.g. 1, 3, 5 or 'Antara'
   availableClasses?: string[];
+  restrictedClasses?: string[]; // Daftar kelas beasiswa / dilarang mengulang khusus untuk matakuliah ini
   academicYear?: string; // e.g. '2024/2025', '2025/2026'
   periodId?: string; // ID record periode pendaftaran
 }
@@ -379,11 +380,18 @@ export function getMaxSksForBatch(angkatan?: string, settings?: AdminSettings, p
 export function getRestrictedClassesForSemester(
   semesterNum: number | string | undefined | null,
   settings?: AdminSettings,
-  period?: RegistrationPeriod
+  period?: RegistrationPeriod,
+  course?: CourseItem
 ): string[] {
+  // 1. Jika course spesifik memiliki daftar restrictedClasses mandiri
+  if (course && Array.isArray(course.restrictedClasses)) {
+    return course.restrictedClasses;
+  }
+  // 2. Jika periode spesifik memiliki aturan restrictedRepeatClasses
   if (period && Array.isArray(period.restrictedRepeatClasses) && period.restrictedRepeatClasses.length > 0) {
     return period.restrictedRepeatClasses;
   }
+  // 3. Fallback ke restrictedRepeatClasses global per semester
   if (!settings || !settings.restrictedRepeatClasses || !semesterNum) {
     return [];
   }
@@ -396,9 +404,14 @@ export function isClassRestrictedForRepeat(
   className: string,
   semesterNum: number | string | undefined | null,
   settings?: AdminSettings,
-  period?: RegistrationPeriod
+  period?: RegistrationPeriod,
+  course?: CourseItem
 ): boolean {
   if (!className) return false;
+  // 1. Jika course memiliki aturan restrictedClasses mandiri
+  if (course && Array.isArray(course.restrictedClasses)) {
+    return course.restrictedClasses.includes(className);
+  }
   const restrictedList = getRestrictedClassesForSemester(semesterNum, settings, period);
   return restrictedList.includes(className);
 }
@@ -406,7 +419,8 @@ export function isClassRestrictedForRepeat(
 export function getRestrictedClassReason(
   semesterNum: number | string | undefined | null,
   settings?: AdminSettings,
-  period?: RegistrationPeriod
+  period?: RegistrationPeriod,
+  course?: CourseItem
 ): string {
   if (period?.restrictedRepeatClassReason) {
     return period.restrictedRepeatClassReason;
