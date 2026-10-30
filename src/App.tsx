@@ -722,18 +722,18 @@ export default function App() {
         defaultRoleHint={loginRoleHint}
       />
 
-      {/* Clean Academic Footer with INSTIPER Branding */}
-      <footer className="bg-[#0a1f12] text-slate-300 text-xs py-8 border-t border-emerald-900/60 print:hidden mb-28 lg:mb-0">
+      {/* Clean Academic Footer with Eye-Friendly Slate & Emerald Tone */}
+      <footer className="bg-slate-900 dark:bg-slate-950 text-slate-300 text-xs py-8 border-t border-slate-800/80 print:hidden mb-28 lg:mb-0 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-white/10 p-1 flex items-center justify-center shrink-0 border border-white/15 shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-white/5 p-1.5 flex items-center justify-center shrink-0 border border-white/10 shadow-xs">
               <img src="/logo_instiper.png" alt="Logo INSTIPER" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="font-extrabold text-white text-xs uppercase tracking-wide">
                 Institut Pertanian Stiper (INSTIPER) Yogyakarta
               </p>
-              <p className="text-[11px] text-emerald-200/80">
+              <p className="text-[11px] text-emerald-400 font-medium">
                 Fakultas Pertanian — Sistem Pendaftaran Mengulang Matakuliah
               </p>
             </div>
@@ -752,7 +752,7 @@ export default function App() {
               {!currentUser ? (
                 <button
                   onClick={() => handleOpenLoginModal('baak')}
-                  className="text-emerald-400 hover:text-emerald-300 underline font-medium cursor-pointer inline-flex items-center gap-1 opacity-70 hover:opacity-100 transition-opacity"
+                  className="text-emerald-400 hover:text-emerald-300 underline font-medium cursor-pointer inline-flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity"
                   title="Akses Khusus Pengelola / Staf Admin Fakultas & Keuangan"
                 >
                   <Lock className="w-3 h-3" />

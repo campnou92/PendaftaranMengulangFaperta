@@ -952,27 +952,23 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-36 lg:pb-16 text-slate-800 dark:text-slate-100 font-sans">
       
       {/* ============================================================
-          1. HEADER (Section 1)
-          Fakultas Pertanian INSTIPER Yogyakarta Identity
+          1. PAGE HERO & LIVE STATUS (Section 1)
+          Judul ringkas & informatif tanpa logo dobel dengan Header
          ============================================================ */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shrink-0 shadow-xs">
-            <img src="/logo_instiper.png" alt="Logo INSTIPER" className="w-full h-full object-contain" />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-200/80 dark:border-slate-800/80">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+              Formulir Pendaftaran Mengulang
+            </h1>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>T.A. {activeAcademicYear} • {activeTerm}</span>
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-                Pendaftaran Mengulang Mata Kuliah
-              </h1>
-              <span className="hidden sm:inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#EAB308]/20 text-[#CA8A04] dark:text-[#EAB308] border border-[#EAB308]/40">
-                FAPERTA
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-              Fakultas Pertanian — Institut Pertanian STIPER Yogyakarta
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed max-w-2xl">
+            Lengkapi data mahasiswa, pilih mata kuliah yang ingin diulang, dan cetak bukti pendaftaran untuk validasi ke loket Fakultas Pertanian.
+          </p>
         </div>
 
         {/* Countdown Timer Penutupan Pendaftaran (Hari, Jam, Menit, Detik) */}
@@ -1079,7 +1075,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
           )}
         </div>
-      </header>
+      </div>
 
       {/* ============================================================
           MAIN TWO-COLUMN GRID (Desktop 8-col Left / 4-col Right Sticky)
