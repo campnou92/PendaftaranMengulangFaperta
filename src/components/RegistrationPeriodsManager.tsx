@@ -286,6 +286,19 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
     }
   };
 
+  // Handler: Tambah / simpan batas kuota SKS khusus per angkatan untuk periode ini
+  const handleAddBatchLimit = () => {
+    if (!newBatchLimitYear) return;
+    const cleanYear = newBatchLimitYear.trim();
+    const cleanVal = Number(newBatchLimitValue) || 24;
+    setBatchMaxSksInput(prev => ({
+      ...prev,
+      [cleanYear]: cleanVal
+    }));
+    setNewBatchLimitYear('');
+    setNewBatchLimitValue(20);
+  };
+
   // Add new academic year inline
   const handleAddNewAcademicYear = (e: React.FormEvent) => {
     e.preventDefault();
@@ -850,17 +863,55 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
 
                 {/* Card Body: Details */}
                 <div className="p-4 space-y-3 text-xs">
-                  {/* Jadwal Pelaksanaan */}
-                  <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400">
-                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <span className="font-bold text-slate-700 dark:text-slate-300">Jadwal: </span>
-                      {period.useSchedule && period.startDate && period.endDate ? (
-                        <span>{formatDateTimeId(period.startDate)} s/d {formatDateTimeId(period.endDate)}</span>
-                      ) : (
-                        <span className="italic">Manual Tanpa Jadwal Batas</span>
-                      )}
+                  {/* Jadwal Pendaftaran Semester Ini */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-[#166534] dark:text-emerald-400" />
+                        <span>Jadwal Pendaftaran:</span>
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${statusInfo.badgeClass}`}>
+                        {statusInfo.label}
+                      </span>
                     </div>
+                    {period.useSchedule && period.startDate && period.endDate ? (
+                      <div className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold font-mono leading-tight">
+                        {formatDateTimeId(period.startDate)} s/d {formatDateTimeId(period.endDate)}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-500 italic">
+                        Manual (Terbuka tanpa batasan waktu otomatis)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Kuota & Batas Maksimal SKS Semester Ini */}
+                  <div className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase flex items-center gap-1">
+                        <Sliders className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>Kuota &amp; Batas SKS:</span>
+                      </span>
+                      <span className="font-black text-xs text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded border border-blue-300 dark:border-blue-700">
+                        Standar Maks {period.defaultMaxSks ?? adminSettings.defaultMaxSks ?? 24} SKS
+                      </span>
+                    </div>
+                    {period.batchMaxSks && Object.keys(period.batchMaxSks).length > 0 ? (
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-1">Batas Khusus Angkatan:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.entries(period.batchMaxSks).map(([yr, lim]) => (
+                            <span key={yr} className="px-2 py-0.5 bg-white dark:bg-slate-800 text-blue-800 dark:text-blue-300 rounded-md text-[10px] font-bold border border-blue-200 dark:border-blue-800 shadow-2xs">
+                              Angkatan {yr}: {lim} SKS
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block italic">
+                        Semua angkatan mengikuti batas standar ({period.defaultMaxSks ?? adminSettings.defaultMaxSks ?? 24} SKS).
+                      </span>
+                    )}
                   </div>
 
                   {/* Matakuliah yang Ditawarkan */}
@@ -885,27 +936,16 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     </button>
                   </div>
 
-                  {/* Konfigurasi Khusus Periode Ini (Biaya, SKS, Beasiswa) */}
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    {/* Biaya */}
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-400 font-bold block text-[10px] uppercase">Biaya / SKS:</span>
-                      {period.feePerSksEnabled !== false ? (
-                        <span className="font-extrabold text-amber-700 dark:text-amber-400">
-                          Rp {(period.costPerSks ?? adminSettings.costPerSks ?? 50000).toLocaleString('id-ID')}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 font-medium">Gratis / Non-Biaya</span>
-                      )}
-                    </div>
-
-                    {/* Batas SKS */}
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-400 font-bold block text-[10px] uppercase">Batas SKS:</span>
-                      <span className="font-extrabold text-blue-700 dark:text-blue-400">
-                        Maks {period.defaultMaxSks ?? adminSettings.defaultMaxSks ?? 24} SKS
+                  {/* Biaya SKS Periode Ini */}
+                  <div className="p-2 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-bold text-[10px] uppercase">Ketentuan Biaya:</span>
+                    {period.feePerSksEnabled !== false ? (
+                      <span className="font-extrabold text-amber-700 dark:text-amber-400">
+                        Rp {(period.costPerSks ?? adminSettings.costPerSks ?? 50000).toLocaleString('id-ID')} / SKS ({period.paidBatches ? period.paidBatches.join(', ') : 'Angkatan Berbayar'})
                       </span>
-                    </div>
+                    ) : (
+                      <span className="text-slate-500 font-medium">Bebas Biaya (Gratis)</span>
+                    )}
                   </div>
 
                   {/* Kelas Beasiswa Dilarang */}
@@ -999,8 +1039,8 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">1</span>
-                <span>Semester &amp; Tahun Ajaran</span>
+                <CalendarClock className="w-4 h-4 text-[#166534] dark:text-emerald-400" />
+                <span>1. Identitas &amp; Jadwal Pendaftaran</span>
               </button>
 
               <button
@@ -1012,8 +1052,8 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">2</span>
-                <span>Mata Kuliah &amp; Import Excel ({periodCourses.length})</span>
+                <BookOpen className="w-4 h-4 text-[#166534] dark:text-emerald-400" />
+                <span>2. Mata Kuliah &amp; Kelas ({periodCourses.length})</span>
               </button>
 
               <button
@@ -1025,8 +1065,8 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black">3</span>
-                <span>Biaya SKS, Batas SKS &amp; Beasiswa</span>
+                <Sliders className="w-4 h-4 text-[#166534] dark:text-emerald-400" />
+                <span>3. Kuota SKS, Biaya &amp; Larangan Kelas</span>
               </button>
             </div>
 
@@ -1559,43 +1599,102 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     )}
                   </div>
 
-                  {/* SEKSI 2: BATAS MAKSIMAL SKS KHUSUS PERIODE INI */}
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-700">
-                      <Sliders className="w-4 h-4 text-blue-600" />
+                  {/* SEKSI 2: PENGATURAN KUOTA & BATAS MAKSIMAL SKS (SEMESTER INI) */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800/60 space-y-4">
+                    <div className="flex items-center gap-2.5 pb-3 border-b border-blue-200 dark:border-blue-800/60">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
+                        <Sliders className="w-4 h-4" />
+                      </div>
                       <div>
-                        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
-                          2. Batas Maksimal Pengambilan SKS (Periode Ini)
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                          2. Pengaturan Kuota &amp; Batas Maksimal SKS (Semester {semesterInput})
                         </h4>
-                        <p className="text-[11px] text-slate-500">
-                          Default 24 SKS atau atur batas khusus per angkatan untuk pendaftaran semester ini.
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Tentukan batas maksimal SKS pengambilan untuk semester ini secara mandiri (default 24 SKS atau batas khusus per angkatan).
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          Batas Maksimal SKS Standar
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Batas Standar Semester Ini */}
+                      <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          Batas SKS Standar Seluruh Angkatan
                         </label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={30}
-                          value={defaultMaxSksInput}
-                          onChange={(e) => setDefaultMaxSksInput(Number(e.target.value) || 24)}
-                          className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-blue-900 dark:text-blue-400"
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={defaultMaxSksInput}
+                            onChange={(e) => setDefaultMaxSksInput(Number(e.target.value) || 24)}
+                            className="w-24 h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-black text-blue-900 dark:text-blue-400 text-center"
+                          />
+                          <span className="text-xs font-bold text-slate-600 dark:text-slate-400">SKS / Mahasiswa</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1.5">
+                          Berlaku otomatis untuk semua angkatan yang tidak memiliki aturan batasan khusus pada semester ini.
+                        </p>
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          Batas Khusus Angkatan Tertentu
+                      {/* Form Tambah Batas Khusus Angkatan */}
+                      <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          Tambah / Ubah Batas Kuota Angkatan Khusus
                         </label>
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                          <select
+                            value={newBatchLimitYear}
+                            onChange={(e) => setNewBatchLimitYear(e.target.value)}
+                            className="h-10 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                          >
+                            <option value="">Pilih Angkatan...</option>
+                            {ANGKATAN_OPTIONS.map(yr => (
+                              <option key={yr} value={yr}>Angkatan {yr}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={newBatchLimitValue}
+                            onChange={(e) => setNewBatchLimitValue(Number(e.target.value) || 20)}
+                            className="w-20 h-10 px-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-center text-slate-900 dark:text-white"
+                            title="Batas SKS"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddBatchLimit}
+                            disabled={!newBatchLimitYear}
+                            className={`h-10 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                              newBatchLimitYear
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            }`}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Simpan</span>
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1.5">
+                          Contoh: Mahasiswa Angkatan 2020 dibatasi 20 SKS, Angkatan 2021 dibatasi 22 SKS.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Active Batch Limits List */}
+                    <div className="pt-2">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                        Daftar Batasan Kuota SKS Khusus per Angkatan yang Diterapkan:
+                      </span>
+                      {Object.keys(batchMaxSksInput).length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(batchMaxSksInput).map(([yr, limit]) => (
-                            <span key={yr} className="px-2.5 py-1 bg-blue-50 text-blue-800 rounded-lg text-xs font-bold border border-blue-200 flex items-center gap-1">
-                              Angkatan {yr}: {limit} SKS
+                            <span
+                              key={yr}
+                              className="px-3 py-1.5 bg-blue-100 dark:bg-blue-950 text-blue-900 dark:text-blue-300 rounded-xl text-xs font-bold border border-blue-300 dark:border-blue-800 flex items-center gap-2 shadow-2xs"
+                            >
+                              <span>Angkatan {yr}: <strong>{limit} SKS</strong></span>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1603,14 +1702,19 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                                   delete copy[yr];
                                   setBatchMaxSksInput(copy);
                                 }}
-                                className="text-rose-500 hover:text-rose-700 ml-1 cursor-pointer"
+                                className="w-4 h-4 rounded-full bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-rose-500 hover:text-white flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                                title={`Hapus aturan khusus Angkatan ${yr}`}
                               >
                                 ×
                               </button>
                             </span>
                           ))}
                         </div>
-                      </div>
+                      ) : (
+                        <div className="p-3 bg-white/70 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-[11px] text-slate-500 text-center">
+                          Belum ada batas khusus per angkatan. Semua angkatan mahasiswa mengikuti batas standar ({defaultMaxSksInput} SKS).
+                        </div>
+                      )}
                     </div>
                   </div>
 

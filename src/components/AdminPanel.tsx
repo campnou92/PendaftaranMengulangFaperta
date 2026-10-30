@@ -1537,7 +1537,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   )}
                 </button>
 
-                {/* Menu: Jadwal & Kuota SKS */}
+                {/* Menu: Pengaturan Umum & Biaya Fakultas */}
                 <button
                   type="button"
                   onClick={() => setActiveTab('superadmin')}
@@ -1548,8 +1548,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <CalendarClock className={`w-4 h-4 shrink-0 ${activeTab === 'superadmin' ? 'text-white' : 'text-slate-400'}`} />
-                    <span className="truncate">Jadwal &amp; Batas SKS</span>
+                    <Sliders className={`w-4 h-4 shrink-0 ${activeTab === 'superadmin' ? 'text-white' : 'text-slate-400'}`} />
+                    <span className="truncate">Pengaturan Umum &amp; Biaya</span>
                   </div>
                   {activeTab === 'superadmin' ? (
                     <ChevronRight className="w-4 h-4 text-white shrink-0 ml-1" />
@@ -1773,7 +1773,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {activeTab === 'registrations' && 'Rekap & Data Pendaftar'}
                   {activeTab === 'periods' && 'Periode Pendaftaran & Penawaran MK'}
                   {activeTab === 'courses' && 'Mata Kuliah & SKS'}
-                  {activeTab === 'superadmin' && 'Jadwal & Kuota SKS'}
+                  {activeTab === 'superadmin' && 'Pengaturan Umum & Biaya Fakultas'}
                   {activeTab === 'users' && 'Kelola Kredensial Pengelola'}
                 </h1>
                 <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -2614,272 +2614,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* ============================================================== */}
-            {/* FITUR BUKA / TUTUP PENDAFTARAN BERDASARKAN SEMESTER & JADWAL PERIODE */}
+            {/* INTEGRASI JADWAL PENDAFTARAN (DIKELOLA DI MENU PERIODE PENDAFTARAN) */}
             {/* ============================================================== */}
-            <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-slate-50 border-2 border-emerald-400 rounded-xl p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-emerald-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <CalendarClock className="w-4 h-4" />
+            <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-emerald-400 dark:border-emerald-700 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                    <CalendarClock className="w-5 h-5 text-yellow-300" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-emerald-950 flex items-center gap-2">
-                      Pengaturan Buka / Tutup Pendaftaran Berdasarkan Semester & Rentang Jadwal
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">
-                        Superadmin
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                        Pengaturan Jadwal Pendaftaran Semester
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        Terkoneksi ke Periode Pendaftaran
                       </span>
-                    </h3>
-                    <p className="text-[11px] text-emerald-800">
-                      Buka atau tutup akses pendaftaran per semester (Semester 3 atau Semester 5), serta tentukan rentang tanggal dan jam kapan pendaftaran dibuka secara otomatis.
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                      Jadwal pembukaan dan penutupan pendaftaran kini dikonfigurasi langsung per-semester di menu <strong>Periode Pendaftaran</strong>. Setiap semester dapat memiliki rentang tanggal buka, batas akhir penutupan otomatis, dan pesan notifikasi yang berbeda-beda tanpa duplikasi pengaturan.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {scheduleSavedFeedback && (
-                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 border border-emerald-300">
-                      <Check className="w-3 h-3" />
-                      Jadwal Tersimpan!
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAllSemesters(true)}
-                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
-                    title="Buka pendaftaran untuk semua semester sekarang"
-                  >
-                    Buka Semua
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleAllSemesters(false)}
-                    className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
-                    title="Tutup pendaftaran untuk semua semester sekarang"
-                  >
-                    Tutup Semua
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSaveScheduleSettings()}
-                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Simpan Jadwal
-                  </button>
-                </div>
-              </div>
-
-              {/* SEMESTER CARDS (SEMESTER 3 & SEMESTER 5) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-                {(['3', '5'] as const).map((semKey) => {
-                  const schedule = semesterSchedulesDraft[semKey] || {
-                    semester: Number(semKey),
-                    isOpen: true,
-                    useSchedule: true,
-                    startDate: '2026-10-01T08:00',
-                    endDate: '2026-11-30T23:59',
-                    closedMessage: `Pendaftaran Mengulang Semester ${semKey} saat ini ditutup oleh pihak Fakultas Pertanian.`
-                  };
-                  const liveStatus = getSemesterStatus(semKey, { ...adminSettings, semesterSchedules: semesterSchedulesDraft });
-
-                  return (
-                    <div
-                      key={semKey}
-                      className={`rounded-xl border-2 p-4 transition-all ${
-                        liveStatus.isOpen
-                          ? 'bg-white border-emerald-300 shadow-xs'
-                          : 'bg-rose-50/40 border-rose-300 shadow-xs'
-                      }`}
-                    >
-                      {/* Top Header of Card */}
-                      <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{semKey === '3' ? '🌿' : '🌾'}</span>
-                          <div>
-                            <h4 className="font-black text-sm text-slate-900">
-                              Semester {semKey}
-                            </h4>
-                            <span className="text-[10px] text-slate-500 font-medium">
-                              {courses.filter(c => c.semester === Number(semKey)).length} Mata Kuliah Terdaftar
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Status Badge & Toggle Button */}
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${liveStatus.badgeClass}`}>
-                            {liveStatus.label}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleUpdateSchedule(semKey, { isOpen: !schedule.isOpen });
-                              handleSaveScheduleSettings({
-                                ...semesterSchedulesDraft,
-                                [semKey]: { ...schedule, isOpen: !schedule.isOpen }
-                              });
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                              schedule.isOpen
-                                ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                            }`}
-                            title={schedule.isOpen ? 'Klik untuk menutup pendaftaran semester ini' : 'Klik untuk membuka pendaftaran semester ini'}
-                          >
-                            {schedule.isOpen ? (
-                              <>
-                                <Lock className="w-3 h-3" />
-                                Tutup
-                              </>
-                            ) : (
-                              <>
-                                <Unlock className="w-3 h-3" />
-                                Buka
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Schedule Settings Details */}
-                      <div className="space-y-3 text-xs">
-                        {/* Auto-schedule checkbox */}
-                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                          <div>
-                            <label className="font-bold text-slate-900 block cursor-pointer flex items-center gap-1.5">
-                              <input
-                                type="checkbox"
-                                checked={schedule.useSchedule}
-                                onChange={(e) => handleUpdateSchedule(semKey, { useSchedule: e.target.checked })}
-                                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
-                              />
-                              Gunakan Jadwal Rentang Waktu Otomatis
-                            </label>
-                            <span className="text-[10px] text-slate-500 ml-5.5 block">
-                              Sistem otomatis membuka/menutup sesuai tanggal & jam yang disetel
-                            </span>
-                          </div>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                            schedule.useSchedule ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
-                          }`}>
-                            {schedule.useSchedule ? 'Jadwal Aktif' : 'Manual'}
-                          </span>
-                        </div>
-
-                        {/* Date Inputs if useSchedule is active */}
-                        {schedule.useSchedule && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 bg-white rounded-lg border border-slate-200">
-                            <div>
-                              <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-emerald-600" />
-                                Tanggal & Jam Mulai Dibuka:
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={schedule.startDate || ''}
-                                onChange={(e) => handleUpdateSchedule(semKey, { startDate: e.target.value })}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                              <span className="text-[10px] text-slate-500 mt-0.5 block truncate">
-                                Mulai: {schedule.startDate ? formatDateTimeId(schedule.startDate) : 'Belum diatur'}
-                              </span>
-                            </div>
-
-                            <div>
-                              <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-rose-600" />
-                                Tanggal & Jam Batas Berakhir:
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={schedule.endDate || ''}
-                                onChange={(e) => handleUpdateSchedule(semKey, { endDate: e.target.value })}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
-                              <span className="text-[10px] text-slate-500 mt-0.5 block truncate">
-                                Berakhir: {schedule.endDate ? formatDateTimeId(schedule.endDate) : 'Belum diatur'}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Quick Presets */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                          <span className="text-[10px] font-bold text-slate-500">Preset Cepat:</span>
-                          <button
-                            type="button"
-                            onClick={() => handleApplySchedulePreset(semKey, '1week')}
-                            className="px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-semibold rounded border border-slate-300 cursor-pointer"
-                          >
-                            +7 Hari
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplySchedulePreset(semKey, '2weeks')}
-                            className="px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-semibold rounded border border-slate-300 cursor-pointer"
-                          >
-                            +14 Hari
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplySchedulePreset(semKey, '1month')}
-                            className="px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 text-[10px] font-semibold rounded border border-slate-300 cursor-pointer"
-                          >
-                            +30 Hari
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplySchedulePreset(semKey, 'permanent')}
-                            className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[10px] font-semibold rounded border border-emerald-300 cursor-pointer"
-                          >
-                            Buka Tanpa Batas
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleApplySchedulePreset(semKey, 'close')}
-                            className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-800 text-[10px] font-semibold rounded border border-rose-300 cursor-pointer"
-                          >
-                            Tutup Sekarang
-                          </button>
-                        </div>
-
-                        {/* Custom closed message */}
-                        <div className="pt-2 border-t border-slate-200">
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                            Pesan Notifikasi Khusus Saat Ditutup:
-                          </label>
-                          <input
-                            type="text"
-                            value={schedule.closedMessage || ''}
-                            onChange={(e) => handleUpdateSchedule(semKey, { closedMessage: e.target.value })}
-                            placeholder={`Pendaftaran Mengulang Semester ${semKey} telah ditutup oleh pihak Fakultas Pertanian.`}
-                            className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* LIVE SUMMARY BANNER */}
-              <div className="bg-emerald-100/60 border border-emerald-200 rounded-lg p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <div className="text-[11px] text-emerald-950 font-medium">
-                    <strong>Sinkronisasi Real-Time:</strong> Status Semester 3 (
-                    <span className="font-bold underline">{getSemesterStatus('3', { ...adminSettings, semesterSchedules: semesterSchedulesDraft }).label}</span>
-                    ) & Semester 5 (
-                    <span className="font-bold underline">{getSemesterStatus('5', { ...adminSettings, semesterSchedules: semesterSchedulesDraft }).label}</span>
-                    ). Mahasiswa yang membuka formulir akan langsung mendapati portal menyesuaikan dengan jadwal ini.
-                  </div>
-                </div>
                 <button
                   type="button"
-                  onClick={() => handleSaveScheduleSettings()}
-                  className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded text-xs font-bold shadow-xs shrink-0 cursor-pointer"
+                  onClick={() => setActiveTab('periods')}
+                  className="px-4 py-2.5 bg-[#008744] hover:bg-[#007038] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
                 >
-                  Simpan Semua Jadwal
+                  <Calendar className="w-4 h-4" />
+                  <span>Atur Jadwal di Periode Pendaftaran</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -3555,357 +3320,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* ============================================================== */}
-            {/* FITUR BATAS MAKSIMAL PENGAMBILAN SKS (DEFAULT 24 SKS & ATURAN ANGKATAN) */}
+            {/* INTEGRASI KUOTA SKS (DIKELOLA DI MENU PERIODE PENDAFTARAN) */}
             {/* ============================================================== */}
-            <div className="bg-gradient-to-br from-indigo-50/70 via-blue-50/50 to-slate-50 border-2 border-indigo-300 rounded-xl p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-indigo-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <Gauge className="w-4 h-4" />
+            <div className="bg-gradient-to-br from-indigo-50/80 via-blue-50/40 to-white dark:from-indigo-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                    <Gauge className="w-5 h-5 text-indigo-100" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-indigo-950 flex items-center gap-2">
-                      Pengaturan Batas Maksimal SKS Pengambilan (Default 24 SKS & Aturan Khusus Angkatan)
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-900 border border-indigo-300">
-                        Superadmin
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                        Pengaturan Kuota &amp; Batas Maksimal SKS
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
+                        Terkoneksi ke Periode Pendaftaran
                       </span>
-                    </h3>
-                    <p className="text-[11px] text-indigo-800">
-                      Batas bawaan pengambilan matakuliah adalah <strong>24 SKS</strong>. Anda dapat mengatur jumlah SKS maksimal untuk angkatan tertentu secara fleksibel.
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                      Batas maksimal SKS dan kuota khusus per angkatan kini dikonfigurasi secara mandiri di menu <strong>Periode Pendaftaran</strong> per masing-masing semester (misal: Semester 1, 3, 5 dapat memiliki batasan SKS yang berbeda sesuai beban kurikulum).
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {maxSksSavedFeedback && (
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 border border-emerald-300">
-                      <Check className="w-3 h-3" />
-                      Batas SKS Tersimpan!
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleSaveMaxSksSettings()}
-                    className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold shadow flex items-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Simpan Pengaturan SKS
-                  </button>
-                </div>
-              </div>
-
-              {/* SECTION 1: DEFAULT MAKSIMAL SKS UNTUK SELURUH ANGKATAN */}
-              <div className="bg-white p-4 rounded-lg border border-indigo-200 mb-5 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Sliders className="w-3.5 h-3.5 text-indigo-600" />
-                      1. Batas Maksimal SKS Default (Bawaan Seluruh Angkatan)
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Berlaku otomatis untuk semua angkatan mahasiswa yang tidak memiliki batas khusus tersendiri.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-slate-500 font-medium">Pilihan Cepat:</span>
-                    {[20, 22, 24].map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => {
-                          setDefaultMaxSksInput(val);
-                          handleSaveMaxSksSettings(undefined, val);
-                        }}
-                        className={`text-[11px] px-2.5 py-1 rounded font-bold border cursor-pointer transition-all ${
-                          defaultMaxSksInput === val
-                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
-                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-300'
-                        }`}
-                      >
-                        {val} SKS {val === 24 ? '(Standar)' : ''}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold text-slate-700 whitespace-nowrap">
-                      Jumlah Batas Default:
-                    </label>
-                    <div className="relative w-36">
-                      <input
-                        type="number"
-                        min={1}
-                        max={36}
-                        value={defaultMaxSksInput}
-                        onChange={(e) => setDefaultMaxSksInput(Number(e.target.value) || 24)}
-                        className="w-full px-3 py-1.5 pr-12 rounded border border-indigo-300 font-bold font-mono text-indigo-950 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-indigo-50/30"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 pointer-events-none">
-                        SKS
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] text-slate-600 bg-slate-50 px-3 py-1.5 rounded border border-slate-200 flex-1">
-                    ℹ️ Standar bawaan sistem adalah <strong>24 SKS</strong>. Jika formulir mahasiswa melebihi angka ini, sistem otomatis menampilkan peringatan merah dan tombol kirim pendaftaran dinonaktifkan.
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 2: PENGATURAN ATURAN KHUSUS SKS PER ANGKATAN */}
-              <div className="bg-white p-4 rounded-lg border border-indigo-200 mb-5 shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-200">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Gauge className="w-3.5 h-3.5 text-indigo-600" />
-                      2. Atur Batas Maksimal SKS untuk Angkatan Tertentu
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Tentukan kuota SKS khusus untuk angkatan tertentu (misal: angkatan lama 2020 dibatasi 20 SKS, angkatan 2021 dibatasi 22 SKS).
-                    </p>
-                  </div>
-
-                  {/* Preset Buttons */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Preset:</span>
-                    <button
-                      type="button"
-                      onClick={() => handleApplySksPreset('all-default')}
-                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] font-bold rounded border border-slate-300 cursor-pointer"
-                      title="Semua angkatan memakai batas default 24 SKS"
-                    >
-                      Semua Standar (24 SKS)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleApplySksPreset('seniors-20')}
-                      className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[10px] font-bold rounded border border-amber-300 cursor-pointer"
-                      title="Angkatan 2020 & 2021 dibatasi 20 SKS"
-                    >
-                      Senior &le;2021 (20 SKS)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleApplySksPreset('seniors-graduated')}
-                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 text-[10px] font-bold rounded border border-blue-300 cursor-pointer"
-                      title="2020: 18 SKS, 2021: 20 SKS, 2022: 22 SKS"
-                    >
-                      Gradasi Senior (18, 20, 22 SKS)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Form Tambah / Modifikasi Batas Angkatan */}
-                <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-200 mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-indigo-950 whitespace-nowrap">Pilih Angkatan:</span>
-                    <select
-                      value={selectedBatchForLimit}
-                      onChange={(e) => {
-                        const b = e.target.value;
-                        setSelectedBatchForLimit(b);
-                        if (batchMaxSksConfig[b] !== undefined) {
-                          setCustomBatchLimitSks(batchMaxSksConfig[b]);
-                        }
-                      }}
-                      className="px-2.5 py-1.5 bg-white border border-indigo-300 rounded text-xs font-bold font-mono text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {Array.from(new Set([...ANGKATAN_OPTIONS, ...Object.keys(batchMaxSksConfig)])).sort().map(batch => (
-                        <option key={batch} value={batch}>
-                          Angkatan {batch} {batchMaxSksConfig[batch] ? `(Saat ini: ${batchMaxSksConfig[batch]} SKS)` : `(Default: ${defaultMaxSksInput} SKS)`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-indigo-950 whitespace-nowrap">Batas Maksimal:</span>
-                    <div className="relative w-28">
-                      <input
-                        type="number"
-                        min={1}
-                        max={36}
-                        value={customBatchLimitSks}
-                        onChange={(e) => setCustomBatchLimitSks(Number(e.target.value) || 20)}
-                        className="w-full px-2.5 py-1.5 pr-10 bg-white border border-indigo-300 rounded text-xs font-bold font-mono text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 pointer-events-none">
-                        SKS
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {[18, 20, 22].map((sksVal) => (
-                        <button
-                          key={sksVal}
-                          type="button"
-                          onClick={() => setCustomBatchLimitSks(sksVal)}
-                          className={`text-[10px] px-1.5 py-1 rounded font-bold border cursor-pointer ${
-                            customBatchLimitSks === sksVal
-                              ? 'bg-indigo-600 text-white border-indigo-700'
-                              : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
-                          }`}
-                        >
-                          {sksVal}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSetBatchLimit(selectedBatchForLimit, customBatchLimitSks)}
-                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold shadow flex items-center justify-center gap-1.5 cursor-pointer transition-colors sm:ml-auto"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    Terapkan untuk Angkatan {selectedBatchForLimit}
-                  </button>
-                </div>
-
-                {/* Grid Kartu Status Batas SKS per Angkatan */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-700">
-                      Daftar Status Batas SKS Seluruh Angkatan:
-                    </span>
-                    <span className="text-[11px] text-slate-500">
-                      {Object.keys(batchMaxSksConfig).length} angkatan memiliki aturan batas khusus
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-                    {Array.from(new Set([...ANGKATAN_OPTIONS, ...Object.keys(batchMaxSksConfig)])).sort().map(batch => {
-                      const hasCustom = batchMaxSksConfig[batch] !== undefined && Number(batchMaxSksConfig[batch]) > 0;
-                      const activeLimit = hasCustom ? batchMaxSksConfig[batch] : defaultMaxSksInput;
-
-                      return (
-                        <div
-                          key={batch}
-                          className={`p-2.5 rounded-lg border-2 transition-all flex flex-col justify-between ${
-                            hasCustom
-                              ? 'bg-indigo-50/80 border-indigo-400 shadow-sm'
-                              : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1 mb-1.5">
-                            <span className="font-mono font-black text-sm text-slate-900">
-                              {batch}
-                            </span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              hasCustom
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-200 text-slate-700'
-                            }`}>
-                              {hasCustom ? 'Khusus' : 'Default'}
-                            </span>
-                          </div>
-
-                          <div className="text-center py-1">
-                            <span className={`font-mono font-black text-base ${
-                              hasCustom ? 'text-indigo-900' : 'text-slate-800'
-                            }`}>
-                              {activeLimit} <span className="text-xs font-medium text-slate-500">SKS</span>
-                            </span>
-                          </div>
-
-                          {/* Quick Stepper & Actions */}
-                          <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleSetBatchLimit(batch, Math.max(1, activeLimit - 1))}
-                                className="w-5 h-5 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold flex items-center justify-center cursor-pointer"
-                                title="Kurangi 1 SKS"
-                              >
-                                -
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetBatchLimit(batch, Math.min(36, activeLimit + 1))}
-                                className="w-5 h-5 rounded bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold flex items-center justify-center cursor-pointer"
-                                title="Tambah 1 SKS"
-                              >
-                                +
-                              </button>
-                            </div>
-
-                            {hasCustom ? (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveBatchLimit(batch)}
-                                className="text-[10px] text-rose-600 hover:text-rose-800 font-semibold underline cursor-pointer"
-                                title="Kembalikan angkatan ini ke batas default"
-                              >
-                                Reset
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBatchForLimit(batch);
-                                  setCustomBatchLimitSks(20);
-                                  handleSetBatchLimit(batch, 20);
-                                }}
-                                className="text-[10px] text-indigo-700 hover:text-indigo-900 font-semibold underline cursor-pointer"
-                                title="Atur batas khusus untuk angkatan ini"
-                              >
-                                Set Khusus
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Tambah Angkatan Kustom untuk Batas SKS */}
-                  <div className="flex items-center gap-2 pt-3 mt-3 border-t border-slate-200 text-xs">
-                    <span className="text-[11px] text-slate-600 font-medium">Tambah Angkatan Lain:</span>
-                    <input
-                      type="text"
-                      value={newCustomBatchForLimit}
-                      onChange={(e) => setNewCustomBatchForLimit(e.target.value)}
-                      placeholder="Contoh: 2019"
-                      className="w-28 px-2 py-1 border border-slate-300 rounded text-xs text-slate-900"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const trimmed = newCustomBatchForLimit.trim();
-                        if (!trimmed) return;
-                        handleSetBatchLimit(trimmed, 20);
-                        setSelectedBatchForLimit(trimmed);
-                        setNewCustomBatchForLimit('');
-                      }}
-                      className="px-2.5 py-1 bg-indigo-900 hover:bg-indigo-950 text-white rounded text-xs font-semibold cursor-pointer"
-                    >
-                      Tambah & Atur Batas
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* LIVE PREVIEW / PENJELASAN SINKRONISASI KE FORMULIR MAHASISWA */}
-              <div className="bg-indigo-100/60 border border-indigo-200 rounded-lg p-3 text-xs">
-                <span className="font-bold text-indigo-950 uppercase text-[10px] block mb-1">
-                  👁️ Pratinjau & Penerapan Sistem Batas SKS:
-                </span>
-                <p className="text-[11px] text-indigo-900 font-medium leading-relaxed">
-                  • <strong>Batas Default:</strong> Mahasiswa seluruh angkatan memiliki kuota maksimal <strong>{defaultMaxSksInput} SKS</strong>.
-                  <br />
-                  • <strong>Aturan Khusus:</strong> {
-                    Object.keys(batchMaxSksConfig).length > 0 ? (
-                      Object.entries(batchMaxSksConfig).map(([b, sks]) => `Angkatan ${b}: maks ${sks} SKS`).join(' | ')
-                    ) : (
-                      'Belum ada angkatan yang diatur khusus (semua angkatan menggunakan batas default 24 SKS).'
-                    )
-                  }
-                  <br />
-                  • <strong>Validasi Otomatis:</strong> Di formulir pendaftaran, mahasiswa akan melihat info kuota SKS sesuai angkatannya secara otomatis. Jika pilihan mata kuliah melebihi kuota tersebut, tombol pendaftaran dikunci dan peringatan akan muncul.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('periods')}
+                  className="px-4 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>Atur Kuota SKS di Periode Pendaftaran</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
