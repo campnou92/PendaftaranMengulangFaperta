@@ -6,17 +6,11 @@ import {
   SelectedCourseItem,
   RegistrationStatus,
   AdminSettings, 
-  RegistrationPeriod,
   AuthUser,
   ManagedUser,
   UserRole,
   getMaxSksForBatch, 
-  SemesterSchedule, 
-  getSemesterStatus, 
-  formatDateTimeId,
-  getRestrictedClassesForSemester,
-  isClassRestrictedForRepeat,
-  getRestrictedClassReason
+  isClassRestrictedForRepeat
 } from '../types';
 import { 
   PlusCircle, 
@@ -43,7 +37,6 @@ import {
   Calendar,
   Clock,
   Lock,
-  Unlock,
   CalendarClock,
   AlertTriangle,
   Info,
@@ -51,12 +44,9 @@ import {
   Ban,
   Upload,
   FileUp,
-  FileDown,
   KeyRound,
   UserPlus,
   ShieldCheck,
-  UserCheck,
-  UserX,
   Eye,
   EyeOff,
   ChevronRight,
@@ -66,14 +56,12 @@ import {
 } from 'lucide-react';
 import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
-import { InstiperLogo } from './InstiperLogo';
 import { ExamAttendanceModal } from './ExamAttendanceModal';
 import { RichNoteEditor } from './RichNoteEditor';
 import { RegistrationPeriodsManager } from './RegistrationPeriodsManager';
 import { renderFormattedNote } from '../utils/textFormatting';
 import { 
   getStoredUsers, 
-  saveStoredUsers, 
   addManagedUser, 
   updateManagedUser, 
   deleteManagedUser,
@@ -266,7 +254,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [examAttendanceClass, setExamAttendanceClass] = useState<string | undefined>(undefined);
 
   // Editing course state
-  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editSks, setEditSks] = useState(2);
   const [editProdi, setEditProdi] = useState<'agroteknologi' | 'agribisnis'>('agroteknologi');
@@ -331,25 +318,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCustomBatch, setNewCustomBatch] = useState<string>('');
   const [feeSavedFeedback, setFeeSavedFeedback] = useState<boolean>(false);
 
-  // Superadmin: Max SKS Settings state (Default 24 SKS & Batch specific rules)
-  const [defaultMaxSksInput, setDefaultMaxSksInput] = useState<number>(
-    adminSettings.defaultMaxSks ?? 24
-  );
-  const [batchMaxSksConfig, setBatchMaxSksConfig] = useState<Record<string, number>>(
-    adminSettings.batchMaxSks ?? (DEFAULT_ADMIN_SETTINGS.batchMaxSks || {})
-  );
-  const [selectedBatchForLimit, setSelectedBatchForLimit] = useState<string>('2020');
-  const [customBatchLimitSks, setCustomBatchLimitSks] = useState<number>(20);
-  const [newCustomBatchForLimit, setNewCustomBatchForLimit] = useState<string>('');
-  const [maxSksSavedFeedback, setMaxSksSavedFeedback] = useState<boolean>(false);
-
-  // Superadmin: Semester Registration Schedules (Buka / Tutup & Rentang Waktu)
-  const [semesterSchedulesDraft, setSemesterSchedulesDraft] = useState<Record<string, SemesterSchedule>>(
-    adminSettings.semesterSchedules ?? (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {})
-  );
-  const [scheduleSavedFeedback, setScheduleSavedFeedback] = useState<boolean>(false);
-  const [activeScheduleTab, setActiveScheduleTab] = useState<'3' | '5'>('3');
-
   // Superadmin: Kelas Beasiswa & Pembatasan Kelas Mengulang Per Semester
   const [restrictedRepeatClassesDraft, setRestrictedRepeatClassesDraft] = useState<Record<string, string[]>>(
     adminSettings.restrictedRepeatClasses ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses || {})
@@ -361,7 +329,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCustomScholarshipClass, setNewCustomScholarshipClass] = useState<string>('');
   const [scholarshipSavedFeedback, setScholarshipSavedFeedback] = useState<boolean>(false);
   const [scholarshipCourseSearch, setScholarshipCourseSearch] = useState<string>('');
-  const [editingCourseClassesId, setEditingCourseClassesId] = useState<string | null>(null);
 
   // BAAK: Modal & State Import Master Matakuliah
   const [isCourseImportModalOpen, setIsCourseImportModalOpen] = useState(false);
@@ -377,9 +344,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setSelectedPaidBatches(adminSettings.paidBatches ?? ['2020', '2021', '2022']);
     setPaymentInstructionsDraft(adminSettings.paymentInstructions ?? DEFAULT_ADMIN_SETTINGS.paymentInstructions);
     setPaymentAccountInfoDraft(adminSettings.paymentAccountInfo ?? DEFAULT_ADMIN_SETTINGS.paymentAccountInfo);
-    setDefaultMaxSksInput(adminSettings.defaultMaxSks ?? 24);
-    setBatchMaxSksConfig(adminSettings.batchMaxSks ?? (DEFAULT_ADMIN_SETTINGS.batchMaxSks || {}));
-    setSemesterSchedulesDraft(adminSettings.semesterSchedules ?? (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}));
     setRestrictedRepeatClassesDraft(adminSettings.restrictedRepeatClasses ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses || {}));
     setRestrictedRepeatClassReasonDraft(adminSettings.restrictedRepeatClassReason ?? (DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason || {}));
     setActiveAcademicYearDraft(adminSettings.activeAcademicYear ?? '2025/2026');
@@ -914,165 +878,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
     setFeeSavedFeedback(true);
     setTimeout(() => setFeeSavedFeedback(false), 2500);
-  };
-
-  // Save max SKS settings (Superadmin)
-  const handleSaveMaxSksSettings = (
-    overrideConfig?: Record<string, number>,
-    overrideDefault?: number
-  ) => {
-    const finalDefault = overrideDefault !== undefined ? overrideDefault : (Number(defaultMaxSksInput) || 24);
-    const finalConfig = overrideConfig !== undefined ? overrideConfig : batchMaxSksConfig;
-
-    onUpdateSettings({
-      ...adminSettings,
-      defaultMaxSks: finalDefault,
-      batchMaxSks: finalConfig
-    });
-    setMaxSksSavedFeedback(true);
-    setTimeout(() => setMaxSksSavedFeedback(false), 2500);
-  };
-
-  // Set or update custom limit for a batch
-  const handleSetBatchLimit = (batch: string, sks: number) => {
-    const cleanBatch = batch.trim();
-    if (!cleanBatch) return;
-    const cleanSks = Math.max(1, Math.min(36, Number(sks) || 24));
-    const nextConfig = {
-      ...batchMaxSksConfig,
-      [cleanBatch]: cleanSks
-    };
-    setBatchMaxSksConfig(nextConfig);
-    handleSaveMaxSksSettings(nextConfig);
-  };
-
-  // Remove custom limit for a batch (reverts to default)
-  const handleRemoveBatchLimit = (batch: string) => {
-    const nextConfig = { ...batchMaxSksConfig };
-    delete nextConfig[batch];
-    setBatchMaxSksConfig(nextConfig);
-    handleSaveMaxSksSettings(nextConfig);
-  };
-
-  // Apply quick SKS Presets
-  const handleApplySksPreset = (type: 'all-default' | 'seniors-20' | 'seniors-graduated') => {
-    if (type === 'all-default') {
-      setDefaultMaxSksInput(24);
-      setBatchMaxSksConfig({});
-      handleSaveMaxSksSettings({}, 24);
-    } else if (type === 'seniors-20') {
-      const nextConfig = { '2020': 20, '2021': 20 };
-      setDefaultMaxSksInput(24);
-      setBatchMaxSksConfig(nextConfig);
-      handleSaveMaxSksSettings(nextConfig, 24);
-    } else if (type === 'seniors-graduated') {
-      const nextConfig = { '2020': 18, '2021': 20, '2022': 22 };
-      setDefaultMaxSksInput(24);
-      setBatchMaxSksConfig(nextConfig);
-      handleSaveMaxSksSettings(nextConfig, 24);
-    }
-  };
-
-  // Helper: Format Date to input datetime-local string YYYY-MM-DDTHH:mm
-  const toLocalDatetimeValue = (date: Date): string => {
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  };
-
-  // Save Semester Registration Schedules (Superadmin)
-  const handleSaveScheduleSettings = (overrideSchedules?: Record<string, SemesterSchedule>) => {
-    const finalSchedules = overrideSchedules !== undefined ? overrideSchedules : semesterSchedulesDraft;
-    onUpdateSettings({
-      ...adminSettings,
-      semesterSchedules: finalSchedules
-    });
-    setScheduleSavedFeedback(true);
-    setTimeout(() => setScheduleSavedFeedback(false), 2500);
-  };
-
-  // Update a field in a semester's schedule
-  const handleUpdateSchedule = (semKey: string, updates: Partial<SemesterSchedule>) => {
-    const current = semesterSchedulesDraft[semKey] || {
-      semester: Number(semKey),
-      isOpen: true,
-      useSchedule: true,
-      startDate: '2026-10-01T08:00',
-      endDate: '2026-11-30T23:59',
-      closedMessage: `Pendaftaran Mengulang Semester ${semKey} saat ini ditutup oleh pihak Fakultas Pertanian.`
-    };
-    const next = {
-      ...semesterSchedulesDraft,
-      [semKey]: {
-        ...current,
-        ...updates
-      }
-    };
-    setSemesterSchedulesDraft(next);
-  };
-
-  // Quick preset actions for a semester schedule
-  const handleApplySchedulePreset = (semKey: string, presetType: '1week' | '2weeks' | '1month' | 'permanent' | 'close') => {
-    const now = new Date();
-    let updates: Partial<SemesterSchedule> = {};
-
-    if (presetType === 'close') {
-      updates = { isOpen: false };
-    } else if (presetType === 'permanent') {
-      updates = { isOpen: true, useSchedule: false };
-    } else {
-      const start = new Date(now);
-      const end = new Date(now);
-      if (presetType === '1week') end.setDate(end.getDate() + 7);
-      if (presetType === '2weeks') end.setDate(end.getDate() + 14);
-      if (presetType === '1month') end.setDate(end.getDate() + 30);
-      end.setHours(23, 59, 0, 0);
-
-      updates = {
-        isOpen: true,
-        useSchedule: true,
-        startDate: toLocalDatetimeValue(start),
-        endDate: toLocalDatetimeValue(end)
-      };
-    }
-
-    const current = semesterSchedulesDraft[semKey] || {
-      semester: Number(semKey),
-      isOpen: true,
-      useSchedule: true,
-      startDate: '',
-      endDate: '',
-      closedMessage: `Pendaftaran Mengulang Semester ${semKey} saat ini ditutup oleh pihak Fakultas Pertanian.`
-    };
-    const next = {
-      ...semesterSchedulesDraft,
-      [semKey]: {
-        ...current,
-        ...updates
-      }
-    };
-    setSemesterSchedulesDraft(next);
-    handleSaveScheduleSettings(next);
-  };
-
-  // Mass open / close all semesters
-  const handleToggleAllSemesters = (isOpen: boolean) => {
-    const next: Record<string, SemesterSchedule> = { ...semesterSchedulesDraft };
-    ['3', '5'].forEach(semKey => {
-      const current = next[semKey] || {
-        semester: Number(semKey),
-        isOpen: true,
-        useSchedule: false,
-        startDate: '',
-        endDate: '',
-        closedMessage: `Pendaftaran Mengulang Semester ${semKey} saat ini ditutup oleh pihak Fakultas Pertanian.`
-      };
-      next[semKey] = {
-        ...current,
-        isOpen
-      };
-    });
-    setSemesterSchedulesDraft(next);
-    handleSaveScheduleSettings(next);
   };
 
   // ==========================================
@@ -2488,7 +2293,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </tr>
                         ) : (
                           filteredCoursesForTable.map((course, idx) => {
-                            const isEditing = editingCourseId === course.id;
                             const isSelected = selectedCourseIds.includes(course.id);
 
                             return (
@@ -2518,145 +2322,57 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                                 {/* Nama MK */}
                                 <td className="py-2.5 px-3">
-                                  {isEditing ? (
-                                    <input
-                                      type="text"
-                                      value={editName}
-                                      onChange={(e) => setEditName(e.target.value)}
-                                      className="w-full px-2 py-1 rounded border border-blue-400 text-xs font-semibold"
-                                    />
-                                  ) : (
-                                    <span className="font-medium text-slate-900 dark:text-slate-100">{course.name}</span>
-                                  )}
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">{course.name}</span>
                                 </td>
 
                                 {/* Semester */}
                                 <td className="py-2.5 px-3 text-center">
-                                  {isEditing ? (
-                                    <select
-                                      value={editSemester}
-                                      onChange={(e) => setEditSemester(Number(e.target.value))}
-                                      className="px-2 py-1 rounded border border-blue-400 text-xs font-bold"
-                                    >
-                                      <option value={3}>Sem 3</option>
-                                      <option value={5}>Sem 5</option>
-                                      <option value={1}>Sem 1</option>
-                                      <option value={2}>Sem 2</option>
-                                      <option value={4}>Sem 4</option>
-                                      <option value={6}>Sem 6</option>
-                                      <option value={7}>Sem 7</option>
-                                    </select>
-                                  ) : (
-                                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                                      course.semester === 3
-                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                        : course.semester === 5
-                                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                        : 'bg-slate-100 text-slate-700'
-                                    }`}>
-                                      Sem {course.semester || 3}
-                                    </span>
-                                  )}
+                                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                    course.semester === 3
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : course.semester === 5
+                                      ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}>
+                                    Sem {course.semester || 3}
+                                  </span>
                                 </td>
 
                                 {/* SKS */}
                                 <td className="py-2.5 px-3 text-center">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      max={6}
-                                      value={editSks}
-                                      onChange={(e) => setEditSks(Number(e.target.value))}
-                                      className="w-16 px-1 py-1 rounded border border-blue-400 text-xs text-center font-bold"
-                                    />
-                                  ) : (
-                                    <span className="font-bold text-blue-900 dark:text-blue-300 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 rounded border border-blue-200 dark:border-blue-800">
-                                      {course.sks} SKS
-                                    </span>
-                                  )}
+                                  <span className="font-bold text-blue-900 dark:text-blue-300 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 rounded border border-blue-200 dark:border-blue-800">
+                                    {course.sks} SKS
+                                  </span>
                                 </td>
 
                                 {/* Prodi */}
                                 <td className="py-2.5 px-3">
-                                  {isEditing ? (
-                                    <select
-                                      value={editProdi}
-                                      onChange={(e) => setEditProdi(e.target.value as any)}
-                                      className="px-2 py-1 rounded border border-blue-400 text-xs"
-                                    >
-                                      <option value="agroteknologi">Agroteknologi</option>
-                                      <option value="agribisnis">Agribisnis</option>
-                                    </select>
-                                  ) : (
-                                    <span className="capitalize text-slate-700 dark:text-slate-300 font-medium">
-                                      {course.prodi}
-                                    </span>
-                                  )}
+                                  <span className="capitalize text-slate-700 dark:text-slate-300 font-medium">
+                                    {course.prodi}
+                                  </span>
                                 </td>
 
                                 {/* Opsi Kelas Ditawarkan */}
                                 <td className="py-2.5 px-3">
-                                  {isEditing ? (
-                                    <div className="space-y-1">
-                                      <div className="flex flex-wrap gap-1">
-                                        {adminSettings.classOptions.map((cls) => {
-                                          const isChosen = editClasses.includes(cls);
-                                          return (
-                                            <button
-                                              key={cls}
-                                              type="button"
-                                              onClick={() => {
-                                                if (isChosen) {
-                                                  if (editClasses.length > 1) {
-                                                    setEditClasses(editClasses.filter(c => c !== cls));
-                                                  }
-                                                } else {
-                                                  setEditClasses([...editClasses, cls]);
-                                                }
-                                              }}
-                                              className={`px-1.5 py-0.5 text-[10px] rounded font-bold border transition-colors cursor-pointer ${
-                                                isChosen
-                                                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                                                  : 'bg-white text-slate-500 border-slate-300 hover:bg-slate-50'
-                                              }`}
-                                            >
-                                              {cls}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                      <div className="flex items-center gap-1.5 text-[10px]">
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditClasses(adminSettings.classOptions)}
-                                          className="text-blue-600 hover:underline font-semibold cursor-pointer"
+                                  <div className="flex flex-wrap gap-1">
+                                    {(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions).map((cls) => {
+                                      const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
+                                      return (
+                                        <span
+                                          key={cls}
+                                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                            isScholarship
+                                              ? 'bg-rose-50 text-rose-700 border-rose-300'
+                                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                                          }`}
+                                          title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
                                         >
-                                          Pilih Semua
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-wrap gap-1">
-                                      {(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions).map((cls) => {
-                                        const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
-                                        return (
-                                          <span
-                                            key={cls}
-                                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                                              isScholarship
-                                                ? 'bg-rose-50 text-rose-700 border-rose-300'
-                                                : 'bg-slate-100 text-slate-700 border-slate-200'
-                                            }`}
-                                            title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
-                                          >
-                                            {cls}
-                                            {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
+                                          {cls}
+                                          {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
                                 </td>
 
                                 {/* Actions */}
@@ -4724,7 +4440,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* Mobile Card View for User Accounts */}
               <div className="md:hidden divide-y divide-slate-100">
                 {managedUsers.map((u) => {
-                  const isSuper = u.username === 'superadmin';
                   return (
                     <div key={u.id} className="p-4 space-y-3 bg-white">
                       <div className="flex items-start justify-between">

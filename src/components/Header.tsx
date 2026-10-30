@@ -1,6 +1,6 @@
 import React from 'react';
-import { FileText, Search, ShieldCheck, Coins, LogIn, LogOut, UserCheck, Moon, Sun, Cloud } from 'lucide-react';
-import { AuthUser, UserRole } from '../types';
+import { FileText, Search, ShieldCheck, Coins, LogOut, UserCheck, Moon, Sun } from 'lucide-react';
+import { AuthUser } from '../types';
 
 interface HeaderProps {
   activeTab: 'form' | 'status' | 'admin' | 'finance';
@@ -8,11 +8,9 @@ interface HeaderProps {
   registrationsCount: number;
   chargedRegistrationsCount?: number;
   currentUser: AuthUser | null;
-  onOpenLogin: (roleHint?: UserRole) => void;
   onLogout: () => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  isCloudConnected?: boolean | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -21,11 +19,9 @@ export const Header: React.FC<HeaderProps> = ({
   registrationsCount,
   chargedRegistrationsCount = 0,
   currentUser,
-  onOpenLogin,
   onLogout,
   isDarkMode,
-  onToggleDarkMode,
-  isCloudConnected = true
+  onToggleDarkMode
 }) => {
   return (
     <header className="sticky top-0 z-40 print:hidden shadow-md">

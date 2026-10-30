@@ -9,14 +9,12 @@ import {
   getSemesterStatus, 
   formatDateTimeId,
   isClassRestrictedForRepeat, 
-  getRestrictedClassesForSemester,
-  getRestrictedClassReason
+  getRestrictedClassesForSemester
 } from '../types';
 import { ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
 import { 
   AlertCircle, 
   CheckCircle2, 
-  Check, 
   Search, 
   BookOpen, 
   FileText, 
@@ -24,12 +22,9 @@ import {
   Clock,
   Send,
   Ban,
-  Layers,
-  GraduationCap,
   Printer,
   CreditCard,
   Building2,
-  HelpCircle,
   ChevronDown,
   ChevronUp,
   X,
@@ -288,7 +283,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     // Jika ada semester yang masih buka, cari target penutupan terdekat
     let minTargetDate: Date | null = null;
     let minFormatted = '';
-    let minSemKey = openStatuses[0].semKey;
 
     for (const item of openStatuses) {
       const endStr = item.period?.endDate || item.status.endDate || item.schedule?.endDate || '2026-11-30T23:59:59';
@@ -296,7 +290,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       const validD = isNaN(d.getTime()) ? new Date('2026-11-30T23:59:59') : d;
       if (!minTargetDate || validD.getTime() < minTargetDate.getTime()) {
         minTargetDate = validD;
-        minSemKey = item.semKey;
         minFormatted = validD.toLocaleDateString('id-ID', {
           day: 'numeric',
           month: 'long',

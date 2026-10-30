@@ -17,10 +17,8 @@ import {
   Filter,
   DollarSign,
   TrendingUp,
-  Download,
   Info
 } from 'lucide-react';
-import { InstiperLogo } from './InstiperLogo';
 
 interface FinancePanelProps {
   currentUser: AuthUser;
@@ -51,7 +49,6 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   // Note dialog state
   const [editingNoteRegId, setEditingNoteRegId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState<string>('');
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
   const isFeeActive = adminSettings.feePerSksEnabled ?? true;
   const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
@@ -269,8 +266,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   // Export Excel Khusus Keuangan (.xlsx)
   const handleExportExcelFinance = () => {
     if (filteredData.length === 0) {
-      setFeedbackMsg('Tidak ada data pendaftar untuk diexport.');
-      setTimeout(() => setFeedbackMsg(null), 3500);
+      alert('Tidak ada data pendaftar untuk diexport.');
       return;
     }
 

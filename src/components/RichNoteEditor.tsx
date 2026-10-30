@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -7,15 +7,12 @@ import {
   List, 
   ListOrdered, 
   RemoveFormatting, 
-  ExternalLink, 
   Edit3, 
   Unlink, 
   Check, 
   X,
   FileSpreadsheet,
-  Globe,
-  Sparkles,
-  Info
+  Globe
 } from 'lucide-react';
 import { renderFormattedNote, extractLinks, FormattedLink } from '../utils/textFormatting';
 

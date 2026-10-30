@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Header } from './components/Header';
 import { RegistrationForm } from './components/RegistrationForm';
 import { RegistrationReceipt } from './components/RegistrationReceipt';
@@ -8,11 +8,9 @@ import { LoginModal } from './components/LoginModal';
 // Code splitting: Lazy-load heavy administrative modules
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const FinancePanel = lazy(() => import('./components/FinancePanel').then(m => ({ default: m.FinancePanel })));
-import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS } from './data/courses';
-import { INITIAL_REGISTRATIONS } from './data/mockRegistrations';
+import { DEFAULT_ADMIN_SETTINGS } from './data/courses';
 import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole, ManagedUser } from './types';
 import { CheckCircle2, X, Lock } from 'lucide-react';
-import { InstiperLogo } from './components/InstiperLogo';
 import { 
   testConnection, 
   subscribeCloudRegistrations, 
@@ -585,11 +583,9 @@ export default function App() {
         registrationsCount={registrations.length}
         chargedRegistrationsCount={chargedRegistrationsCount}
         currentUser={currentUser}
-        onOpenLogin={handleOpenLoginModal}
         onLogout={handleLogout}
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
-        isCloudConnected={isCloudConnected}
       />
 
       {/* Toast Notification */}
@@ -744,6 +740,11 @@ export default function App() {
           <div className="text-center sm:text-right text-[11px] text-slate-400 flex flex-col sm:items-end gap-1.5">
             <p>Kampus INSTIPER: Jl. Nangka II, Krodan, Maguwoharjo, Depok, Sleman, D.I. Yogyakarta 55281</p>
             <div className="flex items-center justify-center sm:justify-end gap-3 text-[10px] text-slate-400">
+              <span className="inline-flex items-center gap-1.5" title={isCloudConnected ? 'Database Cloud Firestore Aktif & Terhubung' : 'Penyimpanan Offline'}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isCloudConnected === true ? 'bg-emerald-400 animate-pulse' : isCloudConnected === false ? 'bg-amber-400' : 'bg-slate-400'}`} />
+                <span>{isCloudConnected === true ? 'Cloud Online' : isCloudConnected === false ? 'Mode Lokal' : 'Memeriksa Cloud...'}</span>
+              </span>
+              <span>•</span>
               <span>© {new Date().getFullYear()} Fakultas Pertanian INSTIPER Yogyakarta.</span>
               <span>•</span>
               {!currentUser ? (

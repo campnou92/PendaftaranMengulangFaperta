@@ -420,7 +420,7 @@ export function getRestrictedClassReason(
   semesterNum: number | string | undefined | null,
   settings?: AdminSettings,
   period?: RegistrationPeriod,
-  course?: CourseItem
+  _course?: CourseItem
 ): string {
   if (period?.restrictedRepeatClassReason) {
     return period.restrictedRepeatClassReason;

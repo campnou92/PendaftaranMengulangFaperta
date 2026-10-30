@@ -1,4 +1,5 @@
 import { AuthUser, ManagedUser, UserRole } from '../types';
+import { saveCloudUser, fetchCloudUsers, deleteCloudUser } from '../lib/firebase';
 
 const STORAGE_KEY = 'instiper_managed_users';
 
@@ -194,11 +195,9 @@ export function saveStoredUsers(users: ManagedUser[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
     // Asynchronous cloud sync ke Firestore (password tersimpan aman dalam format hash SHA-256)
-    import('../lib/firebase').then(({ saveCloudUser }) => {
-      users.forEach((u) => {
-        saveCloudUser(u).catch((err) => console.warn('Sync user to cloud warning:', err));
-      });
-    }).catch(() => {});
+    users.forEach((u) => {
+      saveCloudUser(u).catch((err) => console.warn('Sync user to cloud warning:', err));
+    });
   } catch (err) {
     console.error('Gagal menyimpan users ke localStorage:', err);
   }
@@ -230,7 +229,6 @@ export async function authenticateUser(usernameInput: string, passwordInput: str
   // Jika akun belum ada di localStorage lokal (misal baru dibuat di perangkat lain), cari langsung di Firestore Cloud
   if (!matched) {
     try {
-      const { fetchCloudUsers } = await import('../lib/firebase');
       const cloudUsers = await fetchCloudUsers();
       if (cloudUsers && cloudUsers.length > 0) {
         users = cloudUsers;
@@ -260,7 +258,6 @@ export async function authenticateUser(usernameInput: string, passwordInput: str
   // Jika password di lokal masih '[PROTECTED]' (efek bug versi lama), sinkronkan ulang dari Cloud
   if (!passwordMatches && matched.password === '[PROTECTED]') {
     try {
-      const { fetchCloudUsers } = await import('../lib/firebase');
       const cloudUsers = await fetchCloudUsers();
       const cloudMatched = cloudUsers.find(u => u.username.toLowerCase() === cleanUser);
       if (cloudMatched && cloudMatched.password && cloudMatched.password !== '[PROTECTED]') {
@@ -402,9 +399,7 @@ export function deleteManagedUser(userId: string): { success: boolean; message?:
 
   const updated = users.filter(u => u.id !== userId);
   saveStoredUsers(updated);
-  import('../lib/firebase').then(({ deleteCloudUser }) => {
-    deleteCloudUser(userId).catch(() => {});
-  }).catch(() => {});
+  deleteCloudUser(userId).catch(() => {});
   return { success: true, message: `Akun "${target.username}" berhasil dihapus.` };
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CourseItem, SimpleRegistration, AdminSettings } from '../types';
 import * as XLSX from 'xlsx';
 import { 
@@ -6,17 +6,7 @@ import {
   Download, 
   FileSpreadsheet, 
   X, 
-  BookOpen, 
-  Calendar, 
-  Clock, 
-  Layers, 
-  Users, 
-  CheckCircle2, 
-  Filter,
-  RefreshCw,
-  Building,
-  GraduationCap,
-  Sparkles
+  Users
 } from 'lucide-react';
 
 interface ExamAttendanceModalProps {

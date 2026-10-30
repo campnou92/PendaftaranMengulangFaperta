@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SimpleRegistration, AdminSettings, getMaxSksForBatch } from '../types';
-import { Printer, ArrowLeft, CheckCircle2, CreditCard, Download, FileCheck, Info, FileText } from 'lucide-react';
+import { Printer, ArrowLeft, CheckCircle2, CreditCard, Download, Info } from 'lucide-react';
 
 interface RegistrationReceiptProps {
   registration: SimpleRegistration;

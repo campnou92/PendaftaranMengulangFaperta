@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useRef } from 'react';
-import * as XLSX from 'xlsx';
 import { 
   AdminSettings, 
   RegistrationPeriod, 
@@ -8,8 +7,6 @@ import {
   AuthUser,
   formatDateTimeId,
   getSemesterStatus,
-  getMaxSksForBatch,
-  isClassRestrictedForRepeat,
   getRestrictedClassesForSemester
 } from '../types';
 import { ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
@@ -21,21 +18,12 @@ import {
   PlusCircle, 
   Trash2, 
   Edit3, 
-  Save, 
-  Check, 
+  Save,
   X, 
   AlertTriangle, 
-  BookOpen, 
-  Users, 
-  ChevronRight, 
-  Search, 
-  Layers, 
-  Sparkles, 
-  RotateCcw,
-  Info, 
-  CheckCircle, 
+  BookOpen,
+  Search,
   CheckCircle2,
-  Copy, 
   Lock, 
   Unlock, 
   Eye, 
@@ -43,21 +31,16 @@ import {
   Sliders,
   FileUp,
   FileDown,
-  CreditCard,
   Coins,
   ShieldAlert,
-  Award,
-  FileSpreadsheet,
-  Loader2,
   ArrowRight,
   Plus,
-  HelpCircle
 } from 'lucide-react';
 
 interface RegistrationPeriodsManagerProps {
   adminSettings: AdminSettings;
   courses: CourseItem[];
-  registrations: SimpleRegistration[];
+  registrations?: SimpleRegistration[];
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onUpdateCourses?: (newCourses: CourseItem[]) => void;
   currentUser?: AuthUser | null;
@@ -67,11 +50,8 @@ interface RegistrationPeriodsManagerProps {
 export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProps> = ({
   adminSettings,
   courses,
-  registrations,
   onUpdateSettings,
   onUpdateCourses,
-  currentUser,
-  onOpenCourseTab
 }) => {
   const periods: RegistrationPeriod[] = adminSettings.registrationPeriods || [];
   const currentAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
@@ -88,7 +68,6 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
   const [activeModalTab, setActiveModalTab] = useState<'identity' | 'courses' | 'rules'>('identity');
   const [periodBeingEdited, setPeriodBeingEdited] = useState<RegistrationPeriod | null>(null);
   const [periodToDelete, setPeriodToDelete] = useState<RegistrationPeriod | null>(null);
-  const [periodToViewDetails, setPeriodToViewDetails] = useState<RegistrationPeriod | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // =========================================================================
@@ -113,14 +92,12 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
   // MODAL FORM STATE: STEP 2 (MATAKULIAH, SKS & KELAS PERIODE)
   // =========================================================================
   const [periodCourses, setPeriodCourses] = useState<CourseItem[]>([]);
-  const [courseFilterProdi, setCourseFilterProdi] = useState<'all' | 'agroteknologi' | 'agribisnis'>('all');
-  const [courseSearchInModal, setCourseSearchInModal] = useState<string>('');
 
   // Quick Manual Add Course inside Period
   const [quickCourseName, setQuickCourseName] = useState<string>('');
   const [quickCourseSks, setQuickCourseSks] = useState<number>(2);
   const [quickCourseProdi, setQuickCourseProdi] = useState<'agroteknologi' | 'agribisnis'>('agroteknologi');
-  const [quickCourseClasses, setQuickCourseClasses] = useState<string[]>(
+  const [quickCourseClasses] = useState<string[]>(
     adminSettings.classOptions?.filter(c => !c.toLowerCase().includes('beasiswa')) || ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan']
   );
 
@@ -139,7 +116,6 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
   const [feePerSksEnabledInput, setFeePerSksEnabledInput] = useState<boolean>(adminSettings.feePerSksEnabled ?? true);
   const [costPerSksInput, setCostPerSksInput] = useState<number>(adminSettings.costPerSks ?? 50000);
   const [paidBatchesInput, setPaidBatchesInput] = useState<string[]>(adminSettings.paidBatches || ['2020', '2021', '2022']);
-  const [customBatchInput, setCustomBatchInput] = useState<string>('');
   const [paymentInstructionsInput, setPaymentInstructionsInput] = useState<string>(
     adminSettings.paymentInstructions || 'Pemberitahuan: Mahasiswa angkatan yang bersangkutan dikenakan kewajiban pembayaran biaya mengulang mata kuliah sesuai ketentuan akademik Fakultas Pertanian INSTIPER.'
   );

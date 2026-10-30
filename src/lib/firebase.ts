@@ -3,7 +3,6 @@ import {
   getFirestore, 
   collection, 
   doc, 
-  getDoc, 
   getDocs, 
   setDoc, 
   deleteDoc, 
@@ -17,7 +16,7 @@ import { getAuth } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { CourseItem, SimpleRegistration, AdminSettings, ManagedUser } from '../types';
 import { INITIAL_MANAGED_USERS } from '../utils/userManagement';
-import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS } from '../data/courses';
+import { DEFAULT_ADMIN_SETTINGS } from '../data/courses';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);

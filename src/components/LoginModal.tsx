@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthUser, UserRole } from '../types';
-import { Lock, User, KeyRound, X, LogIn, AlertCircle, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react';
+import { User, KeyRound, X, LogIn, AlertCircle, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react';
 import { InstiperLogo } from './InstiperLogo';
 import { authenticateUser } from '../utils/userManagement';
 
@@ -14,7 +14,8 @@ interface LoginModalProps {
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   onClose,
-  onLoginSuccess
+  onLoginSuccess,
+  defaultRoleHint
 }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -92,10 +93,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 INSTIPER YOGYAKARTA
               </span>
               <h3 className="text-lg font-black text-white tracking-tight leading-snug mt-1">
-                Portal Pengelola
+                {defaultRoleHint === 'finance' ? 'Portal Keuangan' : 'Portal Pengelola'}
               </h3>
               <p className="text-xs text-emerald-100/80 font-medium">
-                Akses Terproteksi Khusus Staf &amp; BAAK
+                {defaultRoleHint === 'finance' ? 'Akses Khusus Verifikasi Keuangan' : 'Akses Terproteksi Khusus Staf & BAAK'}
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SimpleRegistration, AdminSettings } from '../types';
-import { Search, Printer, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle, Coins, FileText, CheckCircle, Check, X, Loader2 } from 'lucide-react';
+import { Search, Printer, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle, Check, X, Loader2 } from 'lucide-react';
 import { fetchRegistrationByExactNim } from '../lib/firebase';
 
 interface StatusCheckerProps {
@@ -12,7 +12,6 @@ interface StatusCheckerProps {
 
 export const StatusChecker: React.FC<StatusCheckerProps> = ({
   registrations = [],
-  adminSettings,
   onViewReceipt,
   onGoToForm
 }) => {
