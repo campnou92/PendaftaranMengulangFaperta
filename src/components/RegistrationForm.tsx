@@ -69,18 +69,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     });
 
-    // Fallback awal jika belum pernah ada konfigurasi periode sama sekali di database:
-    if (semSet.size === 0 && (!adminSettings.registrationPeriods || adminSettings.registrationPeriods.length === 0)) {
-      courses.forEach((c) => {
+    // Fallback awal jika belum ada periode pendaftaran aktif:
+    if (semSet.size === 0) {
+      const activeCourses = courses.filter(c => !c.academicYear || c.academicYear === activeAcademicYear);
+      const targetCourses = activeCourses.length > 0 ? activeCourses : courses;
+      targetCourses.forEach((c) => {
         const semNum = Number(c.semester);
-        if (!isNaN(semNum) && semNum > 0 && (!c.academicYear || c.academicYear === activeAcademicYear)) {
+        if (!isNaN(semNum) && semNum > 0) {
           semSet.add(semNum);
         }
       });
     }
 
     return Array.from(semSet).sort((a, b) => a - b);
-  }, [openVisiblePeriods, adminSettings.registrationPeriods, courses, activeAcademicYear]);
+  }, [openVisiblePeriods, courses, activeAcademicYear]);
 
   // Helper mencari record periode pendaftaran yang cocok untuk suatu semester
   const findPeriodForSemester = useCallback((semNum: number | string | undefined | null): RegistrationPeriod | undefined => {
@@ -117,21 +119,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           });
         } else {
           // Ambil dari courses global yang cocok dengan semester dan TA periode ini
-          const matched = courses.filter((c) => {
+          let matched = courses.filter((c) => {
             if (c.periodId && c.periodId === period.id) return true;
             const sameSem = Number(c.semester) === Number(period.semester);
             const sameYear = !c.academicYear || c.academicYear === period.academicYear;
             const isOffered = !Array.isArray(period.offeredCourseIds) || period.offeredCourseIds.length === 0 || period.offeredCourseIds.includes(c.id);
             return sameSem && sameYear && isOffered;
           });
-          matched.forEach((c) => courseMap.set(c.id, c));
+          // Fallback jika tidak ada course spesifik TA tertentu: gunakan matakuliah master semester tersebut
+          if (matched.length === 0) {
+            matched = courses.filter((c) => Number(c.semester) === Number(period.semester));
+          }
+          matched.forEach((c) => courseMap.set(c.id, { ...c, academicYear: period.academicYear || c.academicYear }));
         }
       });
       return Array.from(courseMap.values());
     }
 
-    // Jika belum ada periode sama sekali, tampilkan courses sesuai TA aktif
-    return courses.filter((c) => !c.academicYear || c.academicYear === activeAcademicYear);
+    // Jika belum ada periode sama sekali, tampilkan courses sesuai TA aktif (fallback ke semua courses jika kosong)
+    const activeList = courses.filter((c) => !c.academicYear || c.academicYear === activeAcademicYear);
+    return activeList.length > 0 ? activeList : courses;
   }, [openVisiblePeriods, courses, activeAcademicYear]);
 
   // Semester Portal Selection: 'all' atau nomor semester tertentu (misal '1', '3', '5')
@@ -1781,15 +1788,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                         }`}
                       >
                         {/* Left: Checkbox + Course Name + SKS */}
-                        <div 
+                        <label 
                           className={`flex items-start gap-3 flex-1 min-w-0 select-none ${
                             isCourseClosed ? 'cursor-not-allowed' : 'cursor-pointer'
                           }`}
-                          onClick={() => {
-                            if (!isCourseClosed) {
-                              handleToggleCourse(course);
-                            }
-                          }}
                         >
                           <input
                             type="checkbox"
@@ -1800,7 +1802,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 handleToggleCourse(course);
                               }
                             }}
-                            onClick={(e) => e.stopPropagation()}
                             className={`w-5 h-5 mt-0.5 rounded shrink-0 transition-all ${
                               isCourseClosed
                                 ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-400 cursor-not-allowed opacity-50'
@@ -1845,7 +1846,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                               )}
                             </div>
                           </div>
-                        </div>
+                        </label>
 
                         {/* Right: Class Dropdown */}
                         <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800 shrink-0">

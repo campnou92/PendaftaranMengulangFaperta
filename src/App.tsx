@@ -8,7 +8,7 @@ import { LoginModal } from './components/LoginModal';
 // Code splitting: Lazy-load heavy administrative modules
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const FinancePanel = lazy(() => import('./components/FinancePanel').then(m => ({ default: m.FinancePanel })));
-import { DEFAULT_ADMIN_SETTINGS } from './data/courses';
+import { DEFAULT_ADMIN_SETTINGS, INITIAL_COURSES_WITH_YEAR } from './data/courses';
 import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole, ManagedUser } from './types';
 import { CheckCircle2, X, Lock } from 'lucide-react';
 import { 
@@ -125,7 +125,7 @@ export default function App() {
     } catch (e) {
       console.error('Failed to load courses', e);
     }
-    return [];
+    return INITIAL_COURSES_WITH_YEAR;
   });
 
   // Admin Settings: Class options & editable Note for Superadmin
@@ -245,8 +245,10 @@ export default function App() {
 
     // 3. Real-time courses sync from Firestore (Katalog MK)
     const unsubCourses = subscribeCloudCourses((cloudCourses) => {
-      if (Array.isArray(cloudCourses)) {
+      if (Array.isArray(cloudCourses) && cloudCourses.length > 0) {
         setCourses(cloudCourses);
+      } else {
+        setCourses((prev) => (prev && prev.length > 0 ? prev : INITIAL_COURSES_WITH_YEAR));
       }
     });
 
