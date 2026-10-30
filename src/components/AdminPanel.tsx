@@ -207,13 +207,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newCourseSemester, setNewCourseSemester] = useState<number>(3);
   // Academic Year State & Management
   const currentActiveAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
-  const [selectedCourseYear, setSelectedCourseYear] = useState<string>(currentActiveAcademicYear);
+  const [selectedCourseYear, setSelectedCourseYear] = useState<string>(() => {
+    // Jika tahun ajaran aktif memiliki mata kuliah, tampilkan tahun ajaran aktif.
+    // Jika tahun ajaran aktif belum memiliki mata kuliah khusus, default ke 'all' agar tabel tidak kosong membingungkan admin.
+    const inActiveYear = (courses || []).filter(c => (c.academicYear || '2025/2026') === currentActiveAcademicYear).length;
+    return inActiveYear > 0 ? currentActiveAcademicYear : 'all';
+  });
   const [newCourseAcademicYear, setNewCourseAcademicYear] = useState<string>(currentActiveAcademicYear);
   const [editAcademicYear, setEditAcademicYear] = useState<string>(currentActiveAcademicYear);
 
   // Copy Courses modal state
   const [isCopyCoursesModalOpen, setIsCopyCoursesModalOpen] = useState(false);
-  const [copySourceYear, setCopySourceYear] = useState<string>('2024/2025');
+  const [copySourceYear, setCopySourceYear] = useState<string>('2025/2026');
   const [copyTargetYear, setCopyTargetYear] = useState<string>(currentActiveAcademicYear);
 
   // Academic Year Settings draft (Superadmin / BAAK)
@@ -232,17 +237,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Filter registrations by Academic Year
   const [filterRegAcademicYear, setFilterRegAcademicYear] = useState<string>('all');
 
+  // Courses yang relevan dengan filter Tahun Ajaran yang dipilih saat ini
+  const coursesInSelectedYear = useMemo(() => {
+    if (selectedCourseYear === 'all') return courses;
+    return (courses || []).filter(c => (c.academicYear || '2025/2026') === selectedCourseYear);
+  }, [courses, selectedCourseYear]);
+
   // Filter courses in table by semester
   const [filterCourseSemester, setFilterCourseSemester] = useState<string>('all');
   const uniqueCourseSemesters = useMemo(() => {
     const s = new Set<string>();
-    (courses || []).forEach(c => {
+    const targetList = coursesInSelectedYear.length > 0 ? coursesInSelectedYear : courses;
+    (targetList || []).forEach(c => {
       if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
         s.add(String(c.semester).trim());
       }
     });
     return Array.from(s).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
-  }, [courses]);
+  }, [coursesInSelectedYear, courses]);
 
   // Filter registrations by semester and class
   const [filterRegSemester, setFilterRegSemester] = useState<string>('all');
@@ -576,12 +588,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Confirm reset to default 18 courses (from Modal)
   const handleConfirmResetCourses = () => {
-    onUpdateCourses(INITIAL_COURSES);
+    const targetYear = currentActiveAcademicYear || '2025/2026';
+    const baseCourses = INITIAL_COURSES.map(c => ({
+      ...c,
+      academicYear: targetYear
+    }));
+    onUpdateCourses(baseCourses);
     setSelectedCourseIds([]);
     setIsResetCoursesModalOpen(false);
     setCourseFeedback({
       type: 'success',
-      message: 'Daftar mata kuliah berhasil dikembalikan ke 18 mata kuliah bawaan FP INSTIPER.'
+      message: `Daftar mata kuliah berhasil dikembalikan ke 18 mata kuliah bawaan FP INSTIPER untuk T.A. ${targetYear}.`
     });
     setTimeout(() => setCourseFeedback(null), 3500);
   };
@@ -2111,7 +2128,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                   }`}
                 >
-                  Semua ({courses.length})
+                  Semua ({coursesInSelectedYear.length})
                 </button>
                 {uniqueCourseSemesters.map((sem) => (
                   <button
@@ -2124,7 +2141,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
                     }`}
                   >
-                    Semester {sem} ({courses.filter(c => String(c.semester) === sem).length})
+                    Semester {sem} ({coursesInSelectedYear.filter(c => String(c.semester) === sem).length})
                   </button>
                 ))}
               </div>
@@ -2191,6 +2208,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Banner Informatif jika Tahun Ajaran terpilih belum memiliki mata kuliah */}
+            {selectedCourseYear !== 'all' && coursesInSelectedYear.length === 0 && (
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs mb-4 animate-fade-in">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-bold text-sm text-amber-800 dark:text-amber-200">
+                      Tahun Ajaran {selectedCourseYear} Belum Memiliki Mata Kuliah Khusus (0 MK)
+                    </p>
+                    <p className="mt-0.5 text-amber-700 dark:text-amber-300 leading-relaxed">
+                      Saat ini terdapat <strong>{courses.length} mata kuliah master</strong> di Tahun Ajaran lain (T.A. 2025/2026). Di form pendaftaran depan mahasiswa, sistem otomatis menggunakan mata kuliah master tersebut sebagai cadangan. Anda dapat menyalinnya sekarang ke T.A. {selectedCourseYear} agar dapat dikelola mandiri.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sourceCourses = courses.filter(c => (c.academicYear || '2025/2026') === '2025/2026');
+                      const baseList = sourceCourses.length > 0 ? sourceCourses : courses;
+                      const cloned = baseList.map(c => ({
+                        ...c,
+                        id: `clone-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                        academicYear: selectedCourseYear
+                      }));
+                      onUpdateCourses([...courses, ...cloned]);
+                      setCourseFeedback({
+                        type: 'success',
+                        message: `Berhasil menyalin ${cloned.length} mata kuliah ke T.A. ${selectedCourseYear}!`
+                      });
+                      setTimeout(() => setCourseFeedback(null), 4000);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin {courses.length} MK ke {selectedCourseYear}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCourseYear('all')}
+                    className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Tampilkan Semua TA
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Filtered courses list and batch selection helpers */}
             {(() => {
