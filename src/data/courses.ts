@@ -84,15 +84,23 @@ export const SEMESTER_OPTIONS = [
   { id: '5', label: 'Semester 5', num: 5 }
 ];
 
-export const DEFAULT_CLASSES = ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'];
+export const DEFAULT_CLASSES = [
+  'SPKS A', 'SPKS B', 'SPKS C', 'SPKS D', 'SPKS E', 'SPKS F',
+  'SPKS G', 'SPKS H', 'SPKS I', 'SPKS J', 'SPKS K', 'SMBP A',
+  'SMBP B', 'SMBP C', 'SPA A', 'SPA B', 'SEA A', 'ANTAN A', 'ANTAN B'
+];
 
 export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   activeAcademicYear: '2025/2026',
   activeTerm: 'Ganjil',
   availableAcademicYears: ['2023/2024', '2024/2025', '2025/2026', '2026/2027'],
-  classOptions: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan', 'Kelas Beasiswa'],
+  classOptions: [
+    'SPKS A', 'SPKS B', 'SPKS C', 'SPKS D', 'SPKS E', 'SPKS F',
+    'SPKS G', 'SPKS H', 'SPKS I', 'SPKS J', 'SPKS K', 'SMBP A',
+    'SMBP B', 'SMBP C', 'SPA A', 'SPA B', 'SEA A', 'ANTAN A', 'ANTAN B'
+  ],
   kelasAsalMode: 'input_with_chips',
-  kelasAsalPlaceholder: 'Contoh: Kelas A (atau pilih opsi kelas di bawah)',
+  kelasAsalPlaceholder: 'Contoh: SPKS A, SPKS B (atau pilih opsi kelas di bawah)',
   kelasAsalCustomOptions: [],
   classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 1, 3, atau 5 sesuai jadwal periode yang dibuka.
 2. Admin Fakultas dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel Admin Fakultas).

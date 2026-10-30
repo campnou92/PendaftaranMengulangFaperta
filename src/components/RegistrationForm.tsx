@@ -370,12 +370,71 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return `${day} ${month} ${year}, ${hours}:${minutes} WIB`;
   };
 
-  // Global class options
+  // Seluruh kelas yang ada di database sistem & yang di-import
   const globalClassOptions = useMemo(() => {
-    return adminSettings.classOptions && adminSettings.classOptions.length > 0
-      ? adminSettings.classOptions
-      : DEFAULT_CLASSES;
-  }, [adminSettings.classOptions]);
+    const classSet = new Set<string>();
+
+    // 1. Dari opsi kelas admin di settings database (classOptions)
+    if (Array.isArray(adminSettings.classOptions) && adminSettings.classOptions.length > 0) {
+      adminSettings.classOptions.forEach((c) => {
+        if (c && typeof c === 'string' && c.trim()) classSet.add(c.trim());
+      });
+    }
+
+    // 2. Dari seluruh mata kuliah di sistem / hasil import
+    (courses || []).forEach((c) => {
+      if (Array.isArray(c.availableClasses)) {
+        c.availableClasses.forEach((cls) => {
+          if (cls && typeof cls === 'string' && cls.trim()) classSet.add(cls.trim());
+        });
+      }
+    });
+
+    // 3. Dari periode pendaftaran aktif (jika ada courses mandiri per periode)
+    (adminSettings.registrationPeriods || []).forEach((p) => {
+      if (Array.isArray(p.courses)) {
+        p.courses.forEach((c) => {
+          if (Array.isArray(c.availableClasses)) {
+            c.availableClasses.forEach((cls) => {
+              if (cls && typeof cls === 'string' && cls.trim()) classSet.add(cls.trim());
+            });
+          }
+        });
+      }
+    });
+
+    if (classSet.size === 0) {
+      DEFAULT_CLASSES.forEach((c) => classSet.add(c));
+    }
+
+    return Array.from(classSet);
+  }, [adminSettings.classOptions, adminSettings.registrationPeriods, courses]);
+
+  // Contoh penulisan kelas diambil secara dinamis dari referensi kelas nyata di database sistem / hasil import
+  const dynamicKelasAsalPlaceholder = useMemo(() => {
+    // Ambil kelas reguler nyata (abaikan kelas bertanda beasiswa untuk contoh kelas asal reguler)
+    const regularClasses = globalClassOptions.filter(c => !c.toLowerCase().includes('beasiswa'));
+    const pool = regularClasses.length > 0 ? regularClasses : globalClassOptions;
+
+    // Ambil 2 contoh representatif dari database sistem / hasil import
+    const samples = pool.slice(0, 2);
+
+    if (samples.length >= 2) {
+      return `Contoh: ${samples[0]}, ${samples[1]} (atau pilih opsi kelas di bawah)`;
+    } else if (samples.length === 1) {
+      return `Contoh: ${samples[0]} (atau pilih opsi kelas di bawah)`;
+    }
+
+    return 'Contoh: SPKS A, SPKS B (atau pilih opsi kelas di bawah)';
+  }, [globalClassOptions]);
+
+  const kelasAsalPlaceholderText = useMemo(() => {
+    // Jika admin mengonfigurasi teks kustom yang bukan default lama 'Kelas A'
+    if (adminSettings.kelasAsalPlaceholder && !adminSettings.kelasAsalPlaceholder.includes('Kelas A')) {
+      return adminSettings.kelasAsalPlaceholder;
+    }
+    return dynamicKelasAsalPlaceholder;
+  }, [adminSettings.kelasAsalPlaceholder, dynamicKelasAsalPlaceholder]);
 
   // Helper available classes for course
   const getAvailableClasses = (course: CourseItem): string[] => {
@@ -1482,7 +1541,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                           list="admin-kelas-asal-datalist"
                           value={kelasAsal}
                           onChange={(e) => setKelasAsal(e.target.value)}
-                          placeholder={adminSettings.kelasAsalPlaceholder || `Contoh: ${globalClassOptions[0] || 'Kelas A'}`}
+                          placeholder={kelasAsalPlaceholderText}
                           className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
                         />
                         <datalist id="admin-kelas-asal-datalist">
@@ -1802,6 +1861,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 handleToggleCourse(course);
                               }
                             }}
+                            onClick={(e) => e.stopPropagation()}
                             className={`w-5 h-5 mt-0.5 rounded shrink-0 transition-all ${
                               isCourseClosed
                                 ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-400 cursor-not-allowed opacity-50'
