@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { SimpleRegistration, AdminSettings, AuthUser, PaymentStatus } from '../types';
+import { SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, CourseItem } from '../types';
+import { INITIAL_COURSES } from '../data/courses';
 import {
   Coins,
   CreditCard,
@@ -25,6 +26,7 @@ interface FinancePanelProps {
   currentUser: AuthUser;
   registrations: SimpleRegistration[];
   adminSettings: AdminSettings;
+  courses?: CourseItem[];
   onUpdatePaymentStatus: (registrationId: string, status: PaymentStatus, note?: string) => void;
   onViewReceipt: (registration: SimpleRegistration) => void;
   onLogout: () => void;
@@ -34,6 +36,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   currentUser,
   registrations,
   adminSettings,
+  courses = [],
   onUpdatePaymentStatus,
   onViewReceipt,
   onLogout
@@ -54,31 +57,116 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
   const paidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
   const costPerSks = adminSettings.costPerSks ?? 50000;
 
-  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
+  // Daftar semester unik yang tersedia dari data mata kuliah, periode pendaftaran, jadwal, & data registrasi
   const financeSemesters = useMemo(() => {
     const semSet = new Set<string>();
+
+    const checkYearMatch = (itemYear?: string) => {
+      if (filterAcademicYear === 'all') return true;
+      if (!itemYear) return true; // berlaku umum jika tidak dibatasi tahun ajaran tertentu
+      return itemYear === filterAcademicYear;
+    };
+
+    // 1. Dari master mata kuliah (courses) aplikasi
+    (courses || []).forEach(c => {
+      if (checkYearMatch(c.academicYear)) {
+        if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+          semSet.add(String(c.semester).trim());
+        }
+      }
+    });
+
+    // 2. Dari data periode pendaftaran (adminSettings.registrationPeriods)
     (adminSettings.registrationPeriods || []).forEach(p => {
-      if (p.semester) semSet.add(String(p.semester));
+      if (checkYearMatch(p.academicYear)) {
+        if (p.semester !== undefined && p.semester !== null && String(p.semester).trim() !== '') {
+          semSet.add(String(p.semester).trim());
+        }
+        (p.courses || []).forEach(c => {
+          if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+            semSet.add(String(c.semester).trim());
+          }
+        });
+      }
     });
-    registrations.forEach(r => {
-      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
-      if (match) semSet.add(match[1]);
-      r.selectedCourses?.forEach(c => {
-        if (c.semester) semSet.add(String(c.semester));
+
+    // 3. Dari jadwal semester (adminSettings.semesterSchedules)
+    if (adminSettings.semesterSchedules) {
+      Object.keys(adminSettings.semesterSchedules).forEach(semKey => {
+        if (semKey && semKey.trim() !== '') {
+          semSet.add(semKey.trim());
+        }
       });
-    });
-    if (semSet.size === 0) {
-      semSet.add('3');
-      semSet.add('5');
     }
-    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
-  }, [adminSettings.registrationPeriods, registrations]);
+
+    // 4. Dari data registrasi aktual yang sudah masuk
+    (registrations || []).forEach(r => {
+      const regYear = r.academicYear || adminSettings.activeAcademicYear || '2025/2026';
+      if (checkYearMatch(regYear)) {
+        const matches = r.targetSemester?.match(/\d+/g);
+        if (matches) {
+          matches.forEach(m => semSet.add(m));
+        }
+        r.selectedCourses?.forEach(c => {
+          if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+            semSet.add(String(c.semester).trim());
+          }
+        });
+      }
+    });
+
+    // 5. Fallback cerdas jika filter tahun ajaran tertentu menghasilkan 0 semester: ambil semua semester yang ada
+    if (semSet.size === 0) {
+      (courses || []).forEach(c => {
+        if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+          semSet.add(String(c.semester).trim());
+        }
+      });
+      (adminSettings.registrationPeriods || []).forEach(p => {
+        if (p.semester !== undefined && p.semester !== null && String(p.semester).trim() !== '') {
+          semSet.add(String(p.semester).trim());
+        }
+      });
+    }
+
+    // 6. Fallback bawaan dari INITIAL_COURSES jika database masih bersih/awal
+    if (semSet.size === 0) {
+      INITIAL_COURSES.forEach(c => {
+        if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+          semSet.add(String(c.semester).trim());
+        }
+      });
+    }
+
+    return Array.from(semSet).sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      if (!isNaN(numA)) return -1;
+      if (!isNaN(numB)) return 1;
+      return a.localeCompare(b);
+    });
+  }, [courses, adminSettings.registrationPeriods, adminSettings.semesterSchedules, adminSettings.activeAcademicYear, registrations, filterAcademicYear]);
+
+  // Auto-reset filter semester jika semester aktif tidak ada di pilihan baru saat filter tahun ajaran berubah
+  useEffect(() => {
+    if (filterSemester !== 'all' && filterSemester !== 'gabungan') {
+      if (!financeSemesters.includes(filterSemester)) {
+        setFilterSemester('all');
+      }
+    }
+  }, [financeSemesters, filterSemester]);
 
   // Helper: Temukan periode pendaftaran yang sesuai untuk suatu registrasi
   // Digunakan untuk membaca aturan biaya SKS yang di-override per periode
   const findPeriodForReg = (reg: SimpleRegistration) => {
     const periods = adminSettings.registrationPeriods || [];
     if (periods.length === 0) return null;
+    const courseWithPeriod = reg.selectedCourses?.find(c => c.periodId);
+    if (courseWithPeriod?.periodId) {
+      const found = periods.find(p => p.id === courseWithPeriod.periodId);
+      if (found) return found;
+    }
     const semMatch = reg.targetSemester?.match(/(\d+)/);
     const semNum = semMatch ? semMatch[1] : null;
     return periods.find((p) => {
@@ -131,10 +219,22 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
     // Filter by semester
     if (filterSemester !== 'all') {
       if (filterSemester === 'gabungan') {
-        const isGab = reg.targetSemester?.toLowerCase().includes('gabungan') || reg.targetSemester?.toLowerCase().includes('lintas');
+        const uniqueSemestersInReg = new Set(
+          (reg.selectedCourses || [])
+            .map(c => String(c.semester))
+            .filter(Boolean)
+        );
+        const isGab =
+          reg.targetSemester?.toLowerCase().includes('gabungan') ||
+          reg.targetSemester?.toLowerCase().includes('lintas') ||
+          uniqueSemestersInReg.size > 1;
         if (!isGab) return false;
       } else {
-        const matchesTarget = reg.targetSemester === filterSemester || reg.targetSemester === `Semester ${filterSemester}`;
+        const targetSemMatches: string[] = reg.targetSemester ? Array.from(reg.targetSemester.match(/\d+/g) || []) : [];
+        const matchesTarget =
+          reg.targetSemester === filterSemester ||
+          reg.targetSemester === `Semester ${filterSemester}` ||
+          targetSemMatches.includes(String(filterSemester));
         const matchesCourse = reg.selectedCourses?.some(c => String(c.semester) === String(filterSemester));
         if (!matchesTarget && !matchesCourse) return false;
       }
@@ -587,7 +687,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                             )}
                           </div>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-                            {reg.kelasAsal} ({reg.targetSemester || 'Semester 3'})
+                            {reg.kelasAsal} ({reg.targetSemester || (reg.selectedCourses && reg.selectedCourses.length > 0 ? `Semester ${Array.from(new Set(reg.selectedCourses.map(c => c.semester))).join(' & ')}` : 'Semua Semester')})
                           </span>
                         </td>
 

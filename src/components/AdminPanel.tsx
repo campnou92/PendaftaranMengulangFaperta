@@ -246,6 +246,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Filter courses in table by semester
   const [filterCourseSemester, setFilterCourseSemester] = useState<string>('all');
+  const uniqueCourseSemesters = useMemo(() => {
+    const s = new Set<string>();
+    (courses || []).forEach(c => {
+      if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+        s.add(String(c.semester).trim());
+      }
+    });
+    return Array.from(s).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [courses]);
 
   // Filter registrations by semester and class
   const [filterRegSemester, setFilterRegSemester] = useState<string>('all');
@@ -1384,21 +1393,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     document.body.removeChild(link);
   };
 
-  // Daftar semester unik yang tersedia dari data periode & registrasi aktif
+  // Daftar semester unik yang tersedia dari data mata kuliah, periode, & registrasi aktif
   const availableRegSemesters = useMemo(() => {
     const semSet = new Set<string>();
-    (adminSettings.registrationPeriods || []).forEach(p => {
-      if (p.semester) semSet.add(String(p.semester));
+    (courses || []).forEach(c => {
+      if (c.semester !== undefined && c.semester !== null && String(c.semester).trim() !== '') {
+        semSet.add(String(c.semester).trim());
+      }
     });
-    registrations.forEach(r => {
-      const match = r.targetSemester?.match(/Semester\s+(\d+)/i);
-      if (match) semSet.add(match[1]);
-      r.selectedCourses?.forEach(c => {
-        if (c.semester) semSet.add(String(c.semester));
+    (adminSettings.registrationPeriods || []).forEach(p => {
+      if (p.semester) semSet.add(String(p.semester).trim());
+      (p.courses || []).forEach(c => {
+        if (c.semester) semSet.add(String(c.semester).trim());
       });
     });
+    registrations.forEach(r => {
+      const matches = r.targetSemester?.match(/\d+/g);
+      if (matches) matches.forEach(m => semSet.add(m));
+      r.selectedCourses?.forEach(c => {
+        if (c.semester) semSet.add(String(c.semester).trim());
+      });
+    });
+    if (semSet.size === 0) {
+      INITIAL_COURSES.forEach(c => {
+        if (c.semester) semSet.add(String(c.semester).trim());
+      });
+    }
     return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
-  }, [adminSettings.registrationPeriods, registrations]);
+  }, [courses, adminSettings.registrationPeriods, registrations]);
 
   const filteredRegistrations = registrations.filter(r => {
     const matchesSearch =
@@ -1990,28 +2012,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   Semua ({courses.length})
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterCourseSemester('3')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    filterCourseSemester === '3'
-                      ? 'bg-[#166534] text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  🌿 Semester 3 ({courses.filter(c => c.semester === 3).length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterCourseSemester('5')}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    filterCourseSemester === '5'
-                      ? 'bg-[#166534] text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  🌾 Semester 5 ({courses.filter(c => c.semester === 5).length})
-                </button>
+                {uniqueCourseSemesters.map((sem) => (
+                  <button
+                    key={sem}
+                    type="button"
+                    onClick={() => setFilterCourseSemester(sem)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      filterCourseSemester === sem
+                        ? 'bg-[#166534] text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    Semester {sem} ({courses.filter(c => String(c.semester) === sem).length})
+                  </button>
+                ))}
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -4657,8 +4671,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <button
                               type="button"
                               disabled={isSuper}
-                              onClick={() => {
-                                updateManagedUser(u.id, { isActive: !u.isActive });
+                              onClick={async () => {
+                                await updateManagedUser(u.id, { isActive: !u.isActive });
                                 refreshUsersList();
                               }}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
@@ -4986,14 +5000,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
 
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
                       setPasswordModalFeedback(null);
                       if (!newPasswordReset.trim()) {
                         setPasswordModalFeedback('Password baru tidak boleh kosong.');
                         return;
                       }
-                      const res = updateManagedUser(targetUserForPassword.id, { password: newPasswordReset.trim() });
+                      const res = await updateManagedUser(targetUserForPassword.id, { password: newPasswordReset.trim() });
                       if (res.success) {
                         refreshUsersList();
                         setPasswordModalFeedback('Password berhasil diperbarui!');
@@ -5977,9 +5991,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onChange={(e) => setEditRegTargetSemester(e.target.value)}
                         className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
                       >
-                        <option value="Semester 3">Semester 3</option>
-                        <option value="Semester 5">Semester 5</option>
-                        <option value="Semester 3 & 5 Gabungan">Semester 3 &amp; 5 Gabungan</option>
+                        {availableRegSemesters.map(sem => (
+                          <option key={sem} value={`Semester ${sem}`}>Semester {sem}</option>
+                        ))}
+                        <option value="Semester Gabungan">Semester Gabungan / Lintas</option>
+                        {editRegTargetSemester && 
+                          !availableRegSemesters.some(s => `Semester ${s}` === editRegTargetSemester) && 
+                          editRegTargetSemester !== 'Semester Gabungan' && (
+                            <option value={editRegTargetSemester}>{editRegTargetSemester}</option>
+                        )}
                       </select>
                     </div>
 

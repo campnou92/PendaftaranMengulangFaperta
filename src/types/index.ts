@@ -42,6 +42,7 @@ export interface SelectedCourseItem {
   semester?: number | string;
   selectedClass: string;
   academicYear?: string;
+  periodId?: string;
 }
 
 export interface UploadedFileItem {

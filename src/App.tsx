@@ -10,7 +10,7 @@ const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ def
 const FinancePanel = lazy(() => import('./components/FinancePanel').then(m => ({ default: m.FinancePanel })));
 import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS } from './data/courses';
 import { INITIAL_REGISTRATIONS } from './data/mockRegistrations';
-import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole } from './types';
+import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole, ManagedUser } from './types';
 import { CheckCircle2, X, Lock } from 'lucide-react';
 import { InstiperLogo } from './components/InstiperLogo';
 import { 
@@ -683,6 +683,7 @@ export default function App() {
                     currentUser={currentUser}
                     registrations={registrations}
                     adminSettings={adminSettings}
+                    courses={courses}
                     onUpdatePaymentStatus={handleUpdatePaymentStatus}
                     onViewReceipt={(r) => {
                       setActiveReceipt(r);
