@@ -3053,23 +3053,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </p>
                 </div>
 
-                {/* Kalimat Pernyataan Komitmen Mahasiswa */}
+                {/* Kalimat Peringatan Konfirmasi Data Mahasiswa */}
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Kalimat Pernyataan &amp; Komitmen Mahasiswa (Point 4):
+                      Teks Peringatan / Konfirmasi Data Mahasiswa (Point 4):
                     </label>
                   </div>
                   <textarea
                     rows={3}
                     value={flowCommitmentDraft}
                     onChange={(e) => setFlowCommitmentDraft(e.target.value)}
-                    placeholder="Contoh: Saya menyatakan data mata kuliah yang saya pilih sudah benar..."
+                    placeholder="Contoh: Mohon periksa kembali kesesuaian data identitas (NIM, Nama, No. WhatsApp)..."
                     className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534] resize-none leading-relaxed"
                   />
                   <p className="text-[11px] text-slate-400">
-                    Kalimat persetujuan yang wajib dicentang mahasiswa sebelum tombol Kirim Pendaftaran aktif.
+                    Teks peringatan pada kotak kuning Point 4 agar mahasiswa memastikan kebenaran data sebelum mengirimkan pendaftaran.
                   </p>
                 </div>
               </div>

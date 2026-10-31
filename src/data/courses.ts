@@ -30,7 +30,7 @@ export const DEFAULT_REGISTRATION_FLOW: RegistrationFlowSettings = {
     }
   ],
   highlightNote: 'Penting: Pastikan seluruh isian identitas mahasiswa dan mata kuliah yang dipilih sudah sesuai sebelum mengirimkan formulir pendaftaran.',
-  commitmentText: 'Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa setelah formulir ini terkirim, saya wajib mencetak KRS Mengulang (A4) dan menyerahkannya langsung ke Administrasi Fakultas Pertanian INSTIPER'
+  commitmentText: 'Mohon periksa kembali kesesuaian data identitas (NIM, Nama, No. WhatsApp), daftar mata kuliah, dan kelas yang Anda ambil. Setelah menekan tombol Kirim Pendaftaran, formulir akan diproses dan sistem menerbitkan dokumen KRS resmi untuk diserahkan ke loket Fakultas Pertanian.'
 };
 
 export const INITIAL_COURSES: CourseItem[] = [

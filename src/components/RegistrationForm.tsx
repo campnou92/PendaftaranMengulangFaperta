@@ -170,8 +170,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [sksFilter, setSksFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'default' | 'sks-desc' | 'name-asc'>('default');
 
-  // 6. Agreement check / acknowledgment
-  const [agreeToFlow, setAgreeToFlow] = useState(true);
+  // 6. Agreement check / acknowledgment (Telah digantikan peringatan pastikan data benar)
 
   // Mobile Guide Collapsible State
   const [isMobileGuideOpen, setIsMobileGuideOpen] = useState(false);
@@ -868,9 +867,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (!email.trim() || !nama.trim() || !nim.trim() || !noWa.trim() || !kelasAsal.trim()) return false;
     if (selectedList.length === 0) return false;
     if (totalSks > currentMaxSks) return false;
-    if (!agreeToFlow) return false;
     return true;
-  }, [activePortalStatus, closedCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks, agreeToFlow]);
+  }, [activePortalStatus, closedCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks]);
 
   const getSubmitDisabledReason = (): string | null => {
     if (!activePortalStatus.isOpen) {
@@ -888,9 +886,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
     if (totalSks > currentMaxSks) {
       return `Total SKS (${totalSks} SKS) melebihi batas maksimal Angkatan ${angkatan} (${currentMaxSks} SKS). Kurangi pilihan mata kuliah Anda.`;
-    }
-    if (!agreeToFlow) {
-      return 'Harap beri centang pada persetujuan alur penyerahan berkas fisik dan pembayaran ke loket fakultas.';
     }
     return null;
   };
@@ -2215,7 +2210,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     Langkah Terakhir
                   </span>
                   <span className="text-xs font-black text-slate-800 dark:text-slate-100">
-                    Point 4: <span className="text-[#141414] dark:text-white font-extrabold">Pernyataan &amp; Finalisasi Pendaftaran</span>
+                    Point 4: <span className="text-[#141414] dark:text-white font-extrabold">Konfirmasi &amp; Kirim Pendaftaran</span>
                   </span>
                 </div>
                 <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse stroke-[2.5] ml-1" />
@@ -2224,7 +2219,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
 
             {/* ============================================================
-                7. POINT 4: PERNYATAAN & KOMITMEN (Section 7)
+                7. POINT 4: KONFIRMASI & KIRIM PENDAFTARAN (Section 7)
                ============================================================ */}
             <section id="section-point-4" className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-4">
               {/* Top Accent Gradient Line */}
@@ -2240,32 +2235,30 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       Point 4
                     </span>
                     <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                      Pernyataan &amp; Komitmen Alur Pendaftaran
+                      Konfirmasi &amp; Kirim Pendaftaran
                     </h3>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pastikan kebenaran data dan pahami kewajiban penyerahan berkas fisik ke loket Fakultas Pertanian.
+                    Pastikan seluruh data yang Anda isi sudah benar sebelum mengirim formulir pendaftaran.
                   </p>
                 </div>
               </div>
 
-              {/* Komitmen Berada Sebelum Tombol Kirim Pendaftaran */}
-              <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border-2 border-emerald-600/30 dark:border-emerald-500/40 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-2xs">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agreeToFlow}
-                    onChange={(e) => setAgreeToFlow(e.target.checked)}
-                    className="w-5 h-5 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer shrink-0"
-                  />
-                  <span>
-                    {currentFlowSettings.commitmentText || 'Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa setelah formulir ini terkirim, saya wajib mencetak KRS Mengulang (A4) dan menyerahkannya langsung ke Administrasi Fakultas Pertanian INSTIPER'} {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran biaya.' : '(bebas biaya mengulang).'}
-                  </span>
-                </label>
+              {/* Peringatan Memastikan Data yang Diisi Sudah Benar */}
+              <div className="p-4 sm:p-5 bg-amber-50/90 dark:bg-amber-950/40 rounded-2xl border-2 border-amber-300 dark:border-amber-700/80 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed shadow-2xs flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <strong className="font-extrabold text-amber-950 dark:text-amber-200 block text-xs sm:text-sm">
+                    Peringatan: Pastikan Seluruh Data yang Diisi Sudah Benar!
+                  </strong>
+                  <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
+                    {currentFlowSettings.commitmentText || 'Mohon periksa kembali kesesuaian data identitas (NIM, Nama, No. WhatsApp), daftar mata kuliah, dan kelas yang Anda ambil. Setelah menekan tombol Kirim Pendaftaran, formulir akan diproses dan sistem menerbitkan dokumen KRS resmi untuk diserahkan ke loket Fakultas Pertanian.'}
+                  </p>
+                </div>
               </div>
 
-              {/* Tombol Kirim Pendaftaran (Berada Tepat Setelah Komitmen) */}
-              <div className="pt-2">
+              {/* Tombol Kirim Pendaftaran (Berada Tepat Setelah Peringatan) */}
+              <div className="pt-1">
                 <button
                   type="submit"
                   form="registration-form"
