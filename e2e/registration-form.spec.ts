@@ -66,5 +66,20 @@ test.describe('Aplikasi Pendaftaran Mengulang FAPERTA - Formulir Pendaftaran', (
     await submitBtn.scrollIntoViewIfNeeded();
     await expect(submitBtn).toBeEnabled({ timeout: 10000 });
   });
+
+  test('opsi kelas mata kuliah menampilkan pilihan kelas yang aktif dan dapat dipilih', async ({ page }) => {
+    const courseCard = page.locator('label').filter({ hasText: /SKS/i }).first();
+    await expect(courseCard).toBeVisible({ timeout: 10000 });
+
+    const courseCheckbox = courseCard.locator('input[type="checkbox"]');
+    await courseCheckbox.check();
+
+    const classSelect = page.locator('table select').first();
+    if (await classSelect.isVisible()) {
+      await expect(classSelect).toBeEnabled();
+      const optionTexts = await classSelect.locator('option').allInnerTexts();
+      expect(optionTexts.length).toBeGreaterThan(0);
+    }
+  });
 });
 

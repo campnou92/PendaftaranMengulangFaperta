@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { checkNimIsRegistered } from '../lib/firebase';
 import { renderFormattedNote } from '../utils/textFormatting';
+import { getClassQuotaStatus, getEnrolledClassCount } from '../utils/classQuota';
 
 interface RegistrationFormProps {
   courses: CourseItem[];
@@ -466,6 +467,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (course) {
       const period = findPeriodForCourse(course);
       const available = getAvailableClasses(course);
+      const allowedNotFull = available.filter(cls => {
+        if (isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course)) return false;
+        const q = getClassQuotaStatus(course, cls, existingRegistrations, adminSettings);
+        return !q.isFull;
+      });
+      if (allowedNotFull.length > 0) return allowedNotFull[0];
+
       const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course));
       return allowed[0] || available[0] || 'Kelas A';
     }
@@ -479,6 +487,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (chosen && available.includes(chosen) && !isClassRestrictedForRepeat(chosen, course.semester, adminSettings, period, course)) {
       return chosen;
     }
+    const allowedNotFull = available.filter(cls => {
+      if (isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course)) return false;
+      const q = getClassQuotaStatus(course, cls, existingRegistrations, adminSettings);
+      return !q.isFull;
+    });
+    if (allowedNotFull.length > 0) return allowedNotFull[0];
+
     const allowed = available.filter(cls => !isClassRestrictedForRepeat(cls, course.semester, adminSettings, period, course));
     return allowed[0] || available[0] || 'Kelas A';
   };
@@ -842,16 +857,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return selectedList.find(c => isCourseClosedCheck(c).isClosed);
   }, [selectedList, isCourseClosedCheck]);
 
+  // Cek apakah ada matakuliah yang kelas pilihannya sudah penuh kuotanya
+  const fullCourseSelected = useMemo(() => {
+    return selectedList.find(c => {
+      const cls = getSelectedClass(c);
+      const q = getClassQuotaStatus(c, cls, existingRegistrations, adminSettings);
+      return q.isFull;
+    });
+  }, [selectedList, courseSelections, existingRegistrations, adminSettings]);
+
   // Validation before submission
   const canSubmit = useMemo(() => {
     if (!activePortalStatus.isOpen) return false;
     if (closedCourseSelected) return false;
+    if (fullCourseSelected) return false;
     if (duplicateRegistration) return false;
     if (!email.trim() || !nama.trim() || !nim.trim() || !noWa.trim() || !kelasAsal.trim()) return false;
     if (selectedList.length === 0) return false;
     if (totalSks > currentMaxSks) return false;
     return true;
-  }, [activePortalStatus, closedCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks]);
+  }, [activePortalStatus, closedCourseSelected, fullCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks]);
 
   const getSubmitDisabledReason = (): string | null => {
     if (!activePortalStatus.isOpen) {
@@ -859,6 +884,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
     if (closedCourseSelected) {
       return `Mata kuliah "${closedCourseSelected.name}" berada di Semester ${closedCourseSelected.semester} yang saat ini pendaftarannya sedang ditutup.`;
+    }
+    if (fullCourseSelected) {
+      const cls = getSelectedClass(fullCourseSelected);
+      const q = getClassQuotaStatus(fullCourseSelected, cls, existingRegistrations, adminSettings);
+      return `Kelas ${cls} untuk mata kuliah "${fullCourseSelected.name}" sudah penuh (${q.enrolled}/${q.quota} mahasiswa). Silakan pilih kelas lain yang masih tersedia.`;
     }
     if (duplicateRegistration) return `NIM ${nim} sudah terdaftar sebelumnya atas nama ${duplicateRegistration.nama} (ID: ${duplicateRegistration.id}). Anda tidak dapat mendaftar dua kali kecuali pendaftaran sebelumnya ditolak.`;
     if (!email.trim() || !nama.trim() || !nim.trim() || !noWa.trim() || !kelasAsal.trim()) {
@@ -2074,9 +2104,28 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                             {availableClasses.map((cls) => {
                                               const coursePeriod = findPeriodForCourse(course);
                                               const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
+                                              const qStatus = getClassQuotaStatus(course, cls, existingRegistrations, adminSettings);
+                                              const isFull = qStatus.isFull;
+
+                                              let label = cls;
+                                              if (isScholarship) {
+                                                label += ' (Beasiswa - Dilarang)';
+                                              } else if (qStatus.hasQuota) {
+                                                if (isFull) {
+                                                  label += ` (Penuh - ${qStatus.enrolled}/${qStatus.quota})`;
+                                                } else {
+                                                  label += ` (Sisa ${qStatus.remaining} kursi - ${qStatus.enrolled}/${qStatus.quota})`;
+                                                }
+                                              }
+
                                               return (
-                                                <option key={cls} value={cls} disabled={isScholarship} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                                  {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
+                                                <option 
+                                                  key={cls} 
+                                                  value={cls} 
+                                                  disabled={isScholarship || isFull} 
+                                                  className={`bg-white dark:bg-slate-900 ${isFull ? 'text-rose-600 font-bold' : 'text-slate-900 dark:text-white'}`}
+                                                >
+                                                  {label}
                                                 </option>
                                               );
                                             })}
@@ -2085,9 +2134,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                         </div>
 
                                         <div className="flex items-center justify-between text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold pt-0.5">
-                                          <span className="flex items-center gap-1">
+                                          <span className="flex items-center gap-1 flex-wrap">
                                             <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                             <span>Kelas yang masuk KRS: <strong>{chosenClass}</strong></span>
+                                            {(() => {
+                                              const q = getClassQuotaStatus(course, chosenClass, existingRegistrations, adminSettings);
+                                              if (q.hasQuota) {
+                                                return (
+                                                  <span className={`ml-1 text-[9px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
+                                                    q.isFull 
+                                                      ? 'bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-950/60 dark:text-rose-300' 
+                                                      : 'bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                                  }`}>
+                                                    {q.isFull ? `🚫 Penuh (${q.enrolled}/${q.quota})` : `Sisa ${q.remaining} (${q.enrolled}/${q.quota})`}
+                                                  </span>
+                                                );
+                                              }
+                                              return null;
+                                            })()}
                                           </span>
                                           <span className="text-slate-400 text-[9px] font-normal">
                                             Ketuk untuk ganti
@@ -2135,13 +2199,42 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                   {availableClasses.map((cls) => {
                                     const coursePeriod = findPeriodForCourse(course);
                                     const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
+                                    const qStatus = getClassQuotaStatus(course, cls, existingRegistrations, adminSettings);
+                                    const isFull = qStatus.isFull;
+
+                                    let label = cls;
+                                    if (isScholarship) {
+                                      label += ' (Beasiswa - Dilarang)';
+                                    } else if (qStatus.hasQuota) {
+                                      if (isFull) {
+                                        label += ` (Penuh - ${qStatus.enrolled}/${qStatus.quota})`;
+                                      } else {
+                                        label += ` (Sisa ${qStatus.remaining} - ${qStatus.enrolled}/${qStatus.quota})`;
+                                      }
+                                    }
+
                                     return (
-                                      <option key={cls} value={cls} disabled={isScholarship}>
-                                        {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
+                                      <option key={cls} value={cls} disabled={isScholarship || isFull} className={isFull ? 'text-rose-600 font-bold' : ''}>
+                                        {label}
                                       </option>
                                     );
                                   })}
                                 </select>
+                                {isChecked && (() => {
+                                  const q = getClassQuotaStatus(course, chosenClass, existingRegistrations, adminSettings);
+                                  if (!q.hasQuota) return null;
+                                  return (
+                                    <div className="mt-1 flex items-center justify-between text-[10px]">
+                                      <span className={`px-1.5 py-0.2 rounded font-mono font-bold ${
+                                        q.isFull 
+                                          ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' 
+                                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                      }`}>
+                                        {q.isFull ? `Kapasitas Penuh (${q.enrolled}/${q.quota})` : `Sisa ${q.remaining} kursi (${q.enrolled}/${q.quota})`}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
                               </td>
 
                               {/* Kolom 7: Status Biaya */}

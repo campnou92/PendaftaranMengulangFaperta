@@ -63,6 +63,7 @@ import { ExamAttendanceModal } from './ExamAttendanceModal';
 import { RichNoteEditor } from './RichNoteEditor';
 import { RegistrationPeriodsManager } from './RegistrationPeriodsManager';
 import { renderFormattedNote } from '../utils/textFormatting';
+import { getClassQuotaStatus, getEnrolledClassCount, getClassQuota } from '../utils/classQuota';
 import { 
   getStoredUsers, 
   addManagedUser, 
@@ -274,6 +275,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [editProdi, setEditProdi] = useState<'agroteknologi' | 'agribisnis'>('agroteknologi');
   const [editSemester, setEditSemester] = useState<number>(3);
   const [editClasses, setEditClasses] = useState<string[]>([]);
+  const [editClassQuotas, setEditClassQuotas] = useState<Record<string, number>>({});
+
+  // Batch Quota Modal State
+  const [isBatchQuotaModalOpen, setIsBatchQuotaModalOpen] = useState(false);
+  const [batchQuotaSemester, setBatchQuotaSemester] = useState<string>('all');
+  const [batchQuotaValue, setBatchQuotaValue] = useState<number>(40);
+  const [batchQuotaSelectedClasses, setBatchQuotaSelectedClasses] = useState<string[]>([]);
 
   // Dedicated In-App Modals for Course Management (Anti-Gagal dalam Iframe)
   const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
@@ -422,6 +430,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditSemester(Number(course.semester) || 3);
     setEditAcademicYear(course.academicYear || currentActiveAcademicYear);
     setEditClasses(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions);
+    setEditClassQuotas(course.classQuotas ? { ...course.classQuotas } : {});
     setCourseFeedback(null);
     setIsEditCourseModalOpen(true);
   };
@@ -443,7 +452,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           prodi: editProdi,
           semester: Number(editSemester) || 3,
           academicYear: editAcademicYear || c.academicYear || currentActiveAcademicYear,
-          availableClasses: editClasses.length > 0 ? editClasses : adminSettings.classOptions
+          availableClasses: editClasses.length > 0 ? editClasses : adminSettings.classOptions,
+          classQuotas: editClassQuotas
         };
       }
       return c;
@@ -457,6 +467,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       message: `Mata kuliah "${editName.trim()}" (${editSks} SKS, Semester ${editSemester}) berhasil diperbarui!`
     });
     setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
+  // Terapkan Kuota Massal ke banyak mata kuliah sekaligus
+  const handleApplyBatchQuota = () => {
+    const targetCourses = courses.filter(c => {
+      if (batchQuotaSemester === 'selected') {
+        return selectedCourseIds.includes(c.id);
+      }
+      if (selectedCourseYear !== 'all' && (c.academicYear || '2025/2026') !== selectedCourseYear) {
+        return false;
+      }
+      if (batchQuotaSemester !== 'all' && String(c.semester) !== batchQuotaSemester) {
+        return false;
+      }
+      return true;
+    });
+
+    if (targetCourses.length === 0) {
+      setCourseFeedback({ type: 'error', message: 'Tidak ada mata kuliah yang cocok untuk diterapkan kuota.' });
+      setTimeout(() => setCourseFeedback(null), 3500);
+      return;
+    }
+
+    const targetIds = new Set(targetCourses.map(c => c.id));
+    const classesToApply = batchQuotaSelectedClasses.length > 0 ? batchQuotaSelectedClasses : adminSettings.classOptions;
+
+    const updated = courses.map(c => {
+      if (!targetIds.has(c.id)) return c;
+      const existingQuotas = { ...(c.classQuotas || {}) };
+      classesToApply.forEach(cls => {
+        if (batchQuotaValue <= 0) {
+          delete existingQuotas[cls];
+        } else {
+          existingQuotas[cls] = batchQuotaValue;
+        }
+      });
+      return {
+        ...c,
+        classQuotas: existingQuotas
+      };
+    });
+
+    onUpdateCourses(updated);
+    setIsBatchQuotaModalOpen(false);
+    setCourseFeedback({
+      type: 'success',
+      message: `Berhasil menerapkan kuota ${batchQuotaValue > 0 ? `${batchQuotaValue} mhs/kelas` : 'tak terbatas (reset)'} pada ${targetCourses.length} mata kuliah!`
+    });
+    setTimeout(() => setCourseFeedback(null), 4000);
   };
 
   // Salin Semua Matkul dari Satu Tahun Ajaran ke Tahun Ajaran Lain (Fitur Duplikasi Cepat)
@@ -2242,6 +2301,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>Import Matakuliah &amp; SKS</span>
                 </button>
 
+                {/* Atur Kuota Massal */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBatchQuotaSemester(filterCourseSemester === 'all' ? 'all' : filterCourseSemester);
+                    setBatchQuotaValue(40);
+                    setBatchQuotaSelectedClasses([...adminSettings.classOptions]);
+                    setIsBatchQuotaModalOpen(true);
+                  }}
+                  className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  title="Atur kapasitas kuota kelas untuk seluruh mata kuliah sekaligus"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Atur Kuota Massal</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsResetCoursesModalOpen(true)}
@@ -2378,6 +2453,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                         <button
                           type="button"
+                          onClick={() => {
+                            setBatchQuotaSemester('selected');
+                            setBatchQuotaValue(40);
+                            setBatchQuotaSelectedClasses([...adminSettings.classOptions]);
+                            setIsBatchQuotaModalOpen(true);
+                          }}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>Atur Kuota ({selectedCourseIds.length})</span>
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => setIsBatchDeleteModalOpen(true)}
                           className="px-4 py-2 bg-[#E4202A] hover:bg-red-700 text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
                         >
@@ -2490,18 +2579,39 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   <div className="flex flex-wrap gap-1">
                                     {(course.availableClasses && course.availableClasses.length > 0 ? course.availableClasses : adminSettings.classOptions).map((cls) => {
                                       const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings);
+                                      const quotaStatus = getClassQuotaStatus(course, cls, registrations, adminSettings);
                                       return (
                                         <span
                                           key={cls}
-                                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold border inline-flex items-center gap-1 ${
                                             isScholarship
                                               ? 'bg-rose-50 text-rose-700 border-rose-300'
-                                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                                              : quotaStatus.isFull
+                                              ? 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800'
+                                              : quotaStatus.hasQuota
+                                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                                              : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                                           }`}
-                                          title={isScholarship ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` : 'Kelas Reguler'}
+                                          title={
+                                            isScholarship 
+                                              ? `Kelas Beasiswa (Semester ${course.semester}): Dilarang untuk mengulang` 
+                                              : quotaStatus.hasQuota
+                                              ? `Kapasitas: ${quotaStatus.enrolled}/${quotaStatus.quota} mhs terdaftar${quotaStatus.isFull ? ' (KUOTA PENUH)' : ` (Sisa ${quotaStatus.remaining} kursi)`}`
+                                              : 'Kelas Reguler (Kapasitas tidak dibatasi)'
+                                          }
                                         >
-                                          {cls}
-                                          {isScholarship && <span className="ml-1 text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>}
+                                          <span>{cls}</span>
+                                          {isScholarship ? (
+                                            <span className="text-[9px] text-rose-600 font-extrabold">🚫 Beasiswa</span>
+                                          ) : quotaStatus.hasQuota ? (
+                                            <span className={`text-[9px] font-mono font-bold px-1 py-0.2 rounded ${
+                                              quotaStatus.isFull 
+                                                ? 'bg-rose-600 text-white' 
+                                                : 'bg-emerald-200/80 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
+                                            }`}>
+                                              {quotaStatus.enrolled}/{quotaStatus.quota}
+                                            </span>
+                                          ) : null}
                                         </span>
                                       );
                                     })}
@@ -2592,12 +2702,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             </div>
 
                             <div className="flex items-center justify-between pt-1">
-                              <div className="flex flex-wrap gap-1 max-w-[200px]">
-                                {(course.availableClasses || adminSettings.classOptions).slice(0, 4).map(cls => (
-                                  <span key={cls} className="text-[9px] font-bold px-1.5 py-0.2 bg-slate-100 text-slate-700 rounded border border-slate-200">
-                                    {cls}
-                                  </span>
-                                ))}
+                              <div className="flex flex-wrap gap-1 max-w-[220px]">
+                                {(course.availableClasses || adminSettings.classOptions).slice(0, 4).map(cls => {
+                                  const q = getClassQuotaStatus(course, cls, registrations, adminSettings);
+                                  return (
+                                    <span key={cls} className={`text-[9px] font-bold px-1.5 py-0.2 rounded border inline-flex items-center gap-0.5 ${
+                                      q.isFull 
+                                        ? 'bg-rose-100 text-rose-800 border-rose-300' 
+                                        : q.hasQuota 
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                                    }`}>
+                                      <span>{cls}</span>
+                                      {q.hasQuota && (
+                                        <span className="font-mono text-[8px] opacity-80">
+                                          [{q.enrolled}/{q.quota}]
+                                        </span>
+                                      )}
+                                    </span>
+                                  );
+                                })}
                                 {(course.availableClasses || adminSettings.classOptions).length > 4 && (
                                   <span className="text-[9px] text-slate-500 font-semibold">
                                     +{(course.availableClasses || adminSettings.classOptions).length - 4} kelas
@@ -5392,6 +5516,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Pengaturan Kuota Mahasiswa per Kelas */}
+              <div className="pt-2 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Kapasitas Kuota Mahasiswa per Kelas
+                  </label>
+                  <span className="text-[10px] text-slate-500">
+                    (0 atau kosong = Kuota tak terbatas)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50">
+                  {editClasses.map((cls) => {
+                    const quotaVal = editClassQuotas[cls] !== undefined ? editClassQuotas[cls] : '';
+                    const enrolled = courseBeingEdited ? getEnrolledClassCount(courseBeingEdited, cls, registrations) : 0;
+                    return (
+                      <div key={cls} className="bg-white p-2 rounded-lg border border-slate-200 flex flex-col gap-1 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700 truncate">{cls}</span>
+                          <span className="text-[10px] font-mono text-slate-500 font-semibold" title="Jumlah pendaftar aktif saat ini">
+                            {enrolled} mhs
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Tak Terbatas"
+                            value={quotaVal}
+                            onChange={(e) => {
+                              const valStr = e.target.value;
+                              if (valStr === '') {
+                                const next = { ...editClassQuotas };
+                                delete next[cls];
+                                setEditClassQuotas(next);
+                              } else {
+                                const val = parseInt(valStr, 10);
+                                setEditClassQuotas(prev => ({
+                                  ...prev,
+                                  [cls]: isNaN(val) ? 0 : val
+                                }));
+                              }
+                            }}
+                            className="w-full text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 focus:border-[#009A44] focus:ring-1 focus:ring-[#009A44]"
+                          />
+                          <span className="text-[10px] text-slate-500 font-bold shrink-0">kursi</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -5414,6 +5591,197 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               >
                 <Save className="w-4 h-4" />
                 <span>Simpan Perubahan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 1B: ATUR KUOTA MASSAL KELAS MAHASISWA */}
+      {/* ============================================================== */}
+      {isBatchQuotaModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            {/* Header */}
+            <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white">Atur Kuota Kapasitas Kelas Massal</h3>
+                  <p className="text-[11px] text-blue-100">Tetapkan batas maksimal mahasiswa per kelas sekaligus</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBatchQuotaModalOpen(false)}
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+              {/* Target Mata Kuliah */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                  Target Mata Kuliah yang Diterapkan:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {selectedCourseIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBatchQuotaSemester('selected')}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        batchQuotaSemester === 'selected'
+                          ? 'bg-blue-50 text-blue-700 border-blue-500 ring-2 ring-blue-500/20'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>🎯 Terpilih ({selectedCourseIds.length} MK)</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setBatchQuotaSemester('all')}
+                    className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      batchQuotaSemester === 'all'
+                        ? 'bg-blue-50 text-blue-700 border-blue-500 ring-2 ring-blue-500/20'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <span>Semua Semester ({coursesInSelectedYear.length} MK)</span>
+                  </button>
+                  {uniqueCourseSemesters.map(sem => (
+                    <button
+                      key={sem}
+                      type="button"
+                      onClick={() => setBatchQuotaSemester(sem)}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        batchQuotaSemester === sem
+                          ? 'bg-blue-50 text-blue-700 border-blue-500 ring-2 ring-blue-500/20'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>Semester {sem}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Besaran Kuota */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                  Kapasitas Kuota per Kelas (Maksimal Mahasiswa):
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Contoh: 40 (0 = Tidak Dibatasi)"
+                    value={batchQuotaValue}
+                    onChange={(e) => setBatchQuotaValue(parseInt(e.target.value, 10) || 0)}
+                    className="flex-1 text-sm font-extrabold px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">mahasiswa / kelas</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  {[30, 35, 40, 45, 50, 0].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setBatchQuotaValue(val)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer ${
+                        batchQuotaValue === val
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {val === 0 ? 'Tanpa Batas (0)' : `${val} mhs`}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  * Isi <strong>0</strong> jika ingin mereset kuota agar pendaftaran kelas tidak dibatasi kuota.
+                </p>
+              </div>
+
+              {/* Kelas yang Dipilih untuk Diterapkan Kuota */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Terapkan pada Kelas:
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBatchQuotaSelectedClasses([...adminSettings.classOptions])}
+                      className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      Pilih Semua
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setBatchQuotaSelectedClasses(adminSettings.classOptions.filter(c => !c.toLowerCase().includes('beasiswa')))}
+                      className="text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:underline cursor-pointer"
+                    >
+                      Hanya Reguler
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+                  {adminSettings.classOptions.map((cls) => {
+                    const isChosen = batchQuotaSelectedClasses.includes(cls);
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => {
+                          if (isChosen) {
+                            if (batchQuotaSelectedClasses.length > 1) {
+                              setBatchQuotaSelectedClasses(batchQuotaSelectedClasses.filter(c => c !== cls));
+                            }
+                          } else {
+                            setBatchQuotaSelectedClasses([...batchQuotaSelectedClasses, cls]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                          isChosen
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'
+                        }`}
+                      >
+                        <span>{cls}</span>
+                        {isChosen && <Check className="w-3 h-3 ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBatchQuotaModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleApplyBatchQuota}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-blue-600/20 active:scale-98"
+              >
+                <Save className="w-4 h-4" />
+                <span>Terapkan Kuota Massal</span>
               </button>
             </div>
           </div>

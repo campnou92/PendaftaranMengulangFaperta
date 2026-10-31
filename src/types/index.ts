@@ -30,6 +30,7 @@ export interface CourseItem {
   prodi: 'agroteknologi' | 'agribisnis' | string;
   semester: number | string; // e.g. 1, 3, 5 or 'Antara'
   availableClasses?: string[];
+  classQuotas?: Record<string, number>; // Kuota kapasitas per kelas, contoh: { "Kelas A": 40, "Kelas B": 35 }
   restrictedClasses?: string[]; // Daftar kelas beasiswa / dilarang mengulang khusus untuk matakuliah ini
   academicYear?: string; // e.g. '2024/2025', '2025/2026'
   periodId?: string; // ID record periode pendaftaran
@@ -112,6 +113,9 @@ export interface AdminSettings {
   // Pengaturan Batas Maksimal Pengambilan SKS (Default 24 SKS & Konfigurasi Khusus Per Angkatan)
   defaultMaxSks: number; // Default 24 SKS
   batchMaxSks?: Record<string, number>; // Batas SKS khusus per angkatan, misal { "2020": 20, "2021": 22 }
+
+  // Pengaturan Kuota Default Mahasiswa Per Kelas (0 / undefined = tidak dibatasi)
+  defaultClassQuota?: number;
 
   // Pengaturan Buka / Tutup Pendaftaran Berdasarkan Semester & Jadwal Periode (Superadmin)
   semesterSchedules?: Record<string, SemesterSchedule>;
