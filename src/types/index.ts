@@ -103,6 +103,10 @@ export interface AdminSettings {
   activeTerm?: string; // Default: 'Ganjil'
   availableAcademicYears?: string[]; // Contoh: ['2023/2024', '2024/2025', '2025/2026', '2026/2027']
 
+  // Saklar Utama Buka / Tutup Pendaftaran Halaman Depan (Master Switch)
+  isGlobalRegistrationOpen?: boolean; // undefined atau true = Dibuka, false = Ditutup Total
+  globalClosedMessage?: string; // Pesan kustom jika pendaftaran ditutup total
+
   // Pengaturan Biaya Mengulang Per SKS untuk Angkatan Tertentu (Superadmin)
   feePerSksEnabled: boolean;
   costPerSks: number; // Biaya per SKS dalam Rupiah, misal 50000
@@ -229,10 +233,23 @@ export function getSemesterStatus(
   const semKey = String(semesterNum);
   const activeYear = targetAcademicYear || settings?.activeAcademicYear || '2025/2026';
 
+  // 0. Cek Saklar Utama Global Portal (Master Switch)
+  if (settings?.isGlobalRegistrationOpen === false) {
+    return {
+      isOpen: false,
+      state: 'manual_closed',
+      label: 'DITUTUP TOTAL',
+      badgeClass: 'bg-rose-100 text-rose-800 border-rose-300',
+      message: settings.globalClosedMessage || 'Pendaftaran mengulang saat ini sedang ditutup oleh pihak Admin Fakultas Pertanian.'
+    };
+  }
+
   // 1. Prioritas Utama: Cek apakah ada record RegistrationPeriod yang cocok
   if (settings?.registrationPeriods && settings.registrationPeriods.length > 0) {
     const period = settings.registrationPeriods.find(
       p => String(p.semester) === semKey && (p.academicYear === activeYear || !p.academicYear)
+    ) || settings.registrationPeriods.find(
+      p => String(p.semester) === semKey
     );
 
     if (period) {

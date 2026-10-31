@@ -143,6 +143,8 @@ export default function App() {
             availableAcademicYears: Array.isArray(parsed.availableAcademicYears) && parsed.availableAcademicYears.length > 0 
               ? parsed.availableAcademicYears 
               : (DEFAULT_ADMIN_SETTINGS.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']),
+            isGlobalRegistrationOpen: typeof parsed.isGlobalRegistrationOpen === 'boolean' ? parsed.isGlobalRegistrationOpen : (DEFAULT_ADMIN_SETTINGS.isGlobalRegistrationOpen ?? true),
+            globalClosedMessage: parsed.globalClosedMessage || DEFAULT_ADMIN_SETTINGS.globalClosedMessage,
             feePerSksEnabled: typeof parsed.feePerSksEnabled === 'boolean' ? parsed.feePerSksEnabled : DEFAULT_ADMIN_SETTINGS.feePerSksEnabled,
             costPerSks: typeof parsed.costPerSks === 'number' ? parsed.costPerSks : DEFAULT_ADMIN_SETTINGS.costPerSks,
             paidBatches: Array.isArray(parsed.paidBatches) ? parsed.paidBatches : DEFAULT_ADMIN_SETTINGS.paidBatches,

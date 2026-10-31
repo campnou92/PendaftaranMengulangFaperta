@@ -59,12 +59,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Ambil seluruh periode pendaftaran yang ditentukan Admin: hanya yang showOnMainForm !== false dan isOpen !== false
   const openVisiblePeriods = useMemo(() => {
+    if (adminSettings.isGlobalRegistrationOpen === false) return [];
     const allPeriods: RegistrationPeriod[] = adminSettings.registrationPeriods || [];
     return allPeriods.filter(p => p.showOnMainForm !== false && p.isOpen !== false);
-  }, [adminSettings.registrationPeriods]);
+  }, [adminSettings.registrationPeriods, adminSettings.isGlobalRegistrationOpen]);
 
   // Ekstrak secara dinamis semester apa saja yang diaktifkan Admin untuk tampil di halaman utama
   const activeSemesters = useMemo(() => {
+    if (adminSettings.isGlobalRegistrationOpen === false) return [];
     const semSet = new Set<number>();
     
     // Prioritas 1: Dari openVisiblePeriods (hanya semester yang dibuka & diset tampil oleh admin)
@@ -194,6 +196,21 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Helper untuk menghitung sisa waktu & status penutupan link berdasarkan semester
   const calculateTimeLeft = () => {
     const now = new Date();
+
+    // 0. Cek jika Saklar Utama Global Portal Ditutup oleh Admin
+    if (adminSettings.isGlobalRegistrationOpen === false) {
+      return {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        isClosed: true,
+        statusLabel: 'Link Pendaftaran Ditutup',
+        detailMessage: adminSettings.globalClosedMessage || 'Pendaftaran mengulang saat ini sedang ditutup oleh pihak Fakultas Pertanian.',
+        semesterLabel: 'Semua Semester',
+        targetDateFormatted: '-'
+      };
+    }
 
     // 1. Jika pengguna memilih semester tertentu (misal Semester 1, Semester 3 atau Semester 5)
     if (selectedSemester !== 'all') {
@@ -832,6 +849,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Status jadwal pembukaan portal semester (dinamis untuk semua semester aktif)
   const activePortalStatus = useMemo(() => {
+    if (adminSettings.isGlobalRegistrationOpen === false) {
+      return {
+        isOpen: false,
+        message: adminSettings.globalClosedMessage || 'Pendaftaran mengulang saat ini sedang ditutup oleh pihak Fakultas Pertanian.'
+      };
+    }
     if (activeSemesters.length === 0) {
       return {
         isOpen: false,

@@ -127,6 +127,8 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
   activeAcademicYear: '2025/2026',
   activeTerm: 'Ganjil',
   availableAcademicYears: ['2023/2024', '2024/2025', '2025/2026', '2026/2027'],
+  isGlobalRegistrationOpen: true,
+  globalClosedMessage: 'Pendaftaran mengulang saat ini sedang ditutup oleh pihak Admin Fakultas Pertanian.',
   classOptions: [
     'SPKS A', 'SPKS B', 'SPKS C', 'SPKS D', 'SPKS E', 'SPKS F',
     'SPKS G', 'SPKS H', 'SPKS I', 'SPKS J', 'SPKS K', 'SMBP A',

@@ -39,6 +39,7 @@ import {
   Calendar,
   Clock,
   Lock,
+  Unlock,
   CalendarClock,
   AlertTriangle,
   Info,
@@ -516,6 +517,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       message: `Berhasil menerapkan kuota ${batchQuotaValue > 0 ? `${batchQuotaValue} mhs/kelas` : 'tak terbatas (reset)'} pada ${targetCourses.length} mata kuliah!`
     });
     setTimeout(() => setCourseFeedback(null), 4000);
+  };
+
+  // Status Pendaftaran Depan & Handler Buka/Tutup Global Portal
+  const isRegistrationActive = useMemo(() => {
+    if (adminSettings.isGlobalRegistrationOpen === false) return false;
+    const periods = adminSettings.registrationPeriods || [];
+    if (periods.length > 0) {
+      return periods.some(p => p.isOpen !== false && p.showOnMainForm !== false);
+    }
+    const schedules = adminSettings.semesterSchedules || {};
+    return Object.values(schedules).some((s: any) => s.isOpen !== false);
+  }, [adminSettings.isGlobalRegistrationOpen, adminSettings.registrationPeriods, adminSettings.semesterSchedules]);
+
+  const handleToggleGlobalRegistration = (targetState: boolean) => {
+    const updatedPeriods = (adminSettings.registrationPeriods || []).map(p => ({
+      ...p,
+      isOpen: targetState,
+      showOnMainForm: targetState,
+      updatedAt: new Date().toISOString()
+    }));
+    const updatedSchedules: Record<string, any> = {};
+    Object.keys(adminSettings.semesterSchedules || {}).forEach(k => {
+      updatedSchedules[k] = {
+        ...(adminSettings.semesterSchedules?.[k] || {}),
+        isOpen: targetState
+      };
+    });
+
+    onUpdateSettings({
+      ...adminSettings,
+      isGlobalRegistrationOpen: targetState,
+      registrationPeriods: updatedPeriods,
+      semesterSchedules: updatedSchedules
+    });
+
+    setCourseFeedback({
+      type: 'success',
+      message: targetState 
+        ? 'Pendaftaran halaman depan BERHASIL DIBUKA untuk seluruh semester.' 
+        : 'Pendaftaran halaman depan BERHASIL DITUTUP TOTAL.'
+    });
+    setTimeout(() => setCourseFeedback(null), 3500);
   };
 
   // Salin Semua Matkul dari Satu Tahun Ajaran ke Tahun Ajaran Lain (Fitur Duplikasi Cepat)
@@ -2044,6 +2087,81 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
           {/* Area Konten Tab Dinamis */}
           <div className="flex-1">
+
+          {/* Master Switch Status Pendaftaran Depan */}
+          <div className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 ${
+            !isRegistrationActive
+              ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800'
+              : 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800'
+          }`}>
+            <div className="flex items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
+                !isRegistrationActive
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-[#008744] text-white'
+              }`}>
+                {!isRegistrationActive ? (
+                  <Lock className="w-5 h-5" />
+                ) : (
+                  <Unlock className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                    !isRegistrationActive
+                      ? 'bg-rose-200 text-rose-900 border border-rose-300 dark:bg-rose-900/60 dark:text-rose-200'
+                      : 'bg-emerald-200 text-emerald-950 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-200'
+                  }`}>
+                    {!isRegistrationActive ? '🔴 PENDAFTARAN DITUTUP' : '🟢 PENDAFTARAN DIBUKA'}
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Status Pendaftaran di Halaman Depan Mahasiswa
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                  {!isRegistrationActive
+                    ? 'Formulir pendaftaran di halaman depan saat ini DITUTUP TOTAL. Mahasiswa tidak dapat memilih mata kuliah maupun mengirimkan pendaftaran.'
+                    : 'Pendaftaran di halaman depan saat ini AKTIF / TERBUKA. Mahasiswa dapat mengisi formulir pendaftaran dan memilih mata kuliah mengulang.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleToggleGlobalRegistration(!isRegistrationActive)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 ${
+                  !isRegistrationActive
+                    ? 'bg-[#008744] hover:bg-[#00702F] text-white'
+                    : 'bg-rose-600 hover:bg-red-700 text-white'
+                }`}
+                title={!isRegistrationActive ? 'Klik untuk membuka pendaftaran halaman depan' : 'Klik untuk menutup seluruh pendaftaran halaman depan'}
+              >
+                {!isRegistrationActive ? (
+                  <>
+                    <Unlock className="w-4 h-4" />
+                    <span>Buka Pendaftaran Depan</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Tutup Pendaftaran Depan Sekarang</span>
+                  </>
+                )}
+              </button>
+
+              {activeTab !== 'periods' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('periods')}
+                  className="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  Kelola Jadwal &amp; Periode →
+                </button>
+              )}
+            </div>
+          </div>
 
         {/* TAB 1: KELOLA MATA KULIAH & SKS (FITUR 1) */}
         {activeTab === 'courses' && (

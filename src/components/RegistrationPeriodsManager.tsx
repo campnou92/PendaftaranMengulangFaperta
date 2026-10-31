@@ -574,9 +574,22 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
       return p;
     });
 
+    const updatedSchedules = {
+      ...(adminSettings.semesterSchedules || {}),
+      [String(period.semester)]: {
+        semester: Number(period.semester) || 3,
+        isOpen: newStatus,
+        useSchedule: period.useSchedule,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        closedMessage: period.closedMessage
+      }
+    };
+
     onUpdateSettings({
       ...adminSettings,
-      registrationPeriods: updatedPeriods
+      registrationPeriods: updatedPeriods,
+      semesterSchedules: updatedSchedules
     });
 
     setFeedback({
@@ -596,9 +609,22 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
       return p;
     });
 
+    const updatedSchedules = {
+      ...(adminSettings.semesterSchedules || {}),
+      [String(period.semester)]: {
+        semester: Number(period.semester) || 3,
+        isOpen: newShow && period.isOpen,
+        useSchedule: period.useSchedule,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        closedMessage: period.closedMessage
+      }
+    };
+
     onUpdateSettings({
       ...adminSettings,
-      registrationPeriods: updatedPeriods
+      registrationPeriods: updatedPeriods,
+      semesterSchedules: updatedSchedules
     });
 
     setFeedback({
@@ -615,9 +641,13 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
     const title = periodToDelete.title;
 
     const updatedPeriods = periods.filter(p => p.id !== targetId);
+    const updatedSchedules = { ...(adminSettings.semesterSchedules || {}) };
+    delete updatedSchedules[String(periodToDelete.semester)];
+
     onUpdateSettings({
       ...adminSettings,
-      registrationPeriods: updatedPeriods
+      registrationPeriods: updatedPeriods,
+      semesterSchedules: updatedSchedules
     });
 
     if (onUpdateCourses) {
