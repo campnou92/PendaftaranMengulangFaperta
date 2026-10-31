@@ -1,4 +1,37 @@
-import { CourseItem, AdminSettings } from '../types';
+import { CourseItem, AdminSettings, RegistrationFlowSettings } from '../types';
+
+export const DEFAULT_REGISTRATION_FLOW: RegistrationFlowSettings = {
+  title: 'Alur Resmi Pendaftaran Mengulang',
+  subtitle: 'Fakultas Pertanian — Wajib Dipahami Seluruh Mahasiswa',
+  steps: [
+    {
+      step: 1,
+      title: 'Isi Identitas & Kelas Asal',
+      desc: 'Lengkapi identitas mahasiswa, tentukan kelas asal, lalu pilih semester kurikulum yang ingin diulang.',
+      tag: 'Online'
+    },
+    {
+      step: 2,
+      title: 'Cetak Lembar KRS (A4)',
+      desc: 'Setelah formulir dikirim, sistem membuka dokumen KRS. Cetak pada kertas A4 atau simpan file HTML/PDF resmi.',
+      tag: 'Standar Resmi'
+    },
+    {
+      step: 3,
+      title: 'Bukti Pembayaran SKS',
+      desc: 'Bagi angkatan lama (2022 ke bawah), bayar biaya per SKS dan siapkan slip fisik transfer/bank. (Angkatan 2023+ bebas biaya).',
+      tag: 'Slip Bank'
+    },
+    {
+      step: 4,
+      title: 'Serahkan ke Loket FP',
+      desc: 'Bawa lembar cetak formulir beserta bukti fisik pembayaran (jika ada) ke Administrasi Fakultas Pertanian untuk validasi.',
+      tag: 'Loket Admin FP'
+    }
+  ],
+  highlightNote: 'Penting: Pastikan seluruh isian identitas mahasiswa dan mata kuliah yang dipilih sudah sesuai sebelum mengirimkan formulir pendaftaran.',
+  commitmentText: 'Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa setelah formulir ini terkirim, saya wajib mencetak KRS Mengulang (A4) dan menyerahkannya langsung ke Administrasi Fakultas Pertanian INSTIPER'
+};
 
 export const INITIAL_COURSES: CourseItem[] = [
   // ==========================================
@@ -202,5 +235,6 @@ Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_insti
   restrictedRepeatClassReason: {
     '3': 'Kelas Beasiswa pada Semester 3 dikhususkan bagi mahasiswa penerima beasiswa penuh dan tidak dibuka untuk kelas mengulang.',
     '5': 'Kelas Beasiswa dan Kelas D pada Semester 5 diperuntukkan bagi mahasiswa jalur beasiswa prestasi/kemitraan dan tidak dapat diambil untuk mengulang.'
-  }
+  },
+  registrationFlow: DEFAULT_REGISTRATION_FLOW
 };

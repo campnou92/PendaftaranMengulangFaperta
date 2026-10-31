@@ -122,6 +122,24 @@ export interface AdminSettings {
   // Pengaturan Kelas Beasiswa (Tidak Boleh untuk Kelas Mengulang) Per Semester (Superadmin)
   restrictedRepeatClasses?: Record<string, string[]>; // Mapping per semester: misal { '3': ['Kelas Beasiswa'], '5': ['Kelas Beasiswa', 'Kelas D'] }
   restrictedRepeatClassReason?: Record<string, string>; // Keterangan / alasan per semester
+
+  // Pengaturan Alur & Panduan Pendaftaran Mahasiswa (Superadmin / Admin Fakultas)
+  registrationFlow?: RegistrationFlowSettings;
+}
+
+export interface RegistrationFlowStep {
+  step: number;
+  title: string;
+  desc: string;
+  tag?: string;
+}
+
+export interface RegistrationFlowSettings {
+  title: string; // Default: 'Alur Resmi Pendaftaran Mengulang'
+  subtitle: string; // Default: 'Fakultas Pertanian — Wajib Dipahami Seluruh Mahasiswa'
+  steps: RegistrationFlowStep[];
+  highlightNote: string;
+  commitmentText: string;
 }
 
 export interface RegistrationPeriod {

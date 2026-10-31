@@ -10,7 +10,9 @@ import {
   ManagedUser,
   UserRole,
   getMaxSksForBatch, 
-  isClassRestrictedForRepeat
+  isClassRestrictedForRepeat,
+  RegistrationFlowStep,
+  RegistrationFlowSettings
 } from '../types';
 import { 
   PlusCircle, 
@@ -52,9 +54,10 @@ import {
   ChevronRight,
   Database,
   Copy,
-  Loader2
+  Loader2,
+  ListOrdered
 } from 'lucide-react';
-import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS, DEFAULT_CLASSES } from '../data/courses';
+import { INITIAL_COURSES, DEFAULT_ADMIN_SETTINGS, ANGKATAN_OPTIONS, DEFAULT_CLASSES, DEFAULT_REGISTRATION_FLOW } from '../data/courses';
 import { downloadMasterCoursesTemplate, parseMasterCoursesFile } from '../utils/excelImportExport';
 import { ExamAttendanceModal } from './ExamAttendanceModal';
 import { RichNoteEditor } from './RichNoteEditor';
@@ -349,6 +352,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [importCourseSuccess, setImportCourseSuccess] = useState<string | null>(null);
   const [importMode, setImportMode] = useState<'append' | 'replace'>('append');
 
+  // Superadmin: Editor Alur & Panduan Pendaftaran Mahasiswa
+  const initialFlow = adminSettings.registrationFlow ?? DEFAULT_REGISTRATION_FLOW;
+  const [flowTitleDraft, setFlowTitleDraft] = useState<string>(initialFlow.title);
+  const [flowSubtitleDraft, setFlowSubtitleDraft] = useState<string>(initialFlow.subtitle);
+  const [flowStepsDraft, setFlowStepsDraft] = useState<RegistrationFlowStep[]>(
+    initialFlow.steps && initialFlow.steps.length === 4 ? initialFlow.steps : DEFAULT_REGISTRATION_FLOW.steps
+  );
+  const [flowHighlightDraft, setFlowHighlightDraft] = useState<string>(initialFlow.highlightNote);
+  const [flowCommitmentDraft, setFlowCommitmentDraft] = useState<string>(initialFlow.commitmentText);
+  const [flowSavedFeedback, setFlowSavedFeedback] = useState<boolean>(false);
+
   // Sync if adminSettings changes externally
   useEffect(() => {
     setFeeEnabled(adminSettings.feePerSksEnabled ?? true);
@@ -361,6 +375,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setActiveAcademicYearDraft(adminSettings.activeAcademicYear ?? '2025/2026');
     setActiveTermDraft(adminSettings.activeTerm ?? 'Ganjil');
     setAvailableYearsDraft(adminSettings.availableAcademicYears ?? ['2023/2024', '2024/2025', '2025/2026', '2026/2027']);
+
+    const rf = adminSettings.registrationFlow ?? DEFAULT_REGISTRATION_FLOW;
+    setFlowTitleDraft(rf.title);
+    setFlowSubtitleDraft(rf.subtitle);
+    setFlowStepsDraft(rf.steps && rf.steps.length === 4 ? rf.steps : DEFAULT_REGISTRATION_FLOW.steps);
+    setFlowHighlightDraft(rf.highlightNote);
+    setFlowCommitmentDraft(rf.commitmentText);
   }, [adminSettings]);
 
   // Add course handler (FITUR 1 dengan Semester & Feedback In-App & Tahun Ajaran)
@@ -777,6 +798,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
     setNoteSavedFeedback(true);
     setTimeout(() => setNoteSavedFeedback(false), 2500);
+  };
+
+  // Superadmin: Simpan Pengaturan Alur Pendaftaran
+  const handleSaveFlowSettings = () => {
+    const updatedFlow: RegistrationFlowSettings = {
+      title: flowTitleDraft.trim() || DEFAULT_REGISTRATION_FLOW.title,
+      subtitle: flowSubtitleDraft.trim() || DEFAULT_REGISTRATION_FLOW.subtitle,
+      steps: flowStepsDraft.map((st, idx) => ({
+        step: idx + 1,
+        title: st.title.trim() || DEFAULT_REGISTRATION_FLOW.steps[idx].title,
+        desc: st.desc.trim() || DEFAULT_REGISTRATION_FLOW.steps[idx].desc,
+        tag: (st.tag ?? '').trim() || DEFAULT_REGISTRATION_FLOW.steps[idx].tag
+      })),
+      highlightNote: flowHighlightDraft.trim() || DEFAULT_REGISTRATION_FLOW.highlightNote,
+      commitmentText: flowCommitmentDraft.trim() || DEFAULT_REGISTRATION_FLOW.commitmentText
+    };
+
+    onUpdateSettings({
+      ...adminSettings,
+      registrationFlow: updatedFlow
+    });
+    setFlowSavedFeedback(true);
+    setTimeout(() => setFlowSavedFeedback(false), 2500);
+  };
+
+  // Superadmin: Reset Pengaturan Alur Pendaftaran ke Default
+  const handleResetFlowSettings = () => {
+    setFlowTitleDraft(DEFAULT_REGISTRATION_FLOW.title);
+    setFlowSubtitleDraft(DEFAULT_REGISTRATION_FLOW.subtitle);
+    setFlowStepsDraft(DEFAULT_REGISTRATION_FLOW.steps);
+    setFlowHighlightDraft(DEFAULT_REGISTRATION_FLOW.highlightNote);
+    setFlowCommitmentDraft(DEFAULT_REGISTRATION_FLOW.commitmentText);
+
+    onUpdateSettings({
+      ...adminSettings,
+      registrationFlow: DEFAULT_REGISTRATION_FLOW
+    });
+    setFlowSavedFeedback(true);
+    setTimeout(() => setFlowSavedFeedback(false), 2500);
+  };
+
+  const handleUpdateStepDraft = (index: number, field: keyof RegistrationFlowStep, value: string) => {
+    setFlowStepsDraft(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
   };
 
   // Add Class Option
@@ -2810,6 +2878,199 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {noteDraft ? renderFormattedNote(noteDraft) : <span className="text-slate-400 italic">Belum ada catatan.</span>}
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ============================================================== */}
+            {/* FITUR ALUR: Editor Alur & Panduan Pendaftaran Mahasiswa */}
+            {/* ============================================================== */}
+            <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-[#166534] dark:border-emerald-600 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-emerald-200 dark:border-emerald-800/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#166534] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+                    <ListOrdered className="w-5 h-5 text-yellow-300" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                        Editor Alur &amp; Panduan Pendaftaran Mahasiswa
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#166534] border border-emerald-300">
+                        Live di Form Mahasiswa
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Kelola 4 langkah prosedur alur pendaftaran, judul panduan, catatan penting, serta kalimat komitmen mahasiswa.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {flowSavedFeedback && (
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 animate-fade-in flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      Alur Tersimpan!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetFlowSettings}
+                    className="h-10 px-3.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset Bawaan</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveFlowSettings}
+                    className="h-10 px-5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Alur Pendaftaran</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Judul & Subjudul Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Judul Utama Banner Panduan:
+                  </label>
+                  <input
+                    type="text"
+                    value={flowTitleDraft}
+                    onChange={(e) => setFlowTitleDraft(e.target.value)}
+                    placeholder="Contoh: Alur Resmi Pendaftaran Mengulang"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534]"
+                  />
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Subjudul / Lembaga:
+                  </label>
+                  <input
+                    type="text"
+                    value={flowSubtitleDraft}
+                    onChange={(e) => setFlowSubtitleDraft(e.target.value)}
+                    placeholder="Contoh: Fakultas Pertanian — Wajib Dipahami Seluruh Mahasiswa"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534]"
+                  />
+                </div>
+              </div>
+
+              {/* 4 Langkah Prosedur */}
+              <div>
+                <label className="block text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2.5">
+                  4 Langkah Prosedur Alur Resmi:
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  {flowStepsDraft.map((st, idx) => (
+                    <div 
+                      key={idx} 
+                      className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-700/50 shadow-2xs space-y-2.5 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-[#166534] text-white">
+                            Langkah {idx + 1}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-bold">
+                            Point 0{idx + 1}
+                          </span>
+                        </div>
+
+                        <div className="mt-2.5 space-y-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                              Tag / Badge Prosedur:
+                            </label>
+                            <input
+                              type="text"
+                              value={st.tag}
+                              onChange={(e) => handleUpdateStepDraft(idx, 'tag', e.target.value)}
+                              placeholder="Tag (e.g. Online, Cetak A4)"
+                              className="w-full h-8 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                              Judul Langkah:
+                            </label>
+                            <input
+                              type="text"
+                              value={st.title}
+                              onChange={(e) => handleUpdateStepDraft(idx, 'title', e.target.value)}
+                              placeholder="Judul Prosedur"
+                              className="w-full h-8 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                              Deskripsi Instruksi:
+                            </label>
+                            <textarea
+                              rows={3}
+                              value={st.desc}
+                              onChange={(e) => handleUpdateStepDraft(idx, 'desc', e.target.value)}
+                              placeholder="Deskripsi langkah..."
+                              className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 resize-none leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                        ✓ Tampil di Card 0{idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Catatan Penting & Kalimat Komitmen */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+                {/* Highlight Note */}
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Catatan Penting di Bawah 4 Kartu Alur:
+                    </label>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={flowHighlightDraft}
+                    onChange={(e) => setFlowHighlightDraft(e.target.value)}
+                    placeholder="Contoh: Pastikan seluruh isian identitas mahasiswa..."
+                    className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534] resize-none leading-relaxed"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Teks ini tampil pada bilah hijau di bagian bawah banner alur pendaftaran.
+                  </p>
+                </div>
+
+                {/* Kalimat Pernyataan Komitmen Mahasiswa */}
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Kalimat Pernyataan &amp; Komitmen Mahasiswa (Point 4):
+                    </label>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={flowCommitmentDraft}
+                    onChange={(e) => setFlowCommitmentDraft(e.target.value)}
+                    placeholder="Contoh: Saya menyatakan data mata kuliah yang saya pilih sudah benar..."
+                    className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534] resize-none leading-relaxed"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Kalimat persetujuan yang wajib dicentang mahasiswa sebelum tombol Kirim Pendaftaran aktif.
+                  </p>
                 </div>
               </div>
             </div>
