@@ -29,6 +29,7 @@ import {
   ChevronUp,
   ArrowUpDown,
   ArrowRight,
+  GraduationCap,
   X,
   Loader2
 } from 'lucide-react';
@@ -1703,16 +1704,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     03
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
                         Point 3
                       </span>
                       <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
                         Pilih Mata Kuliah yang Diulang
                       </h2>
+                      <span className="text-[10px] sm:hidden font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-300/60 dark:border-amber-700">
+                        + Pilihan Kelas
+                      </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Centang mata kuliah yang ingin Anda daftarkan dan sesuaikan pilihan kelasnya.
+                      Centang mata kuliah yang ingin Anda daftarkan dan sesuaikan pilihan kelasnya (A, B, C, dll).
                     </p>
                   </div>
                 </div>
@@ -1731,6 +1735,21 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     <span className="text-slate-400">/</span>
                     <span>Maks {currentMaxSks} SKS</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Panduan Khusus Layar HP / Mobile: Pilihan Kelas Otomatis */}
+              <div className="sm:hidden p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border border-emerald-200/90 dark:border-emerald-800 text-xs shadow-2xs flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div className="flex-1 leading-relaxed text-slate-700 dark:text-slate-300">
+                  <strong className="text-emerald-950 dark:text-emerald-100 font-extrabold block text-xs">
+                    Pilihan Kelas Langsung di Layar HP
+                  </strong>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                    Setiap mata kuliah memiliki menu pilihan kelas. Centang mata kuliah yang Anda inginkan, maka kotak <strong>Pilih Kelas Mengulang</strong> akan langsung aktif di bawah nama mata kuliah tanpa perlu menggeser layar.
+                  </p>
                 </div>
               </div>
 
@@ -1932,13 +1951,18 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700/80 text-[11px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider select-none">
-                          <th className="py-3.5 px-3.5 text-center w-16">Pilih</th>
-                          <th className="py-3.5 px-4 min-w-[220px]">Mata Kuliah &amp; Kode</th>
-                          <th className="py-3.5 px-3 text-center w-24">SKS</th>
-                          <th className="py-3.5 px-3 text-center w-24">Semester</th>
-                          <th className="py-3.5 px-3 w-32">Program Studi</th>
-                          <th className="py-3.5 px-4 min-w-[180px]">Opsi Kelas Ditawarkan</th>
-                          <th className="py-3.5 px-4 text-right w-28">Status Biaya</th>
+                          <th className="py-3.5 px-2.5 sm:px-3.5 text-center w-12 sm:w-16">Pilih</th>
+                          <th className="py-3.5 px-3 sm:px-4 min-w-[200px] sm:min-w-[220px]">
+                            <span>Mata Kuliah &amp; Kode</span>
+                            <span className="sm:hidden text-[9px] font-bold text-emerald-700 dark:text-emerald-400 block normal-case font-sans">
+                              (Termasuk Pilihan Kelas)
+                            </span>
+                          </th>
+                          <th className="hidden sm:table-cell py-3.5 px-3 text-center w-24">SKS</th>
+                          <th className="hidden sm:table-cell py-3.5 px-3 text-center w-24">Semester</th>
+                          <th className="hidden sm:table-cell py-3.5 px-3 w-32">Program Studi</th>
+                          <th className="hidden sm:table-cell py-3.5 px-4 min-w-[180px]">Opsi Kelas Ditawarkan</th>
+                          <th className="hidden sm:table-cell py-3.5 px-4 text-right w-28">Status Biaya</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
@@ -1962,7 +1986,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                               }`}
                             >
                               {/* Kolom 1: Checkbox Seleksi (Playwright Selector Compatible via sr-only SKS label) */}
-                              <td className="py-3 px-3.5 text-center align-middle">
+                              <td className="py-3 px-2 sm:px-3.5 text-center align-top sm:align-middle">
                                 <label 
                                   className={`inline-flex items-center justify-center p-2 rounded-lg text-xs font-bold transition-all select-none cursor-pointer ${
                                     isCourseClosed 
@@ -1996,8 +2020,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 </label>
                               </td>
 
-                              {/* Kolom 2: Nama Mata Kuliah & Kode */}
-                              <td className="py-3 px-4 align-middle">
+                              {/* Kolom 2: Nama Mata Kuliah, Kode & Mobile Details */}
+                              <td className="py-3 px-3 sm:px-4 align-top sm:align-middle">
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`font-bold text-xs sm:text-sm tracking-tight ${
@@ -2020,32 +2044,118 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                     <span>•</span>
                                     <span>Kurikulum FP</span>
                                   </div>
+
+                                  {/* Mobile Responsive Details & Class Selector (Tampil di Layar HP < sm) */}
+                                  <div className="mt-2.5 sm:hidden space-y-2">
+                                    {/* Chips Info: SKS, Semester, Prodi, Biaya */}
+                                    <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                      <span className="px-2 py-0.5 rounded-md font-mono font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                                        {course.sks} SKS
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-md font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        Sem {course.semester}
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-md font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                        {course.prodi}
+                                      </span>
+                                      {isPaidBatch && (
+                                        <span className="px-2 py-0.5 rounded-md font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40">
+                                          Rp {(course.sks * costPerSks).toLocaleString('id-ID')}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Mobile Class Selector Control */}
+                                    {!isChecked || isCourseClosed ? (
+                                      <div className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-850/60 transition-all">
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                                            <GraduationCap className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                            <span>Pilihan Kelas:</span>
+                                          </span>
+                                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                            {chosenClass} (Tersedia)
+                                          </span>
+                                        </div>
+                                        {!isCourseClosed && (
+                                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                                            <span>👉 Centang mata kuliah untuk memilih/mengubah kelas.</span>
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="p-2.5 rounded-xl border-2 border-emerald-500 bg-white dark:bg-slate-900 shadow-sm space-y-1.5 ring-2 ring-emerald-500/20">
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <label 
+                                            htmlFor={`mobile-class-select-${course.id}`}
+                                            className="text-xs font-black text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5"
+                                          >
+                                            <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                            <span>Pilih Kelas Mengulang:</span>
+                                          </label>
+                                          <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                            {chosenClass}
+                                          </span>
+                                        </div>
+
+                                        <div className="relative">
+                                          <select
+                                            id={`mobile-class-select-${course.id}`}
+                                            value={chosenClass}
+                                            onChange={(e) => handleChangeClass(course.id, e.target.value)}
+                                            className="w-full h-9 pl-3 pr-8 rounded-lg text-xs font-extrabold bg-emerald-50/60 dark:bg-emerald-950/40 text-slate-900 dark:text-emerald-100 border border-emerald-500 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-2xs appearance-none"
+                                          >
+                                            {availableClasses.map((cls) => {
+                                              const coursePeriod = findPeriodForCourse(course);
+                                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
+                                              return (
+                                                <option key={cls} value={cls} disabled={isScholarship} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                                  {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
+                                                </option>
+                                              );
+                                            })}
+                                          </select>
+                                          <ChevronDown className="w-4 h-4 text-emerald-700 dark:text-emerald-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none stroke-[2.5]" />
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold pt-0.5">
+                                          <span className="flex items-center gap-1">
+                                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                            <span>Kelas yang masuk KRS: <strong>{chosenClass}</strong></span>
+                                          </span>
+                                          <span className="text-slate-400 text-[9px] font-normal">
+                                            Ketuk untuk ganti
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
 
                               {/* Kolom 3: Beban SKS - Rapi, horizontal, tidak berulang/tumpang tindih */}
-                              <td className="py-3 px-3 text-center align-middle whitespace-nowrap">
+                              <td className="hidden sm:table-cell py-3 px-3 text-center align-middle whitespace-nowrap">
                                 <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-2xs whitespace-nowrap">
                                   {course.sks} SKS
                                 </span>
                               </td>
 
                               {/* Kolom 4: Semester */}
-                              <td className="py-3 px-3 text-center align-middle">
+                              <td className="hidden sm:table-cell py-3 px-3 text-center align-middle">
                                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                                   Sem {course.semester}
                                 </span>
                               </td>
 
                               {/* Kolom 5: Program Studi */}
-                              <td className="py-3 px-3 align-middle">
+                              <td className="hidden sm:table-cell py-3 px-3 align-middle">
                                 <span className="capitalize font-semibold text-slate-700 dark:text-slate-300 text-xs">
                                   {course.prodi}
                                 </span>
                               </td>
 
                               {/* Kolom 6: Opsi Kelas Ditawarkan */}
-                              <td className="py-3 px-4 align-middle">
+                              <td className="hidden sm:table-cell py-3 px-4 align-middle">
                                 <select
                                   disabled={!isChecked || isCourseClosed}
                                   value={chosenClass}
@@ -2069,7 +2179,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                               </td>
 
                               {/* Kolom 7: Status Biaya */}
-                              <td className="py-3 px-4 text-right align-middle">
+                              <td className="hidden sm:table-cell py-3 px-4 text-right align-middle">
                                 {isPaidBatch ? (
                                   <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-xs">
                                     Rp {(course.sks * costPerSks).toLocaleString('id-ID')}
