@@ -39,7 +39,11 @@ export const Header: React.FC<HeaderProps> = ({
               <img
                 src="/logo_instiper.png"
                 alt="Logo Resmi INSTIPER Yogyakarta"
-                className="w-9 h-9 sm:w-11 sm:h-11 object-contain shrink-0 drop-shadow-xs transition-transform group-hover:scale-105"
+                width={44}
+                height={44}
+                className="w-9 h-9 sm:w-11 sm:h-11 object-contain shrink-0 drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
+                loading="eager"
+                decoding="async"
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">

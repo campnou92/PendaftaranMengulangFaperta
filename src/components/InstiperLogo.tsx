@@ -18,6 +18,7 @@ export const InstiperLogo: React.FC<InstiperLogoProps> = ({
       height={size}
       className={`object-contain shrink-0 drop-shadow-xs ${className}`}
       loading="eager"
+      decoding="async"
     />
   );
 };
