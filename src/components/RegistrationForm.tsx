@@ -160,9 +160,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     [id: string]: { checked: boolean; selectedClass: string };
   }>({});
 
-  // 4. Batch class applicator
-  const [batchClassToApply, setBatchClassToApply] = useState('Kelas A');
-
   // 5. Prodi Tab: 'agroteknologi' | 'agribisnis' | 'all'
   const [activeProdiTab, setActiveProdiTab] = useState<'agroteknologi' | 'agribisnis' | 'all'>('agroteknologi');
   const [searchQuery, setSearchQuery] = useState('');
@@ -745,26 +742,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         selectedClass: newClass,
       },
     }));
-  };
-
-  // Apply batch class to all currently checked courses (hanya mata kuliah yang terbuka)
-  const handleApplyBatchClass = (cls: string) => {
-    setCourseSelections((prev) => {
-      const next = { ...prev };
-      activeYearCourses.forEach((c) => {
-        if (next[c.id]?.checked && !isCourseClosedCheck(c).isClosed) {
-          const available = getAvailableClasses(c);
-          const p = findPeriodForCourse(c);
-          if (available.includes(cls) && !isClassRestrictedForRepeat(cls, c.semester, adminSettings, p)) {
-            next[c.id] = {
-              ...next[c.id],
-              selectedClass: cls,
-            };
-          }
-        }
-      });
-      return next;
-    });
   };
 
   // Select all or Deselect all visible courses (Hanya berlaku untuk mata kuliah yang dibuka)
@@ -1737,58 +1714,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 </div>
 
-                {/* SKS Badge Meter */}
-                <div className={`self-start sm:self-auto px-4 py-2 rounded-full text-xs font-mono font-bold flex items-center gap-2 shadow-2xs border ${
-                  isOverSksLimit 
-                    ? 'bg-red-100 text-red-600 border-red-300' 
-                    : 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                }`}>
-                  <span>{totalSks} SKS Terpilih</span>
-                  <span className="text-slate-400">/</span>
-                  <span>Maks {currentMaxSks} SKS</span>
-                </div>
-              </div>
-
-              {/* Terapkan Kelas Sekaligus */}
-              <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Terapkan Kelas Sekaligus:
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {globalClassOptions.map((cls) => {
-                      const activeSemNum = selectedSemester !== 'all' ? Number(selectedSemester) : (activeSemesters[0] || 3);
-                      const isScholarship = isClassRestrictedForRepeat(cls, activeSemNum, adminSettings, currentActivePeriod);
-
-                      return (
-                        <button
-                          key={cls}
-                          type="button"
-                          disabled={isScholarship}
-                          onClick={() => {
-                            if (!isScholarship) {
-                              setBatchClassToApply(cls);
-                              handleApplyBatchClass(cls);
-                            }
-                          }}
-                          title={isScholarship ? 'Kelas Beasiswa tidak boleh dipilih' : `Terapkan ${cls} ke semua mata kuliah yang tercentang`}
-                          className={`px-3 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer ${
-                            isScholarship
-                              ? 'line-through text-slate-400 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-60'
-                              : batchClassToApply === cls
-                              ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs'
-                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
-                          }`}
-                        >
-                          {cls}
-                        </button>
-                      );
-                    })}
+                {/* Status Terpilih & SKS Badge Meter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    Terpilih: <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{selectedList.length}</strong> mata kuliah
                   </div>
-                </div>
-
-                <div className="text-left md:text-right text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
-                  Terpilih: <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{selectedList.length}</strong> mata kuliah (<strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{totalSks}</strong> SKS)
+                  <div className={`self-start sm:self-auto px-4 py-1.5 rounded-full text-xs font-mono font-bold flex items-center gap-2 shadow-2xs border ${
+                    isOverSksLimit 
+                      ? 'bg-red-100 text-red-600 border-red-300' 
+                      : 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                  }`}>
+                    <span>{totalSks} SKS Terpilih</span>
+                    <span className="text-slate-400">/</span>
+                    <span>Maks {currentMaxSks} SKS</span>
+                  </div>
                 </div>
               </div>
 
@@ -2371,7 +2310,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             {/* ============================================================
                 7. POINT 4: PERNYATAAN & KOMITMEN (Section 7)
                ============================================================ */}
-            <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-4">
+            <section id="section-point-4" className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-4">
               {/* Top Accent Gradient Line */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
 
@@ -2394,7 +2333,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-2xs">
+              {/* Komitmen Berada Sebelum Tombol Kirim Pendaftaran */}
+              <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border-2 border-emerald-600/30 dark:border-emerald-500/40 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-2xs">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -2406,6 +2346,27 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa <strong>setelah formulir ini terkirim</strong>, saya wajib <strong>mencetak KRS Mengulang (A4)</strong> dan menyerahkannya langsung ke <strong>Administrasi Fakultas Pertanian INSTIPER</strong> {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran biaya' : '(bebas biaya mengulang)'}.
                   </span>
                 </label>
+              </div>
+
+              {/* Tombol Kirim Pendaftaran (Berada Tepat Setelah Komitmen) */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  form="registration-form"
+                  disabled={!canSubmit}
+                  title={getSubmitDisabledReason() || 'Kirim Formulir Pendaftaran Mengulang'}
+                  className="w-full h-12 sm:h-13 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Kirim Pendaftaran</span>
+                </button>
+
+                {getSubmitDisabledReason() && (
+                  <div className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 leading-relaxed flex items-center gap-2">
+                    <Info className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <span>{getSubmitDisabledReason()}</span>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -2528,17 +2489,18 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </p>
             </div>
 
-            {/* Primary Action Button (Desktop Sidebar) */}
+            {/* Action Shortcut to Point 4 (Desktop Sidebar) */}
             <div>
               <button
-                type="submit"
-                form="registration-form"
-                disabled={!canSubmit}
-                title={getSubmitDisabledReason() || 'Kirim Formulir Pendaftaran Mengulang'}
-                className="w-full h-12 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-sm shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('section-point-4');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
               >
-                <Send className="w-4 h-4" />
-                <span>Kirim Pendaftaran</span>
+                <Send className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-200" />
+                <span>Menuju Point 4 &amp; Kirim Form ↓</span>
               </button>
 
               {getSubmitDisabledReason() && (
@@ -2602,17 +2564,18 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
           </div>
 
-          {/* Right: Submit Button & Mobile disabled hint */}
+          {/* Right: Action Shortcut to Point 4 */}
           <div className="shrink-0 flex flex-col items-stretch sm:items-end gap-1 w-full sm:w-auto">
             <button
-              type="submit"
-              form="registration-form"
-              disabled={!canSubmit}
-              title={getSubmitDisabledReason() || 'Kirim Formulir Pendaftaran Mengulang'}
-              className="w-full sm:w-auto h-12 sm:h-11 px-6 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('section-point-4');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full sm:w-auto h-11 px-5 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
             >
-              <Send className="w-4 h-4" />
-              <span>Kirim Pendaftaran</span>
+              <Send className="w-3.5 h-3.5" />
+              <span>Menuju Point 4 (Kirim) ↓</span>
             </button>
             {getSubmitDisabledReason() && (
               <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold text-center sm:text-right truncate max-w-xs sm:max-w-sm">
