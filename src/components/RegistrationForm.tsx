@@ -18,17 +18,22 @@ import {
   Search, 
   BookOpen, 
   FileText, 
-  Info,
-  Clock,
-  Send,
-  Ban,
-  Printer,
-  CreditCard,
-  Building2,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Loader2
+  Info, 
+  Clock, 
+  Send, 
+  Ban, 
+  Printer, 
+  CreditCard, 
+  Building2, 
+  ChevronDown, 
+  ChevronUp, 
+  X, 
+  Loader2,
+  LayoutGrid,
+  List,
+  SlidersHorizontal,
+  ArrowUpDown,
+  GraduationCap
 } from 'lucide-react';
 import { checkNimIsRegistered } from '../lib/firebase';
 import { renderFormattedNote } from '../utils/textFormatting';
@@ -163,6 +168,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // 5. Prodi Tab: 'agroteknologi' | 'agribisnis' | 'all'
   const [activeProdiTab, setActiveProdiTab] = useState<'agroteknologi' | 'agribisnis' | 'all'>('agroteknologi');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Behance Discover Layout Controls: View Mode ('grid' | 'list'), SKS Filter & Sorting
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sksFilter, setSksFilter] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'default' | 'sks-desc' | 'name-asc'>('default');
 
   // 6. Agreement check / acknowledgment
   const [agreeToFlow, setAgreeToFlow] = useState(true);
@@ -526,9 +536,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     );
   }, [nim, existingRegistrations]);
 
-  // Filter courses based on activeYearCourses, dynamic semester, prodi tab & smart similar search
+  // Filter courses based on activeYearCourses, dynamic semester, prodi tab, SKS, sorting & smart live search
   const filteredCourses = useMemo(() => {
-    return activeYearCourses.filter((c) => {
+    const list = activeYearCourses.filter((c) => {
       // 1. Filter Semester
       if (selectedSemester !== 'all' && String(c.semester) !== selectedSemester) {
         return false;
@@ -537,7 +547,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       // 2. Filter Prodi Tab
       if (activeProdiTab !== 'all' && c.prodi !== activeProdiTab) return false;
 
-      // 3. Smart Similar / Flexible Live Search
+      // 3. Filter Beban SKS
+      if (sksFilter !== 'all' && String(c.sks) !== sksFilter) return false;
+
+      // 4. Smart Similar / Flexible Live Search
       if (searchQuery.trim()) {
         const cleanQuery = searchQuery.toLowerCase().trim();
         const queryWords = cleanQuery.split(/\s+/).filter(Boolean);
@@ -548,7 +561,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
       return true;
     });
-  }, [activeYearCourses, selectedSemester, activeProdiTab, searchQuery]);
+
+    if (sortOrder === 'sks-desc') {
+      return [...list].sort((a, b) => b.sks - a.sks);
+    }
+    if (sortOrder === 'name-asc') {
+      return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return list;
+  }, [activeYearCourses, selectedSemester, activeProdiTab, sksFilter, sortOrder, searchQuery]);
 
   // Courses counts per tab based on activeYearCourses and selectedSemester
   const tabCounts = useMemo(() => {
@@ -694,15 +715,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     });
   }, [adminSettings.semesterSchedules, adminSettings.registrationPeriods, selectedSemester, activeAcademicYear]);
 
-  // Toggle single course selection
-  const handleToggleCourse = (course: CourseItem) => {
+  // Toggle single course selection (with support for explicit boolean target)
+  const handleToggleCourse = (course: CourseItem, forceChecked?: boolean) => {
     const { isClosed } = isCourseClosedCheck(course);
     if (isClosed) return; // Kotak centang nonaktif ketika link ditutup
 
     setCourseSelections((prev) => {
       const current = prev[course.id];
       const isCurrentlyChecked = current?.checked || false;
-      const willBeChecked = !isCurrentlyChecked;
+      const willBeChecked = typeof forceChecked === 'boolean' ? forceChecked : !isCurrentlyChecked;
 
       return {
         ...prev,
@@ -1697,62 +1718,28 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               </div>
 
-              {/* Prodi Tabs */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto">
-                <button
-                  type="button"
-                  onClick={() => setActiveProdiTab('agroteknologi')}
-                  className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
-                    activeProdiTab === 'agroteknologi'
-                      ? 'bg-white dark:bg-slate-900 text-[#166534] dark:text-emerald-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Agroteknologi ({tabCounts.agroSelected}/{tabCounts.agroTotal})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveProdiTab('agribisnis')}
-                  className={`flex-1 min-w-[140px] py-2 px-3 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
-                    activeProdiTab === 'agribisnis'
-                      ? 'bg-white dark:bg-slate-900 text-[#166534] dark:text-emerald-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Agribisnis ({tabCounts.agriSelected}/{tabCounts.agriTotal})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveProdiTab('all')}
-                  className={`py-2 px-3.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer shrink-0 ${
-                    activeProdiTab === 'all'
-                      ? 'bg-white dark:bg-slate-900 text-[#166534] dark:text-emerald-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  Semua ({tabCounts.allSelected}/{tabCounts.allTotal})
-                </button>
-              </div>
-
-              {/* Search bar + Select all */}
-              <div className="space-y-2 pt-1">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* ============================================================
+                  BEHANCE DISCOVER HEADER: SEARCH & PRODI PILL CONTROLLER
+                  Sesuai UI Behance Discover (Search Bar + Segmented Pills)
+                 ============================================================ */}
+              <div className="bg-slate-50 dark:bg-slate-800/80 p-2 sm:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-2">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                  
+                  {/* Behance Unified Search Input */}
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari matkul serupa (misal: tanah, agronomi, kimia, biologi)..."
-                      className="w-full h-10 pl-10 pr-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#166534] shadow-2xs"
+                      placeholder="Cari matakuliah, dosen, kode MK, atau program studi..."
+                      className="w-full h-11 pl-11 pr-10 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#141414] dark:focus:ring-emerald-500 shadow-2xs transition-all"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                         title="Hapus pencarian"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -1760,44 +1747,175 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     )}
                   </div>
 
-                  {/* Tombol Pilih Semua (Dinonaktifkan jika semua matakuliah berstatus tutup) */}
+                  {/* Behance Segmented Pill Switcher (Projects | People | Moodboards -> Semua | Agroteknologi | Agribisnis) */}
+                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0 self-stretch md:self-auto overflow-x-auto no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => setActiveProdiTab('all')}
+                      className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-full text-xs font-bold transition-all text-center cursor-pointer shrink-0 ${
+                        activeProdiTab === 'all'
+                          ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      Semua ({tabCounts.allSelected}/{tabCounts.allTotal})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveProdiTab('agroteknologi')}
+                      className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-full text-xs font-bold transition-all text-center cursor-pointer shrink-0 ${
+                        activeProdiTab === 'agroteknologi'
+                          ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      Agroteknologi ({tabCounts.agroSelected}/{tabCounts.agroTotal})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveProdiTab('agribisnis')}
+                      className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-full text-xs font-bold transition-all text-center cursor-pointer shrink-0 ${
+                        activeProdiTab === 'agribisnis'
+                          ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      Agribisnis ({tabCounts.agriSelected}/{tabCounts.agriTotal})
+                    </button>
+                  </div>
+
+                </div>
+
+                {searchQuery.trim() && (
+                  <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/80 animate-fade-in">
+                    <span className="font-bold">🔍 Live Search:</span>
+                    <span>Ditemukan <strong>{filteredCourses.length}</strong> mata kuliah yang cocok dengan kata kunci "{searchQuery}"</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ============================================================
+                  BEHANCE FILTER PILLS TOOLBAR (Row of Filter Chips with Carets)
+                  Creative Fields ▾ | Tools ▾ | Location ▾ | Grid/List View
+                 ============================================================ */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 pb-1 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex flex-wrap items-center gap-2">
+                  
+                  {/* Filter Pill: Semester */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={selectedSemester}
+                      onChange={(e) => setSelectedSemester(e.target.value)}
+                      className="appearance-none bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold py-1.5 pl-3 pr-7 rounded-full shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#141414] dark:focus:ring-emerald-500 cursor-pointer"
+                      title="Filter Semester Matakuliah"
+                    >
+                      <option value="all">Semester: Semua</option>
+                      {activeSemesters.map(sem => (
+                        <option key={sem} value={String(sem)}>Semester {sem}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                  </div>
+
+                  {/* Filter Pill: Beban SKS */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={sksFilter}
+                      onChange={(e) => setSksFilter(e.target.value)}
+                      className="appearance-none bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold py-1.5 pl-3 pr-7 rounded-full shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#141414] dark:focus:ring-emerald-500 cursor-pointer"
+                      title="Filter Beban SKS"
+                    >
+                      <option value="all">Beban: Semua SKS</option>
+                      <option value="2">2 SKS</option>
+                      <option value="3">3 SKS</option>
+                      <option value="4">4 SKS</option>
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
+                  </div>
+
+                  {/* Filter Pill: Urutkan / Sort */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as any)}
+                      className="appearance-none bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold py-1.5 pl-3 pr-7 rounded-full shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#141414] dark:focus:ring-emerald-500 cursor-pointer"
+                      title="Urutan Tampilan Matakuliah"
+                    >
+                      <option value="default">Urutkan: Default</option>
+                      <option value="sks-desc">SKS Terbanyak</option>
+                      <option value="name-asc">Nama Matkul A - Z</option>
+                    </select>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400 absolute right-2.5 pointer-events-none" />
+                  </div>
+
+                </div>
+
+                {/* Right Side: Select All & Behance Grid / List View Switcher */}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  
+                  {/* Select All Checkbox Pill */}
                   {(() => {
                     const openCourses = filteredCourses.filter(c => !isCourseClosedCheck(c).isClosed);
                     const allVisibleClosed = filteredCourses.length > 0 && openCourses.length === 0;
 
                     return (
-                      <label className={`inline-flex items-center gap-2 text-xs font-semibold select-none self-end sm:self-center shrink-0 ${
+                      <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold select-none cursor-pointer transition-all ${
                         allVisibleClosed 
-                          ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' 
-                          : 'text-slate-700 dark:text-slate-300 cursor-pointer'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60' 
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-400 shadow-2xs'
                       }`}>
                         <input
                           type="checkbox"
                           disabled={allVisibleClosed}
                           checked={areAllVisibleSelected}
                           onChange={handleToggleSelectAllVisible}
-                          className={`w-4 h-4 rounded transition-all ${
-                            allVisibleClosed 
-                              ? 'text-slate-400 bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-50' 
-                              : 'text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer'
-                          }`}
+                          className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 cursor-pointer"
                         />
-                        <span>
+                        <span className="hidden sm:inline">
                           {allVisibleClosed 
-                            ? `Pilih Semua Dinonaktifkan (Link Ditutup)` 
-                            : `Pilih Semua yang Tampil (${openCourses.length}/${filteredCourses.length})`}
+                            ? 'Link Ditutup' 
+                            : `Pilih Semua (${openCourses.length}/${filteredCourses.length})`}
+                        </span>
+                        <span className="sm:hidden">
+                          Semua ({openCourses.length})
                         </span>
                       </label>
                     );
                   })()}
-                </div>
 
-                {searchQuery.trim() && (
-                  <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80 animate-fade-in">
-                    <span className="font-bold">🔍 Live Search:</span>
-                    <span>Ditemukan <strong>{filteredCourses.length}</strong> mata kuliah yang cocok dengan kata kunci "{searchQuery}"</span>
+                  {/* Behance View Mode Switcher: [ ⊞ Grid ] [ ☰ List ] */}
+                  <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
+                        viewMode === 'grid'
+                          ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                      }`}
+                      title="Tampilan Kartu Showcase (Behance Grid)"
+                      aria-label="Tampilan Grid"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
+                        viewMode === 'list'
+                          ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                      }`}
+                      title="Tampilan Daftar Baris (Compact List)"
+                      aria-label="Tampilan List"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                )}
+
+                </div>
               </div>
 
               {/* Banner Peringatan Jika Link Pendaftaran Semester Sedang Ditutup */}
@@ -1815,17 +1933,205 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               )}
 
-              {/* Course rows list */}
-              <div className="space-y-2.5">
-                {filteredCourses.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                    <BookOpen className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
-                    <p className="text-xs text-slate-500 font-medium">
-                      Tidak ada mata kuliah yang cocok dengan filter atau kata kunci.
-                    </p>
-                  </div>
-                ) : (
-                  filteredCourses.map((course) => {
+              {/* ============================================================
+                  COURSE SHOWCASE: BEHANCE GRID VIEW OR COMPACT LIST VIEW
+                 ============================================================ */}
+              {filteredCourses.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/50 dark:bg-slate-900/50">
+                  <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-bold">
+                    Tidak ada mata kuliah yang cocok dengan filter atau kata kunci.
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                    Coba ganti filter semester, prodi, atau hapus kata kunci pencarian.
+                  </p>
+                </div>
+              ) : viewMode === 'grid' ? (
+                /* ------------------------------------------------------------
+                   1. BEHANCE PROJECT CARDS GRID (3-Column Responsive Grid)
+                   ------------------------------------------------------------ */
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                  {filteredCourses.map((course) => {
+                    const { isClosed: isCourseClosed, reason: closedReason } = isCourseClosedCheck(course);
+                    const isChecked = !isCourseClosed && (courseSelections[course.id]?.checked || false);
+                    const chosenClass = getSelectedClass(course);
+                    const availableClasses = getAvailableClasses(course);
+
+                    // Dynamic Gradient Header per prodi ala Behance Artwork Cover
+                    const isAgro = course.prodi === 'agroteknologi';
+                    const coverGradient = isAgro
+                      ? 'from-emerald-900 via-[#0e2c1c] to-slate-900'
+                      : 'from-teal-900 via-[#0d2a29] to-slate-900';
+
+                    return (
+                      <div
+                        key={course.id}
+                        className={`group rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden relative ${
+                          isCourseClosed
+                            ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed select-none'
+                            : isChecked
+                            ? 'bg-emerald-50/20 dark:bg-emerald-950/20 border-emerald-500 shadow-md ring-2 ring-emerald-500/30 -translate-y-0.5'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5'
+                        }`}
+                      >
+                        {/* Behance Project Cover Area (Height ~110px with Gradient & Abstract Motif) */}
+                        <div className={`h-24 sm:h-28 bg-gradient-to-br ${coverGradient} p-3.5 text-white flex flex-col justify-between relative overflow-hidden select-none`}>
+                          
+                          {/* Subtle Course ID Watermark Background */}
+                          <div className="absolute -right-2 -bottom-2 text-white/5 font-black text-4xl sm:text-5xl font-mono tracking-tighter pointer-events-none uppercase">
+                            {course.id}
+                          </div>
+
+                          {/* Top Badges Row */}
+                          <div className="flex items-center justify-between gap-1.5 relative z-10">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
+                              Semester {course.semester}
+                            </span>
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow-2xs">
+                              {course.sks} SKS
+                            </span>
+                          </div>
+
+                          {/* Bottom Badges Row */}
+                          <div className="flex items-center justify-between gap-1.5 relative z-10">
+                            <span className="text-[10px] font-semibold text-emerald-200/90 capitalize truncate">
+                              {course.prodi}
+                            </span>
+
+                            {isChecked ? (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-xs flex items-center gap-1 animate-fade-in">
+                                <span>✓</span>
+                                <span>Terpilih</span>
+                              </span>
+                            ) : isCourseClosed ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">
+                                Ditutup
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {/* Card Content Body */}
+                        <div className="p-4 flex flex-col justify-between flex-1 gap-3">
+                          
+                          <div>
+                            {/* Course Title */}
+                            <h3 
+                              className={`font-bold text-sm sm:text-base leading-snug line-clamp-2 min-h-[2.5rem] transition-colors ${
+                                isCourseClosed 
+                                  ? 'text-slate-400 line-through' 
+                                  : isChecked 
+                                  ? 'text-emerald-700 dark:text-emerald-300' 
+                                  : 'text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
+                              }`}
+                              title={course.name}
+                            >
+                              {course.name}
+                            </h3>
+
+                            <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400">
+                              <span className="font-mono text-[10px] uppercase">{course.id}</span>
+                              <span>•</span>
+                              <span>Kurikulum FP</span>
+                            </div>
+                          </div>
+
+                          {/* Class Selection Dropdown */}
+                          <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between gap-1.5 mb-1">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                Opsi Kelas:
+                              </span>
+                              <span className="text-[10px] font-medium text-slate-400">
+                                {availableClasses.length} Pilihan
+                              </span>
+                            </div>
+
+                            <select
+                              disabled={!isChecked || isCourseClosed}
+                              value={chosenClass}
+                              onChange={(e) => handleChangeClass(course.id, e.target.value)}
+                              className={`w-full h-8 px-2.5 rounded-lg text-xs font-bold border transition-all ${
+                                !isChecked || isCourseClosed
+                                  ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                                  : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-emerald-400 border-emerald-500/50 shadow-2xs focus:ring-2 focus:ring-emerald-500 cursor-pointer'
+                              }`}
+                            >
+                              {availableClasses.map((cls) => {
+                                const coursePeriod = findPeriodForCourse(course);
+                                const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
+                                return (
+                                  <option 
+                                    key={cls} 
+                                    value={cls} 
+                                    disabled={isScholarship}
+                                  >
+                                    {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                        </div>
+
+                        {/* Card Footer: Metadata Left & Checkbox Label Right (Playwright Selector Compatible) */}
+                        <div className="p-3 sm:px-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between gap-2">
+                          
+                          {/* SKS / Fee Status Info */}
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {isPaidBatch ? (
+                              <span className="font-semibold text-amber-700 dark:text-amber-400">
+                                Rp {(course.sks * costPerSks).toLocaleString('id-ID')}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                Bebas Biaya
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Playwright Compatible Selection Checkbox Label (Must have /SKS/i & input checkbox) */}
+                          <label 
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
+                              isCourseClosed
+                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-60'
+                                : isChecked
+                                ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-500/30'
+                                : 'bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              disabled={isCourseClosed}
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (!isCourseClosed) {
+                                  handleToggleCourse(course, e.target.checked);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            />
+                            <span>
+                              {isChecked 
+                                ? `Terpilih • ${course.sks} SKS` 
+                                : `Pilih Mengulang • ${course.sks} SKS`}
+                            </span>
+                          </label>
+
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* ------------------------------------------------------------
+                   2. COMPACT LIST VIEW (Behance Table / Streamlined Row Style)
+                   ------------------------------------------------------------ */
+                <div className="space-y-2.5">
+                  {filteredCourses.map((course) => {
                     const { isClosed: isCourseClosed, reason: closedReason } = isCourseClosedCheck(course);
                     const isChecked = !isCourseClosed && (courseSelections[course.id]?.checked || false);
                     const chosenClass = getSelectedClass(course);
@@ -1838,7 +2144,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                           isCourseClosed
                             ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed select-none'
                             : isChecked
-                            ? 'bg-emerald-50/50 dark:bg-emerald-950/25 border-[#15803D]/60 shadow-xs ring-1 ring-[#15803D]/20'
+                            ? 'bg-emerald-50/50 dark:bg-emerald-950/25 border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/20'
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
@@ -1852,16 +2158,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             type="checkbox"
                             disabled={isCourseClosed}
                             checked={isChecked}
-                            onChange={() => {
+                            onChange={(e) => {
                               if (!isCourseClosed) {
-                                handleToggleCourse(course);
+                                handleToggleCourse(course, e.target.checked);
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
                             className={`w-5 h-5 mt-0.5 rounded shrink-0 transition-all ${
                               isCourseClosed
                                 ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-400 cursor-not-allowed opacity-50'
-                                : 'text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-700 cursor-pointer'
+                                : 'text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer'
                             }`}
                           />
                           <div className="min-w-0 flex-1">
@@ -1870,18 +2176,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 isCourseClosed
                                   ? 'text-slate-400 dark:text-slate-500 line-through'
                                   : isChecked 
-                                  ? 'text-[#166534] dark:text-emerald-300' 
-                                  : 'text-slate-700 dark:text-slate-300'
+                                  ? 'text-emerald-700 dark:text-emerald-300 font-extrabold' 
+                                  : 'text-slate-800 dark:text-slate-200'
                               }`}>
                                 {course.name}
                               </h3>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
                                 {course.sks} SKS
                               </span>
 
-                              {/* Badge Link Ditutup pada Mata Kuliah */}
                               {isCourseClosed && (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1 shrink-0" title={closedReason}>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1 shrink-0" title={closedReason}>
                                   <Ban className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                                   <span>Link Ditutup (Sem {course.semester})</span>
                                 </span>
@@ -1894,12 +2199,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                               <span className="capitalize">{course.prodi}</span>
                               <span>•</span>
                               <span>Semester {course.semester}</span>
-                              {isCourseClosed && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-rose-600 dark:text-rose-400 font-medium">{closedReason}</span>
-                                </>
-                              )}
                             </div>
                           </div>
                         </label>
@@ -1914,7 +2213,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             className={`flex-1 sm:flex-initial h-10 sm:h-9 px-3 rounded-xl sm:rounded-lg text-xs font-bold border transition-all ${
                               !isChecked || isCourseClosed
                                 ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-60'
-                                : 'bg-white dark:bg-slate-800 text-[#166534] dark:text-emerald-400 border-[#15803D]/40 shadow-xs focus:ring-2 focus:ring-[#166534] cursor-pointer'
+                                : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border-emerald-500/50 shadow-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer'
                             }`}
                           >
                             {availableClasses.map((cls) => {
@@ -1935,9 +2234,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
                       </div>
                     );
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
 
             </section>
 
@@ -1959,7 +2258,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     className="w-5 h-5 mt-0.5 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer shrink-0"
                   />
                   <span>
-                    Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa <strong>setelah formulir ini terkirim</strong>, saya wajib <strong>mencetak KRS Mengulang (A4)</strong> dan menyerahkannya langsung ke <strong>Administrasi Fakultas Pertanian INSTIPER</strong> {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran per SKS' : '(bebas biaya SKS mengulang)'}.
+                    Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa <strong>setelah formulir ini terkirim</strong>, saya wajib <strong>mencetak KRS Mengulang (A4)</strong> dan menyerahkannya langsung ke <strong>Administrasi Fakultas Pertanian INSTIPER</strong> {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran biaya mengulang' : '(bebas biaya mengulang)'}.
                   </span>
                 </label>
               </div>

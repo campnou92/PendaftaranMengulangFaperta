@@ -567,7 +567,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F8FAF9] dark:bg-[#0B130E] flex flex-col font-sans text-[#231F20] dark:text-slate-100 transition-colors duration-150">
       
-      {/* Header */}
+      {/* Header (Behance Style Navbar) */}
       <Header
         activeTab={activeTab}
         setActiveTab={(tab) => {
@@ -588,6 +588,7 @@ export default function App() {
         onLogout={handleLogout}
         isDarkMode={isDarkMode}
         onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
+        onOpenLoginModal={(role) => handleOpenLoginModal(role || 'baak')}
       />
 
       {/* Toast Notification */}
