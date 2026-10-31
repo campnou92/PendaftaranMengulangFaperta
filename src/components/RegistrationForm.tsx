@@ -815,23 +815,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     };
   };
 
-  // Ringkasan peringatan kelas beasiswa
-  const scholarshipAlertText = useMemo(() => {
-    const parts: string[] = [];
-    activeSemesters.forEach((sem) => {
-      const p = findPeriodForSemester(sem);
-      const restricted = getRestrictedClassesForSemester(sem, adminSettings, p);
-      if (restricted.length > 0) {
-        parts.push(`Semester ${sem}: ${restricted.join(', ')}`);
-      }
-    });
-
-    if (parts.length > 0) {
-      return `Kelas Beasiswa (${parts.join('; ')}) hanya diperuntukkan bagi mahasiswa penerima beasiswa baru dan dilarang dipilih untuk mengulang. Pilihlah Kelas Reguler (A/B/C/D) atau Karyawan.`;
-    }
-    return `Kelas Beasiswa dikhususkan untuk penerima beasiswa baru dan tidak diperkenankan untuk mengulang mata kuliah. Silakan pilih kelas reguler yang tersedia.`;
-  }, [activeSemesters, adminSettings, findPeriodForSemester]);
-
   // Status jadwal pembukaan portal semester (dinamis untuk semua semester aktif)
   const activePortalStatus = useMemo(() => {
     if (activeSemesters.length === 0) {
@@ -1651,18 +1634,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               )}
             </section>
-
-            {/* ============================================================
-                PERINGATAN KELAS BEASISWA
-               ============================================================ */}
-            <div className="bg-red-50/80 dark:bg-red-950/30 border-l-4 border-red-600 p-4 rounded-r-2xl border border-red-200/60 dark:border-red-900/40 flex items-start gap-3 text-xs sm:text-sm text-slate-800 dark:text-slate-200 shadow-md">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <p>
-                  <strong>Perhatian Akademik:</strong> {scholarshipAlertText}
-                </p>
-              </div>
-            </div>
 
             {/* ============================================================
                 PENGARAH ALUR: POINT 2 ➔ POINT 3 (Directional Flow Indicator)
