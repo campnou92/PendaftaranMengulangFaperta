@@ -18,22 +18,20 @@ import {
   Search, 
   BookOpen, 
   FileText, 
-  Info, 
-  Clock, 
-  Send, 
-  Ban, 
-  Printer, 
-  CreditCard, 
-  Building2, 
-  ChevronDown, 
-  ChevronUp, 
-  X, 
-  Loader2,
+  Info,
+  Clock,
+  Send,
+  Ban,
+  Printer,
+  CreditCard,
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  ArrowUpDown,
   LayoutGrid,
   List,
-  SlidersHorizontal,
-  ArrowUpDown,
-  GraduationCap
+  X,
+  Loader2
 } from 'lucide-react';
 import { checkNimIsRegistered } from '../lib/firebase';
 import { renderFormattedNote } from '../utils/textFormatting';
@@ -169,8 +167,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [activeProdiTab, setActiveProdiTab] = useState<'agroteknologi' | 'agribisnis' | 'all'>('agroteknologi');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Behance Discover Layout Controls: View Mode ('grid' | 'list'), SKS Filter & Sorting
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // Layout Controls: View Mode ('list' for neat academic table, 'grid' for cards), SKS Filter & Sort
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [sksFilter, setSksFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'default' | 'sks-desc' | 'name-asc'>('default');
 
@@ -536,7 +534,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     );
   }, [nim, existingRegistrations]);
 
-  // Filter courses based on activeYearCourses, dynamic semester, prodi tab, SKS, sorting & smart live search
+  // Filter courses based on activeYearCourses, dynamic semester, prodi tab & smart similar search
   const filteredCourses = useMemo(() => {
     const list = activeYearCourses.filter((c) => {
       // 1. Filter Semester
@@ -1247,19 +1245,31 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <form id="registration-form" onSubmit={handleSubmitForm} className="space-y-6 sm:space-y-8">
             
             {/* ============================================================
-                2. LANGKAH 1: PILIH PORTAL SEMESTER (Section 2)
+                2. POINT 1: PILIH PORTAL SEMESTER (Section 2)
                 Dinamis sesuai semester yang memiliki mata kuliah di TA Aktif
                ============================================================ */}
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-[#166534] text-white flex items-center justify-center text-xs font-bold">1</span>
-                    <span>Pilih Portal Semester (T.A. {activeAcademicYear})</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-8">
-                    Tentukan semester mata kuliah yang ingin Anda daftarkan untuk diulang pada periode {activeTerm}.
-                  </p>
+            <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl">
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-800 to-slate-950 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-emerald-500/30 shrink-0">
+                    01
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
+                        Point 1
+                      </span>
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Pilih Portal Semester (T.A. {activeAcademicYear})
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Tentukan semester mata kuliah yang ingin Anda daftarkan untuk diulang pada periode {activeTerm}.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Dropdown Semester Dinamis */}
@@ -1390,17 +1400,53 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </section>
 
             {/* ============================================================
-                3. LANGKAH 2: DATA MAHASISWA (Section 3)
+                PENGARAH ALUR: POINT 1 ➔ POINT 2 (Directional Flow Indicator)
                ============================================================ */}
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="mb-4">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#166534] text-white flex items-center justify-center text-xs font-bold">2</span>
-                  <span>Data Mahasiswa</span>
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-8">
-                  Isi data identitas diri yang valid sesuai KTM dan Kartu Rencana Studi resmi.
-                </p>
+            <div className="flex flex-col items-center justify-center my-4 sm:my-6 select-none relative group" aria-hidden="true">
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-600 via-emerald-500/60 to-emerald-400/20 dark:from-emerald-400 dark:via-emerald-500/40" />
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 dark:bg-slate-900/90 border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-lg shadow-emerald-600/10 dark:shadow-emerald-950/40 backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:border-emerald-500 group-hover:shadow-emerald-500/20">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600 to-slate-900 text-white flex items-center justify-center shadow-xs">
+                  <ChevronDown className="w-3.5 h-3.5 animate-bounce stroke-[3]" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-emerald-700 dark:text-emerald-400 block -mb-0.5">
+                    Langkah Selanjutnya
+                  </span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                    Point 2: <span className="text-[#141414] dark:text-white font-extrabold">Isi Data Identitas Mahasiswa</span>
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse stroke-[2.5] ml-1" />
+              </div>
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-400/20 via-emerald-500/60 to-emerald-600 dark:from-emerald-400/20 dark:via-emerald-500/40 dark:to-emerald-400" />
+            </div>
+
+            {/* ============================================================
+                3. POINT 2: DATA MAHASISWA & KELAS ASAL (Section 3)
+               ============================================================ */}
+            <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl">
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-800 to-slate-950 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-emerald-500/30 shrink-0">
+                    02
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
+                        Point 2
+                      </span>
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Data Mahasiswa &amp; Kelas Asal
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Isi data identitas diri yang valid sesuai KTM dan Kartu Rencana Studi resmi.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1631,9 +1677,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </section>
 
             {/* ============================================================
-                4. PERINGATAN KELAS BEASISWA (Section 4)
+                PERINGATAN KELAS BEASISWA
                ============================================================ */}
-            <div className="bg-red-50/70 dark:bg-red-950/20 border-l-4 border-red-600 p-4 rounded-r-xl flex items-start gap-3 text-xs sm:text-sm text-slate-800 dark:text-slate-200 shadow-xs">
+            <div className="bg-red-50/80 dark:bg-red-950/30 border-l-4 border-red-600 p-4 rounded-r-2xl border border-red-200/60 dark:border-red-900/40 flex items-start gap-3 text-xs sm:text-sm text-slate-800 dark:text-slate-200 shadow-md">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div className="leading-relaxed">
                 <p>
@@ -1643,74 +1689,59 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
 
             {/* ============================================================
-                5. TERAPKAN KELAS SEKALIGUS (Section 5)
+                PENGARAH ALUR: POINT 2 ➔ POINT 3 (Directional Flow Indicator)
                ============================================================ */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-              
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Terapkan Kelas:
-                </span>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {globalClassOptions.map((cls) => {
-                    const activeSemNum = selectedSemester !== 'all' ? Number(selectedSemester) : (activeSemesters[0] || 3);
-                    const isScholarship = isClassRestrictedForRepeat(cls, activeSemNum, adminSettings, currentActivePeriod);
-
-                    return (
-                      <button
-                        key={cls}
-                        type="button"
-                        disabled={isScholarship}
-                        onClick={() => {
-                          if (!isScholarship) {
-                            setBatchClassToApply(cls);
-                            handleApplyBatchClass(cls);
-                          }
-                        }}
-                        title={isScholarship ? 'Kelas Beasiswa tidak boleh dipilih' : `Terapkan ${cls} ke semua mata kuliah yang tercentang`}
-                        className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all cursor-pointer ${
-                          isScholarship
-                            ? 'line-through text-slate-400 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-60'
-                            : batchClassToApply === cls
-                            ? 'bg-[#166534] text-white shadow-xs'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        {cls}
-                      </button>
-                    );
-                  })}
+            <div className="flex flex-col items-center justify-center my-4 sm:my-6 select-none relative group" aria-hidden="true">
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-600 via-emerald-500/60 to-emerald-400/20 dark:from-emerald-400 dark:via-emerald-500/40" />
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 dark:bg-slate-900/90 border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-lg shadow-emerald-600/10 dark:shadow-emerald-950/40 backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:border-emerald-500 group-hover:shadow-emerald-500/20">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600 to-slate-900 text-white flex items-center justify-center shadow-xs">
+                  <ChevronDown className="w-3.5 h-3.5 animate-bounce stroke-[3]" />
                 </div>
+                <div className="text-left">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-emerald-700 dark:text-emerald-400 block -mb-0.5">
+                    Langkah Selanjutnya
+                  </span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                    Point 3: <span className="text-[#141414] dark:text-white font-extrabold">Pilih Mata Kuliah yang Diulang</span>
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse stroke-[2.5] ml-1" />
               </div>
-
-              {/* Counter */}
-              <div className="text-left md:text-right text-xs font-semibold text-slate-700 dark:text-slate-300 shrink-0">
-                Terpilih: <strong className="text-[#166534] dark:text-emerald-400">{selectedList.length}</strong> mata kuliah (<strong className="text-[#166534] dark:text-emerald-400">{totalSks}</strong> SKS)
-              </div>
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-400/20 via-emerald-500/60 to-emerald-600 dark:from-emerald-400/20 dark:via-emerald-500/40 dark:to-emerald-400" />
             </div>
 
             {/* ============================================================
-                6. LANGKAH 3: PILIH MATA KULIAH (Section 6)
+                6. POINT 3: PILIH MATA KULIAH YANG DIULANG (Section 6)
                ============================================================ */}
-            <section className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-[#166534] text-white flex items-center justify-center text-xs font-bold">3</span>
-                    <span>Pilih Mata Kuliah yang Diulang</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-8">
-                    Centang mata kuliah yang ingin Anda daftarkan dan sesuaikan pilihan kelasnya.
-                  </p>
+            <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-6">
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-800 to-slate-950 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-emerald-500/30 shrink-0">
+                    03
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
+                        Point 3
+                      </span>
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        Pilih Mata Kuliah yang Diulang
+                      </h2>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Centang mata kuliah yang ingin Anda daftarkan dan sesuaikan pilihan kelasnya.
+                    </p>
+                  </div>
                 </div>
 
-                {/* SKS Badge */}
-                <div className={`self-start sm:self-auto px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 ${
+                {/* SKS Badge Meter */}
+                <div className={`self-start sm:self-auto px-4 py-2 rounded-full text-xs font-mono font-bold flex items-center gap-2 shadow-2xs border ${
                   isOverSksLimit 
-                    ? 'bg-red-100 text-red-600 border border-red-200' 
-                    : 'bg-[#166534]/10 text-[#166534] dark:text-emerald-400 border border-[#166534]/20'
+                    ? 'bg-red-100 text-red-600 border-red-300' 
+                    : 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                 }`}>
                   <span>{totalSks} SKS Terpilih</span>
                   <span className="text-slate-400">/</span>
@@ -1718,14 +1749,54 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
               </div>
 
-              {/* ============================================================
-                  BEHANCE DISCOVER HEADER: SEARCH & PRODI PILL CONTROLLER
-                  Sesuai UI Behance Discover (Search Bar + Segmented Pills)
-                 ============================================================ */}
+              {/* Terapkan Kelas Sekaligus */}
+              <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Terapkan Kelas Sekaligus:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {globalClassOptions.map((cls) => {
+                      const activeSemNum = selectedSemester !== 'all' ? Number(selectedSemester) : (activeSemesters[0] || 3);
+                      const isScholarship = isClassRestrictedForRepeat(cls, activeSemNum, adminSettings, currentActivePeriod);
+
+                      return (
+                        <button
+                          key={cls}
+                          type="button"
+                          disabled={isScholarship}
+                          onClick={() => {
+                            if (!isScholarship) {
+                              setBatchClassToApply(cls);
+                              handleApplyBatchClass(cls);
+                            }
+                          }}
+                          title={isScholarship ? 'Kelas Beasiswa tidak boleh dipilih' : `Terapkan ${cls} ke semua mata kuliah yang tercentang`}
+                          className={`px-3 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer ${
+                            isScholarship
+                              ? 'line-through text-slate-400 bg-slate-100 dark:bg-slate-800/50 cursor-not-allowed opacity-60'
+                              : batchClassToApply === cls
+                              ? 'bg-[#141414] dark:bg-emerald-600 text-white shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                          }`}
+                        >
+                          {cls}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="text-left md:text-right text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
+                  Terpilih: <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{selectedList.length}</strong> mata kuliah (<strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{totalSks}</strong> SKS)
+                </div>
+              </div>
+
+              {/* Behance Unified Search Input & Segmented Prodi Switcher */}
               <div className="bg-slate-50 dark:bg-slate-800/80 p-2 sm:p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-2">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
                   
-                  {/* Behance Unified Search Input */}
+                  {/* Search Input */}
                   <div className="relative flex-1">
                     <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
@@ -1747,7 +1818,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     )}
                   </div>
 
-                  {/* Behance Segmented Pill Switcher (Projects | People | Moodboards -> Semua | Agroteknologi | Agribisnis) */}
+                  {/* Segmented Prodi Switcher */}
                   <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-full border border-slate-200 dark:border-slate-700 shadow-2xs shrink-0 self-stretch md:self-auto overflow-x-auto no-scrollbar">
                     <button
                       type="button"
@@ -1796,10 +1867,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 )}
               </div>
 
-              {/* ============================================================
-                  BEHANCE FILTER PILLS TOOLBAR (Row of Filter Chips with Carets)
-                  Creative Fields ▾ | Tools ▾ | Location ▾ | Grid/List View
-                 ============================================================ */}
+              {/* Filter Pills Toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1 pb-1 border-b border-slate-100 dark:border-slate-800/80">
                 <div className="flex flex-wrap items-center gap-2">
                   
@@ -1835,7 +1903,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
                   </div>
 
-                  {/* Filter Pill: Urutkan / Sort */}
+                  {/* Filter Pill: Urutkan */}
                   <div className="relative inline-flex items-center">
                     <select
                       value={sortOrder}
@@ -1852,7 +1920,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
                 </div>
 
-                {/* Right Side: Select All & Behance Grid / List View Switcher */}
+                {/* Right: Select All & View Switcher */}
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   
                   {/* Select All Checkbox Pill */}
@@ -1885,33 +1953,35 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     );
                   })()}
 
-                  {/* Behance View Mode Switcher: [ ⊞ Grid ] [ ☰ List ] */}
+                  {/* View Mode Switcher: [ ☰ Tabel Rapi ] [ ⊞ Grid Kartu ] */}
                   <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-full border border-slate-200 dark:border-slate-700">
                     <button
                       type="button"
-                      onClick={() => setViewMode('grid')}
-                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
-                        viewMode === 'grid'
-                          ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs'
-                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                      }`}
-                      title="Tampilan Kartu Showcase (Behance Grid)"
-                      aria-label="Tampilan Grid"
-                    >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setViewMode('list')}
-                      className={`p-1.5 rounded-full transition-all cursor-pointer ${
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
                         viewMode === 'list'
                           ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs'
                           : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                       }`}
-                      title="Tampilan Daftar Baris (Compact List)"
-                      aria-label="Tampilan List"
+                      title="Tampilan Tabel Rapi Berstruktur"
+                      aria-label="Tampilan Tabel Rapi"
                     >
                       <List className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Tabel</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        viewMode === 'grid'
+                          ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs'
+                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                      }`}
+                      title="Tampilan Kartu Showcase"
+                      aria-label="Tampilan Grid Kartu"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Kartu</span>
                     </button>
                   </div>
 
@@ -1934,7 +2004,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               )}
 
               {/* ============================================================
-                  COURSE SHOWCASE: BEHANCE GRID VIEW OR COMPACT LIST VIEW
+                  TABEL MATAKULIAH RAPI & TERSTRUKTUR (Table View) & GRID VIEW
                  ============================================================ */}
               {filteredCourses.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/50 dark:bg-slate-900/50">
@@ -1943,12 +2013,175 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     Tidak ada mata kuliah yang cocok dengan filter atau kata kunci.
                   </p>
                   <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                    Coba ganti filter semester, prodi, atau hapus kata kunci pencarian.
+                    Coba ubah filter semester, prodi, atau hapus kata kunci pencarian.
                   </p>
                 </div>
-              ) : viewMode === 'grid' ? (
+              ) : viewMode === 'list' ? (
                 /* ------------------------------------------------------------
-                   1. BEHANCE PROJECT CARDS GRID (3-Column Responsive Grid)
+                   1. TABEL MATAKULIAH RAPI & TERSTRUKTUR
+                   ------------------------------------------------------------ */
+                <div className="overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700/80 text-[11px] font-black uppercase text-slate-600 dark:text-slate-300 tracking-wider select-none">
+                          <th className="py-3.5 px-3.5 text-center w-20">Pilih</th>
+                          <th className="py-3.5 px-4 min-w-[220px]">Mata Kuliah &amp; Kode</th>
+                          <th className="py-3.5 px-3 text-center w-24">SKS</th>
+                          <th className="py-3.5 px-3 text-center w-24">Semester</th>
+                          <th className="py-3.5 px-3 w-32">Program Studi</th>
+                          <th className="py-3.5 px-4 min-w-[180px]">Opsi Kelas Ditawarkan</th>
+                          <th className="py-3.5 px-4 text-right w-28">Status Biaya</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
+                        {filteredCourses.map((course, idx) => {
+                          const { isClosed: isCourseClosed, reason: closedReason } = isCourseClosedCheck(course);
+                          const isChecked = !isCourseClosed && (courseSelections[course.id]?.checked || false);
+                          const chosenClass = getSelectedClass(course);
+                          const availableClasses = getAvailableClasses(course);
+
+                          return (
+                            <tr
+                              key={course.id}
+                              className={`transition-colors duration-150 ${
+                                isCourseClosed
+                                  ? 'bg-slate-50/60 dark:bg-slate-950/40 opacity-55 cursor-not-allowed select-none'
+                                  : isChecked
+                                  ? 'bg-emerald-50/60 dark:bg-emerald-950/30 font-semibold'
+                                  : idx % 2 === 0
+                                  ? 'bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
+                                  : 'bg-slate-50/40 dark:bg-slate-900/40 hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
+                              }`}
+                            >
+                              {/* Kolom 1: Checkbox Seleksi (Playwright Selector Compatible) */}
+                              <td className="py-3 px-3.5 text-center align-middle">
+                                <label 
+                                  className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all select-none cursor-pointer ${
+                                    isCourseClosed 
+                                      ? 'cursor-not-allowed opacity-50 text-slate-400' 
+                                      : isChecked 
+                                      ? 'bg-emerald-600 text-white shadow-xs' 
+                                      : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                  }`}
+                                  title={isCourseClosed ? closedReason : isChecked ? 'Batal memilih' : 'Pilih mata kuliah ini'}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    disabled={isCourseClosed}
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (!isCourseClosed) {
+                                        handleToggleCourse(course, e.target.checked);
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`w-4 h-4 rounded transition-all ${
+                                      isCourseClosed 
+                                        ? 'opacity-40 cursor-not-allowed' 
+                                        : 'text-emerald-600 focus:ring-emerald-500 cursor-pointer'
+                                    }`}
+                                  />
+                                  <span className="font-mono text-[11px] font-bold">
+                                    {course.sks} SKS
+                                  </span>
+                                </label>
+                              </td>
+
+                              {/* Kolom 2: Nama Mata Kuliah & Kode */}
+                              <td className="py-3 px-4 align-middle">
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`font-bold text-xs sm:text-sm tracking-tight ${
+                                      isCourseClosed 
+                                        ? 'text-slate-400 line-through' 
+                                        : isChecked 
+                                        ? 'text-emerald-700 dark:text-emerald-300' 
+                                        : 'text-slate-900 dark:text-white'
+                                    }`}>
+                                      {course.name}
+                                    </span>
+                                    {isCourseClosed && (
+                                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800" title={closedReason}>
+                                        Link Ditutup
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-400 font-mono">
+                                    <span className="font-semibold text-slate-500 dark:text-slate-400 uppercase">{course.id}</span>
+                                    <span>•</span>
+                                    <span>Kurikulum FP</span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Kolom 3: Beban SKS */}
+                              <td className="py-3 px-3 text-center align-middle">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                                  {course.sks} SKS
+                                </span>
+                              </td>
+
+                              {/* Kolom 4: Semester */}
+                              <td className="py-3 px-3 text-center align-middle">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                  Sem {course.semester}
+                                </span>
+                              </td>
+
+                              {/* Kolom 5: Program Studi */}
+                              <td className="py-3 px-3 align-middle">
+                                <span className="capitalize font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                                  {course.prodi}
+                                </span>
+                              </td>
+
+                              {/* Kolom 6: Opsi Kelas Ditawarkan */}
+                              <td className="py-3 px-4 align-middle">
+                                <select
+                                  disabled={!isChecked || isCourseClosed}
+                                  value={chosenClass}
+                                  onChange={(e) => handleChangeClass(course.id, e.target.value)}
+                                  className={`w-full h-8 px-2.5 rounded-lg text-xs font-bold border transition-all ${
+                                    !isChecked || isCourseClosed
+                                      ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-60'
+                                      : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-emerald-300 border-emerald-500/60 shadow-2xs focus:ring-2 focus:ring-emerald-500 cursor-pointer'
+                                  }`}
+                                >
+                                  {availableClasses.map((cls) => {
+                                    const coursePeriod = findPeriodForCourse(course);
+                                    const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
+                                    return (
+                                      <option key={cls} value={cls} disabled={isScholarship}>
+                                        {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </td>
+
+                              {/* Kolom 7: Status Biaya */}
+                              <td className="py-3 px-4 text-right align-middle">
+                                {isPaidBatch ? (
+                                  <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-xs">
+                                    Rp {(course.sks * costPerSks).toLocaleString('id-ID')}
+                                  </span>
+                                ) : (
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                                    Bebas Biaya
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                /* ------------------------------------------------------------
+                   2. TAMPILAN GRID KARTU SHOWCASE
                    ------------------------------------------------------------ */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                   {filteredCourses.map((course) => {
@@ -1957,7 +2190,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     const chosenClass = getSelectedClass(course);
                     const availableClasses = getAvailableClasses(course);
 
-                    // Dynamic Gradient Header per prodi ala Behance Artwork Cover
                     const isAgro = course.prodi === 'agroteknologi';
                     const coverGradient = isAgro
                       ? 'from-emerald-900 via-[#0e2c1c] to-slate-900'
@@ -1974,15 +2206,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:-translate-y-0.5'
                         }`}
                       >
-                        {/* Behance Project Cover Area (Height ~110px with Gradient & Abstract Motif) */}
+                        {/* Cover Area */}
                         <div className={`h-24 sm:h-28 bg-gradient-to-br ${coverGradient} p-3.5 text-white flex flex-col justify-between relative overflow-hidden select-none`}>
-                          
-                          {/* Subtle Course ID Watermark Background */}
                           <div className="absolute -right-2 -bottom-2 text-white/5 font-black text-4xl sm:text-5xl font-mono tracking-tighter pointer-events-none uppercase">
                             {course.id}
                           </div>
 
-                          {/* Top Badges Row */}
                           <div className="flex items-center justify-between gap-1.5 relative z-10">
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20">
                               Semester {course.semester}
@@ -1992,7 +2221,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             </span>
                           </div>
 
-                          {/* Bottom Badges Row */}
                           <div className="flex items-center justify-between gap-1.5 relative z-10">
                             <span className="text-[10px] font-semibold text-emerald-200/90 capitalize truncate">
                               {course.prodi}
@@ -2011,11 +2239,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                           </div>
                         </div>
 
-                        {/* Card Content Body */}
+                        {/* Content Body */}
                         <div className="p-4 flex flex-col justify-between flex-1 gap-3">
-                          
                           <div>
-                            {/* Course Title */}
                             <h3 
                               className={`font-bold text-sm sm:text-base leading-snug line-clamp-2 min-h-[2.5rem] transition-colors ${
                                 isCourseClosed 
@@ -2061,24 +2287,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 const coursePeriod = findPeriodForCourse(course);
                                 const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
                                 return (
-                                  <option 
-                                    key={cls} 
-                                    value={cls} 
-                                    disabled={isScholarship}
-                                  >
+                                  <option key={cls} value={cls} disabled={isScholarship}>
                                     {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
                                   </option>
                                 );
                               })}
                             </select>
                           </div>
-
                         </div>
 
-                        {/* Card Footer: Metadata Left & Checkbox Label Right (Playwright Selector Compatible) */}
+                        {/* Card Footer */}
                         <div className="p-3 sm:px-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between gap-2">
-                          
-                          {/* SKS / Fee Status Info */}
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                             {isPaidBatch ? (
                               <span className="font-semibold text-amber-700 dark:text-amber-400">
@@ -2091,7 +2310,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                             )}
                           </div>
 
-                          {/* Playwright Compatible Selection Checkbox Label (Must have /SKS/i & input checkbox) */}
                           <label 
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all select-none cursor-pointer ${
                               isCourseClosed
@@ -2119,119 +2337,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                 : `Pilih Mengulang • ${course.sks} SKS`}
                             </span>
                           </label>
-
                         </div>
-
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* ------------------------------------------------------------
-                   2. COMPACT LIST VIEW (Behance Table / Streamlined Row Style)
-                   ------------------------------------------------------------ */
-                <div className="space-y-2.5">
-                  {filteredCourses.map((course) => {
-                    const { isClosed: isCourseClosed, reason: closedReason } = isCourseClosedCheck(course);
-                    const isChecked = !isCourseClosed && (courseSelections[course.id]?.checked || false);
-                    const chosenClass = getSelectedClass(course);
-                    const availableClasses = getAvailableClasses(course);
-
-                    return (
-                      <div
-                        key={course.id}
-                        className={`p-3.5 sm:p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                          isCourseClosed
-                            ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60 cursor-not-allowed select-none'
-                            : isChecked
-                            ? 'bg-emerald-50/50 dark:bg-emerald-950/25 border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/20'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                        }`}
-                      >
-                        {/* Left: Checkbox + Course Name + SKS */}
-                        <label 
-                          className={`flex items-start gap-3 flex-1 min-w-0 select-none ${
-                            isCourseClosed ? 'cursor-not-allowed' : 'cursor-pointer'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            disabled={isCourseClosed}
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (!isCourseClosed) {
-                                handleToggleCourse(course, e.target.checked);
-                              }
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`w-5 h-5 mt-0.5 rounded shrink-0 transition-all ${
-                              isCourseClosed
-                                ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-400 cursor-not-allowed opacity-50'
-                                : 'text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer'
-                            }`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className={`text-xs sm:text-sm font-bold tracking-tight truncate ${
-                                isCourseClosed
-                                  ? 'text-slate-400 dark:text-slate-500 line-through'
-                                  : isChecked 
-                                  ? 'text-emerald-700 dark:text-emerald-300 font-extrabold' 
-                                  : 'text-slate-800 dark:text-slate-200'
-                              }`}>
-                                {course.name}
-                              </h3>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
-                                {course.sks} SKS
-                              </span>
-
-                              {isCourseClosed && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 flex items-center gap-1 shrink-0" title={closedReason}>
-                                  <Ban className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                                  <span>Link Ditutup (Sem {course.semester})</span>
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-                              <span className="font-mono text-[10px]">{course.id}</span>
-                              <span>•</span>
-                              <span className="capitalize">{course.prodi}</span>
-                              <span>•</span>
-                              <span>Semester {course.semester}</span>
-                            </div>
-                          </div>
-                        </label>
-
-                        {/* Right: Class Dropdown */}
-                        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-800 shrink-0">
-                          <span className="text-[11px] text-slate-400 font-medium">Kelas:</span>
-                          <select
-                            disabled={!isChecked || isCourseClosed}
-                            value={chosenClass}
-                            onChange={(e) => handleChangeClass(course.id, e.target.value)}
-                            className={`flex-1 sm:flex-initial h-10 sm:h-9 px-3 rounded-xl sm:rounded-lg text-xs font-bold border transition-all ${
-                              !isChecked || isCourseClosed
-                                ? 'bg-slate-100 dark:bg-slate-800/50 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-60'
-                                : 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border-emerald-500/50 shadow-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer'
-                            }`}
-                          >
-                            {availableClasses.map((cls) => {
-                              const coursePeriod = findPeriodForCourse(course);
-                              const isScholarship = isClassRestrictedForRepeat(cls, course.semester, adminSettings, coursePeriod, course);
-                              return (
-                                <option 
-                                  key={cls} 
-                                  value={cls} 
-                                  disabled={isScholarship}
-                                >
-                                  {cls} {isScholarship ? '(Beasiswa - Dilarang)' : ''}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        </div>
-
                       </div>
                     );
                   })}
@@ -2241,32 +2347,71 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </section>
 
             {/* ============================================================
-                7. KONFIRMASI ALUR PENDAFTARAN & PENYERAHAN KE LOKET
+                PENGARAH ALUR: POINT 3 ➔ POINT 4 (Directional Flow Indicator)
                ============================================================ */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#166534] dark:text-emerald-400" />
-                <span>Pernyataan &amp; Komitmen Alur Pendaftaran Mahasiswa</span>
-              </h3>
+            <div className="flex flex-col items-center justify-center my-4 sm:my-6 select-none relative group" aria-hidden="true">
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-600 via-emerald-500/60 to-emerald-400/20 dark:from-emerald-400 dark:via-emerald-500/40" />
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 dark:bg-slate-900/90 border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-lg shadow-emerald-600/10 dark:shadow-emerald-950/40 backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:border-emerald-500 group-hover:shadow-emerald-500/20">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600 to-slate-900 text-white flex items-center justify-center shadow-xs">
+                  <ChevronDown className="w-3.5 h-3.5 animate-bounce stroke-[3]" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-emerald-700 dark:text-emerald-400 block -mb-0.5">
+                    Langkah Terakhir
+                  </span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100">
+                    Point 4: <span className="text-[#141414] dark:text-white font-extrabold">Pernyataan &amp; Finalisasi Pendaftaran</span>
+                  </span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse stroke-[2.5] ml-1" />
+              </div>
+              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-400/20 via-emerald-500/60 to-emerald-600 dark:from-emerald-400/20 dark:via-emerald-500/40 dark:to-emerald-400" />
+            </div>
 
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+            {/* ============================================================
+                7. POINT 4: PERNYATAAN & KOMITMEN (Section 7)
+               ============================================================ */}
+            <section className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-4">
+              {/* Top Accent Gradient Line */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
+
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-800 to-slate-950 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-emerald-500/30 shrink-0">
+                  04
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
+                      Point 4
+                    </span>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                      Pernyataan &amp; Komitmen Alur Pendaftaran
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Pastikan kebenaran data dan pahami kewajiban penyerahan berkas fisik ke loket Fakultas Pertanian.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed shadow-2xs">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={agreeToFlow}
                     onChange={(e) => setAgreeToFlow(e.target.checked)}
-                    className="w-5 h-5 mt-0.5 rounded text-[#166534] focus:ring-[#166534] border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer shrink-0"
+                    className="w-5 h-5 mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 dark:bg-slate-800 cursor-pointer shrink-0"
                   />
                   <span>
-                    Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa <strong>setelah formulir ini terkirim</strong>, saya wajib <strong>mencetak KRS Mengulang (A4)</strong> dan menyerahkannya langsung ke <strong>Administrasi Fakultas Pertanian INSTIPER</strong> {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran biaya mengulang' : '(bebas biaya mengulang)'}.
+                    Saya menyatakan data mata kuliah yang saya pilih sudah benar dan saya memahami bahwa <strong>setelah formulir ini terkirim</strong>, saya wajib <strong>mencetak KRS Mengulang (A4)</strong> dan menyerahkannya langsung ke <strong>Administrasi Fakultas Pertanian INSTIPER</strong> {isPaidBatch ? 'disertai bukti fisik setoran/transfer pembayaran biaya' : '(bebas biaya mengulang)'}.
                   </span>
                 </label>
               </div>
-            </div>
+            </section>
 
             {/* Global Submission Error if any */}
             {submissionError && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <div className="p-3.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{submissionError}</span>
               </div>
