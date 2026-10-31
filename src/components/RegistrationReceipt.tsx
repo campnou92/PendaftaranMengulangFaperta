@@ -244,6 +244,22 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
 
   return (
     <div className="max-w-[960px] mx-auto px-4 py-6 font-sans">
+      {/* Notifikasi Pendaftaran Berhasil & Info Cek & Cetak Hasil (Disembunyikan saat mencetak) */}
+      <div className="print:hidden mb-4 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-3 shadow-xs">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <div className="flex-1 leading-relaxed">
+          <strong className="font-extrabold text-sm text-emerald-950 dark:text-emerald-100 block mb-0.5">
+            Pendaftaran Berhasil Tersimpan!
+          </strong>
+          <p className="text-slate-700 dark:text-slate-300">
+            KRS Anda telah diterbitkan. Silakan cetak atau unduh dokumen di bawah ini untuk diserahkan ke loket Fakultas Pertanian.
+          </p>
+          <p className="text-[11px] text-emerald-900 dark:text-emerald-300 mt-1.5 font-medium bg-emerald-100/70 dark:bg-emerald-900/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60">
+            ℹ️ <strong>Tips Mahasiswa:</strong> Jika halaman ini tidak sengaja tertutup, Anda tidak perlu mengisi formulir lagi. Anda dapat membuka, memantau status persetujuan, dan mencetak ulang KRS ini kapan saja di menu <strong className="text-[#166534] dark:text-emerald-300">"Cek &amp; Cetak Hasil"</strong> dengan memasukkan NIM Anda.
+          </p>
+        </div>
+      </div>
+
       {/* Action / Print Toolbar (Disembunyikan saat mencetak) */}
       <div className="print:hidden mb-6 bg-[#166534] dark:bg-[#14532D] text-white p-4 rounded-2xl shadow-md space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -28,6 +28,7 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowUpDown,
+  ArrowRight,
   X,
   Loader2
 } from 'lucide-react';
@@ -40,6 +41,7 @@ interface RegistrationFormProps {
   adminSettings: AdminSettings;
   onSubmitSuccess: (newRegistration: SimpleRegistration) => void;
   onUpdateNote?: (newNote: string) => void;
+  onGoToStatus?: () => void;
 }
 
 export const RegistrationForm: React.FC<RegistrationFormProps> = ({
@@ -47,6 +49,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   existingRegistrations,
   adminSettings,
   onSubmitSuccess,
+  onGoToStatus,
 }) => {
   // 1. Tahun Ajaran & Semester Aktif (Sinkron dengan Periode Pendaftaran Terbuka)
   const activeAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
@@ -954,7 +957,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-36 lg:pb-16 text-slate-800 dark:text-slate-100 font-sans">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-16 text-slate-800 dark:text-slate-100 font-sans">
       
       {/* ============================================================
           1. PAGE HERO & LIVE STATUS (Section 1)
@@ -974,6 +977,28 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed max-w-2xl">
             Lengkapi data mahasiswa, pilih mata kuliah yang ingin diulang, dan cetak bukti pendaftaran untuk validasi ke loket Fakultas Pertanian.
           </p>
+
+          {/* Banner Pengarah Cek Status & Cetak Lembar KRS */}
+          {onGoToStatus && (
+            <div className="mt-3.5 inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-xs text-emerald-950 dark:text-emerald-200 shadow-2xs">
+              <Search className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0" />
+              <span>
+                <strong>Sudah pernah mendaftar?</strong> Cek status persetujuan &amp; cetak lembar KRS Anda kapan saja di menu{' '}
+                <a
+                  href="#cek-hasil"
+                  role="link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onGoToStatus?.();
+                  }}
+                  className="font-extrabold text-[#166534] dark:text-emerald-400 underline decoration-2 underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer inline-flex items-center gap-1"
+                >
+                  <span>Cek &amp; Cetak Hasil</span>
+                  <ArrowRight className="w-3 h-3" />
+                </a>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Countdown Timer Penutupan Pendaftaran (Hari, Jam, Menit, Detik) */}
@@ -1277,8 +1302,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                         <span>NIM {duplicateRegistration.nim} sudah terdaftar ({duplicateRegistration.id})</span>
                       </div>
                       <p className="mt-0.5 text-[11px] text-rose-700 dark:text-rose-300">
-                        Pendaftaran atas nama <strong>{duplicateRegistration.nama}</strong> sudah aktif di sistem. Satu NIM hanya diizinkan mendaftar satu kali. Buka menu <strong>Cek Status</strong> untuk mencetak KRS Anda.
+                        Pendaftaran atas nama <strong>{duplicateRegistration.nama}</strong> sudah aktif di sistem. Satu NIM hanya diizinkan mendaftar satu kali. Buka menu <strong>Cek &amp; Cetak Hasil</strong> untuk mencetak lembar KRS Anda.
                       </p>
+                      {onGoToStatus && (
+                        <button
+                          type="button"
+                          onClick={onGoToStatus}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                        >
+                          <Search className="w-3.5 h-3.5" />
+                          <span>Buka Status &amp; Cetak Lembar KRS</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   )}
                   {previousRejectedRegistration && !duplicateRegistration && !isCheckingCloudNim && (
@@ -2259,27 +2295,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </p>
             </div>
 
-            {/* Action Shortcut to Point 4 (Desktop Sidebar) */}
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('section-point-4');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Send className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-200" />
-                <span>Menuju Point 4 &amp; Kirim Form ↓</span>
-              </button>
-
-              {getSubmitDisabledReason() && (
-                <div className="mt-2.5 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  ℹ️ {getSubmitDisabledReason()}
-                </div>
-              )}
-            </div>
-
             {/* Trust badge */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center">
               Fakultas Pertanian INSTIPER Yogyakarta
@@ -2287,74 +2302,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </div>
         </aside>
 
-      </div>
-
-      {/* ============================================================
-          8. MOBILE STICKY BOTTOM BAR (Tampil hanya pada < lg)
-         ============================================================ */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-xl px-3 sm:px-4 py-3 sm:py-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
-          
-          {/* Left stats & Progress bar */}
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {selectedList.length} Mata Kuliah
-                </span>
-                <span className="text-slate-300 dark:text-slate-700">•</span>
-                <span className={`font-mono font-bold ${isOverSksLimit ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
-                  {totalSks} / {currentMaxSks} SKS
-                </span>
-              </div>
-
-              <div className="text-xs">
-                <span className="text-slate-400">Estimasi Biaya: </span>
-                <span className="font-bold text-slate-900 dark:text-white">
-                  {isPaidBatch 
-                    ? `Rp ${totalBiaya.toLocaleString('id-ID')}` 
-                    : <span className="text-[#166534] dark:text-emerald-400">Bebas Biaya</span>
-                  }
-                </span>
-              </div>
-            </div>
-
-            {/* SKS progress bar */}
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
-              <div
-                className={`h-full transition-all duration-300 ${
-                  isOverSksLimit 
-                    ? 'bg-red-500' 
-                    : totalSks === currentMaxSks
-                    ? 'bg-[#EAB308]'
-                    : 'bg-[#166534]'
-                }`}
-                style={{ width: `${Math.min(100, (totalSks / (currentMaxSks || 24)) * 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Right: Action Shortcut to Point 4 */}
-          <div className="shrink-0 flex flex-col items-stretch sm:items-end gap-1 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => {
-                const el = document.getElementById('section-point-4');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="w-full sm:w-auto h-11 px-5 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Menuju Point 4 (Kirim) ↓</span>
-            </button>
-            {getSubmitDisabledReason() && (
-              <p className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold text-center sm:text-right truncate max-w-xs sm:max-w-sm">
-                ℹ️ {getSubmitDisabledReason()}
-              </p>
-            )}
-          </div>
-
-        </div>
       </div>
 
     </div>

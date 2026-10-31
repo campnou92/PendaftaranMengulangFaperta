@@ -13,7 +13,7 @@ export const DEFAULT_REGISTRATION_FLOW: RegistrationFlowSettings = {
     {
       step: 2,
       title: 'Cetak Lembar KRS (A4)',
-      desc: 'Setelah formulir dikirim, sistem membuka dokumen KRS. Cetak pada kertas A4 atau simpan file HTML/PDF resmi.',
+      desc: 'Setelah formulir dikirim, sistem membuka dokumen KRS. Anda juga dapat mengecek status dan mencetak ulang kapan saja di menu "Cek & Cetak Hasil" dengan memasukkan NIM.',
       tag: 'Standar Resmi'
     },
     {

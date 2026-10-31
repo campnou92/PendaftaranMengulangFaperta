@@ -77,14 +77,18 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('status')}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[44px] ${
                   activeTab === 'status'
                     ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold'
                     : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                 }`}
+                title="Cek Status Persetujuan & Cetak Ulang Lembar KRS"
               >
                 <Search className="w-4 h-4" />
                 <span>Cek &amp; Cetak Hasil</span>
+                <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.5 rounded-md shadow-2xs">
+                  KRS
+                </span>
               </button>
 
               {/* Admin Tabs — HANYA tampil jika Staf/Pengelola SUDAH Login */}

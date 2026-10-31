@@ -624,6 +624,7 @@ export default function App() {
                 adminSettings={adminSettings}
                 onSubmitSuccess={handleRegistrationSuccess}
                 onUpdateNote={handleUpdateNote}
+                onGoToStatus={() => setActiveTab('status')}
               />
             )}
 
