@@ -2197,74 +2197,30 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </section>
 
             {/* ============================================================
-                PENGARAH ALUR: POINT 3 ➔ POINT 4 (Directional Flow Indicator)
+                FINALISASI & SUBMISI FORMULIR
                ============================================================ */}
-            <div className="flex flex-col items-center justify-center my-4 sm:my-6 select-none relative group" aria-hidden="true">
-              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-600 via-emerald-500/60 to-emerald-400/20 dark:from-emerald-400 dark:via-emerald-500/40" />
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/95 dark:bg-slate-900/90 border-2 border-emerald-500/40 dark:border-emerald-500/50 shadow-lg shadow-emerald-600/10 dark:shadow-emerald-950/40 backdrop-blur-md transition-all duration-300 group-hover:scale-105 group-hover:border-emerald-500 group-hover:shadow-emerald-500/20">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600 to-slate-900 text-white flex items-center justify-center shadow-xs">
-                  <ChevronDown className="w-3.5 h-3.5 animate-bounce stroke-[3]" />
-                </div>
-                <div className="text-left">
-                  <span className="text-[10px] uppercase font-black tracking-wider text-emerald-700 dark:text-emerald-400 block -mb-0.5">
-                    Langkah Terakhir
-                  </span>
-                  <span className="text-xs font-black text-slate-800 dark:text-slate-100">
-                    Point 4: <span className="text-[#141414] dark:text-white font-extrabold">Konfirmasi &amp; Kirim Pendaftaran</span>
-                  </span>
-                </div>
-                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-pulse stroke-[2.5] ml-1" />
-              </div>
-              <div className="h-6 sm:h-8 w-0.5 bg-gradient-to-b from-emerald-400/20 via-emerald-500/60 to-emerald-600 dark:from-emerald-400/20 dark:via-emerald-500/40 dark:to-emerald-400" />
-            </div>
-
-            {/* ============================================================
-                7. POINT 4: KONFIRMASI & KIRIM PENDAFTARAN (Section 7)
-               ============================================================ */}
-            <section id="section-point-4" className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl p-5 sm:p-7 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/40 dark:shadow-black/50 ring-1 ring-black/[0.04] dark:ring-white/[0.05] relative overflow-hidden transition-all duration-200 hover:shadow-2xl space-y-4">
-              {/* Top Accent Gradient Line */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-amber-400 to-emerald-600" />
-
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-800 to-slate-950 text-white flex items-center justify-center font-black text-sm shadow-md ring-2 ring-emerald-500/30 shrink-0">
-                  04
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/80">
-                      Point 4
-                    </span>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                      Konfirmasi &amp; Kirim Pendaftaran
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Pastikan seluruh data yang Anda isi sudah benar sebelum mengirim formulir pendaftaran.
-                  </p>
-                </div>
-              </div>
-
-              {/* Peringatan Memastikan Data yang Diisi Sudah Benar */}
-              <div className="p-4 sm:p-5 bg-amber-50/90 dark:bg-amber-950/40 rounded-2xl border-2 border-amber-300 dark:border-amber-700/80 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed shadow-2xs flex items-start gap-3">
+            <div className="pt-4 space-y-3.5">
+              {/* Note Peringatan: Pastikan Seluruh Data yang Diisi Sudah Benar */}
+              <div className="p-4 sm:p-4.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-3 shadow-xs">
                 <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <strong className="font-extrabold text-amber-950 dark:text-amber-200 block text-xs sm:text-sm">
+                <div className="space-y-0.5 leading-relaxed">
+                  <strong className="font-extrabold text-xs sm:text-sm text-amber-950 dark:text-amber-100 block">
                     Peringatan: Pastikan Seluruh Data yang Diisi Sudah Benar!
                   </strong>
-                  <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
-                    {currentFlowSettings.commitmentText || 'Mohon periksa kembali kesesuaian data identitas (NIM, Nama, No. WhatsApp), daftar mata kuliah, dan kelas yang Anda ambil. Setelah menekan tombol Kirim Pendaftaran, formulir akan diproses dan sistem menerbitkan dokumen KRS resmi untuk diserahkan ke loket Fakultas Pertanian.'}
+                  <p className="text-slate-700 dark:text-slate-300 text-xs">
+                    {currentFlowSettings.commitmentText || 'Mohon periksa kembali kesesuaian data identitas (NIM, Nama, No. WhatsApp), daftar mata kuliah, dan pilihan kelas Anda. Setelah menekan tombol Kirim Pendaftaran, formulir akan diproses dan sistem menerbitkan dokumen KRS resmi untuk diserahkan ke loket Fakultas Pertanian.'}
                   </p>
                 </div>
               </div>
 
-              {/* Tombol Kirim Pendaftaran (Berada Tepat Setelah Peringatan) */}
-              <div className="pt-1">
+              {/* Tombol Kirim Pendaftaran */}
+              <div>
                 <button
                   type="submit"
                   form="registration-form"
                   disabled={!canSubmit}
                   title={getSubmitDisabledReason() || 'Kirim Formulir Pendaftaran Mengulang'}
-                  className="w-full h-12 sm:h-13 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                  className="w-full h-12 sm:h-13 rounded-2xl bg-[#166534] hover:bg-[#14532D] text-white font-extrabold text-sm sm:text-base shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
                 >
                   <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>Kirim Pendaftaran</span>
@@ -2277,7 +2233,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 )}
               </div>
-            </section>
+            </div>
 
             {/* Global Submission Error if any */}
             {submissionError && (

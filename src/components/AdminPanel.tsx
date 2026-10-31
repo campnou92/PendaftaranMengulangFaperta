@@ -3058,7 +3058,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      Teks Peringatan / Konfirmasi Data Mahasiswa (Point 4):
+                      Teks Note Peringatan Sebelum Tombol Kirim:
                     </label>
                   </div>
                   <textarea
@@ -3069,7 +3069,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-[#166534] resize-none leading-relaxed"
                   />
                   <p className="text-[11px] text-slate-400">
-                    Teks peringatan pada kotak kuning Point 4 agar mahasiswa memastikan kebenaran data sebelum mengirimkan pendaftaran.
+                    Teks catatan pada kotak peringatan sebelum tombol Kirim Pendaftaran agar mahasiswa memastikan kebenaran data.
                   </p>
                 </div>
               </div>
