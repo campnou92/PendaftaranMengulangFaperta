@@ -201,6 +201,54 @@ Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_insti
       ],
       createdAt: '2026-10-05T08:00:00.000Z',
       notes: 'Periode pendaftaran mata kuliah mengulang Semester 5.'
+    },
+    {
+      id: 'period-2026-2027-sem-1',
+      semester: 1,
+      academicYear: '2026/2027',
+      title: 'Pendaftaran Mengulang Semester 1 — T.A. 2026/2027',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-20T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 1 saat ini telah ditutup. Silakan hubungi loket Admin BAAK FP INSTIPER jika memerlukan dispensasi.',
+      offeredCourseIds: ['agro-s1-1', 'agro-s1-2', 'agro-s1-3', 'agri-s1-1', 'agri-s1-2', 'agri-s1-3'],
+      createdAt: '2026-10-01T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang khusus Semester 1.'
+    },
+    {
+      id: 'period-2026-2027-sem-3',
+      semester: 3,
+      academicYear: '2026/2027',
+      title: 'Pendaftaran Mengulang Semester 3 — T.A. 2026/2027',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-01T08:00',
+      endDate: '2026-11-30T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 3 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.',
+      offeredCourseIds: [
+        'agro-1', 'agro-2', 'agro-3', 'agro-4', 'agro-5', 'agro-6', 'agro-7', 'agro-3a', 'agro-3b',
+        'agri-10', 'agri-11', 'agri-12', 'agri-13', 'agri-14', 'agri-15', 'agri-3a', 'agri-3b'
+      ],
+      createdAt: '2026-10-01T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang Semester 3.'
+    },
+    {
+      id: 'period-2026-2027-sem-5',
+      semester: 5,
+      academicYear: '2026/2027',
+      title: 'Pendaftaran Mengulang Semester 5 — T.A. 2026/2027',
+      isOpen: true,
+      useSchedule: true,
+      startDate: '2026-10-05T08:00',
+      endDate: '2026-12-15T23:59',
+      closedMessage: 'Pendaftaran Mengulang Semester 5 saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.',
+      offeredCourseIds: [
+        'agro-8', 'agro-9', 'agro-5a', 'agro-5b', 'agro-5c', 'agro-5d',
+        'agri-16', 'agri-17', 'agri-18', 'agri-5a', 'agri-5b', 'agri-5c', 'agri-5d'
+      ],
+      createdAt: '2026-10-05T08:00:00.000Z',
+      notes: 'Periode pendaftaran mata kuliah mengulang Semester 5.'
     }
   ],
   semesterSchedules: {

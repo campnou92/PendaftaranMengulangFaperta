@@ -561,6 +561,93 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTimeout(() => setCourseFeedback(null), 3500);
   };
 
+  // List semester yang tersedia untuk kontrol buka/tutup cepat
+  const allControlSemesters = useMemo(() => {
+    const semSet = new Set<string>();
+    // Default semesters to always include
+    ['1', '3', '5'].forEach(s => semSet.add(s));
+    courses.forEach(c => {
+      if (c.semester !== undefined && c.semester !== null) {
+        semSet.add(String(c.semester));
+      }
+    });
+    if (adminSettings.semesterSchedules) {
+      Object.keys(adminSettings.semesterSchedules).forEach(k => semSet.add(k));
+    }
+    if (adminSettings.registrationPeriods) {
+      adminSettings.registrationPeriods.forEach(p => semSet.add(String(p.semester)));
+    }
+    return Array.from(semSet).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [courses, adminSettings.semesterSchedules, adminSettings.registrationPeriods]);
+
+  // Handler Buka / Tutup Pendaftaran per Semester Secara Instan & Tersinkronisasi
+  const handleToggleSemester = (semKey: string) => {
+    const activeYear = adminSettings.activeAcademicYear || '2025/2026';
+    const currentStatus = getSemesterStatus(semKey, adminSettings, activeYear);
+    const targetState = !currentStatus.isOpen;
+
+    // 1. Update semesterSchedules
+    const updatedSchedules: Record<string, any> = {
+      ...(adminSettings.semesterSchedules || {}),
+      [semKey]: {
+        ...(adminSettings.semesterSchedules?.[semKey] || {}),
+        semester: Number(semKey) || 1,
+        isOpen: targetState,
+        useSchedule: false,
+        closedMessage: `Pendaftaran Semester ${semKey} (T.A. ${activeYear}) saat ini ditutup oleh pihak Admin Fakultas Pertanian.`
+      }
+    };
+
+    // 2. Update registrationPeriods
+    let periodFound = false;
+    const currentPeriods = adminSettings.registrationPeriods || [];
+    const updatedPeriods = currentPeriods.map(p => {
+      if (String(p.semester) === String(semKey) && (!p.academicYear || p.academicYear === activeYear)) {
+        periodFound = true;
+        return {
+          ...p,
+          isOpen: targetState,
+          showOnMainForm: targetState,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return p;
+    });
+
+    // If no period exists for this semester and activeYear, create one so it's tracked in periods manager
+    if (!periodFound) {
+      const semCourses = courses.filter(c => String(c.semester) === String(semKey) && (!c.academicYear || c.academicYear === activeYear));
+      updatedPeriods.push({
+        id: `period-${activeYear.replace('/', '-')}-sem-${semKey}`,
+        semester: Number(semKey) || semKey,
+        academicYear: activeYear,
+        title: `Pendaftaran Mengulang Semester ${semKey} — T.A. ${activeYear}`,
+        isOpen: targetState,
+        showOnMainForm: targetState,
+        useSchedule: false,
+        startDate: '',
+        endDate: '',
+        closedMessage: `Pendaftaran Mengulang Semester ${semKey} saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.`,
+        offeredCourseIds: semCourses.map(c => c.id),
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    onUpdateSettings({
+      ...adminSettings,
+      // If opening a semester while global switch was off, also re-open global switch
+      isGlobalRegistrationOpen: targetState ? true : adminSettings.isGlobalRegistrationOpen,
+      semesterSchedules: updatedSchedules,
+      registrationPeriods: updatedPeriods
+    });
+
+    setCourseFeedback({
+      type: 'success',
+      message: `Pendaftaran Semester ${semKey} (T.A. ${activeYear}) BERHASIL ${targetState ? 'DIBUKA' : 'DITUTUP'}.`
+    });
+    setTimeout(() => setCourseFeedback(null), 3500);
+  };
+
   // Salin Semua Matkul dari Satu Tahun Ajaran ke Tahun Ajaran Lain (Fitur Duplikasi Cepat)
   const handleCopyCourses = () => {
     if (!copySourceYear || !copyTargetYear) return;
@@ -842,12 +929,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
-    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
+    const isEditRegCrossSem = (editRegTargetSemester && editRegTargetSemester.toLowerCase().includes('gabungan')) ||
+      (Array.isArray(editRegSelectedCourses) && new Set(editRegSelectedCourses.map(c => c.semester)).size > 1);
+    const maxSksAllowed = isEditRegCrossSem ? 24 : getMaxSksForBatch(editRegAngkatan, adminSettings);
 
     if (currentTotalSks > maxSksAllowed) {
       setEditRegFeedback({
         type: 'error',
-        message: `Total beban SKS (${currentTotalSks} SKS) melebihi batas kuota Angkatan ${editRegAngkatan} (maksimal ${maxSksAllowed} SKS).`
+        message: `Total beban SKS (${currentTotalSks} SKS) melebihi batas kuota ${isEditRegCrossSem ? 'Lintas Gabungan' : `Angkatan ${editRegAngkatan}`} (maksimal ${maxSksAllowed} SKS).`
       });
       return;
     }
@@ -2089,77 +2178,149 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="flex-1">
 
           {/* Master Switch Status Pendaftaran Depan */}
-          <div className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 ${
+          <div className={`p-4 rounded-2xl border transition-all shadow-xs flex flex-col gap-4 mb-6 ${
             !isRegistrationActive
               ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800'
               : 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800'
           }`}>
-            <div className="flex items-center gap-3.5">
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
-                !isRegistrationActive
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-[#008744] text-white'
-              }`}>
-                {!isRegistrationActive ? (
-                  <Lock className="w-5 h-5" />
-                ) : (
-                  <Unlock className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                    !isRegistrationActive
-                      ? 'bg-rose-200 text-rose-900 border border-rose-300 dark:bg-rose-900/60 dark:text-rose-200'
-                      : 'bg-emerald-200 text-emerald-950 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-200'
-                  }`}>
-                    {!isRegistrationActive ? '🔴 PENDAFTARAN DITUTUP' : '🟢 PENDAFTARAN DIBUKA'}
-                  </span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Status Pendaftaran di Halaman Depan Mahasiswa
-                  </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
+                  !isRegistrationActive
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-[#008744] text-white'
+                }`}>
+                  {!isRegistrationActive ? (
+                    <Lock className="w-5 h-5" />
+                  ) : (
+                    <Unlock className="w-5 h-5" />
+                  )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                  {!isRegistrationActive
-                    ? 'Formulir pendaftaran di halaman depan saat ini DITUTUP TOTAL. Mahasiswa tidak dapat memilih mata kuliah maupun mengirimkan pendaftaran.'
-                    : 'Pendaftaran di halaman depan saat ini AKTIF / TERBUKA. Mahasiswa dapat mengisi formulir pendaftaran dan memilih mata kuliah mengulang.'}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                      !isRegistrationActive
+                        ? 'bg-rose-200 text-rose-900 border border-rose-300 dark:bg-rose-900/60 dark:text-rose-200'
+                        : 'bg-emerald-200 text-emerald-950 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-200'
+                    }`}>
+                      {!isRegistrationActive ? '🔴 PENDAFTARAN DITUTUP' : '🟢 PENDAFTARAN DIBUKA'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Status Pendaftaran di Halaman Depan Mahasiswa
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                    {!isRegistrationActive
+                      ? 'Formulir pendaftaran di halaman depan saat ini DITUTUP TOTAL. Mahasiswa tidak dapat memilih mata kuliah maupun mengirimkan pendaftaran.'
+                      : 'Pendaftaran di halaman depan saat ini AKTIF / TERBUKA. Mahasiswa dapat mengisi formulir pendaftaran dan memilih mata kuliah mengulang.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleToggleGlobalRegistration(!isRegistrationActive)}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 ${
+                    !isRegistrationActive
+                      ? 'bg-[#008744] hover:bg-[#00702F] text-white'
+                      : 'bg-rose-600 hover:bg-red-700 text-white'
+                  }`}
+                  title={!isRegistrationActive ? 'Klik untuk membuka pendaftaran halaman depan' : 'Klik untuk menutup seluruh pendaftaran halaman depan'}
+                >
+                  {!isRegistrationActive ? (
+                    <>
+                      <Unlock className="w-4 h-4" />
+                      <span>Buka Pendaftaran Depan</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Tutup Pendaftaran Depan Sekarang</span>
+                    </>
+                  )}
+                </button>
+
+                {activeTab !== 'periods' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('periods')}
+                    className="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  >
+                    Kelola Jadwal &amp; Periode →
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleToggleGlobalRegistration(!isRegistrationActive)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 ${
-                  !isRegistrationActive
-                    ? 'bg-[#008744] hover:bg-[#00702F] text-white'
-                    : 'bg-rose-600 hover:bg-red-700 text-white'
-                }`}
-                title={!isRegistrationActive ? 'Klik untuk membuka pendaftaran halaman depan' : 'Klik untuk menutup seluruh pendaftaran halaman depan'}
-              >
-                {!isRegistrationActive ? (
-                  <>
-                    <Unlock className="w-4 h-4" />
-                    <span>Buka Pendaftaran Depan</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    <span>Tutup Pendaftaran Depan Sekarang</span>
-                  </>
-                )}
-              </button>
+            {/* Quick Per-Semester Registration Control Widget */}
+            <div className="w-full pt-3 border-t border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <CalendarClock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Kontrol Status per Semester (T.A. {adminSettings.activeAcademicYear || '2025/2026'})
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Buka atau tutup akses pendaftaran per semester secara langsung
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+                {allControlSemesters.map((semKey) => {
+                  const status = getSemesterStatus(semKey, adminSettings, adminSettings.activeAcademicYear);
+                  const isSemOpen = status.isOpen;
+                  return (
+                    <div 
+                      key={semKey}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-2.5 transition-all ${
+                        isSemOpen
+                          ? 'bg-white dark:bg-slate-900 border-emerald-300 dark:border-emerald-800/80 shadow-2xs'
+                          : 'bg-slate-100/80 dark:bg-slate-900/60 border-slate-300 dark:border-slate-800 text-slate-500'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black text-slate-900 dark:text-white">
+                            Semester {semKey}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                            isSemOpen 
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300' 
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
+                          }`}>
+                            {isSemOpen ? '🟢 Dibuka' : '🔴 Ditutup'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5" title={status.message}>
+                          {status.message}
+                        </p>
+                      </div>
 
-              {activeTab !== 'periods' && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('periods')}
-                  className="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                >
-                  Kelola Jadwal &amp; Periode →
-                </button>
-              )}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSemester(semKey)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
+                          isSemOpen
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-2xs'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                        }`}
+                        title={isSemOpen ? `Tutup pendaftaran Semester ${semKey}` : `Buka pendaftaran Semester ${semKey}`}
+                      >
+                        {isSemOpen ? (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            <span>Tutup</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="w-3 h-3" />
+                            <span>Buka</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -6649,7 +6810,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {/* Live SKS & Fee Estimate Info Box */}
                   {(() => {
                     const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
-                    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
+                    const isEditRegCrossSem = (editRegTargetSemester && editRegTargetSemester.toLowerCase().includes('gabungan')) ||
+                      (Array.isArray(editRegSelectedCourses) && new Set(editRegSelectedCourses.map(c => c.semester)).size > 1);
+                    const maxSksAllowed = isEditRegCrossSem ? 24 : getMaxSksForBatch(editRegAngkatan, adminSettings);
                     const isOverLimit = currentTotalSks > maxSksAllowed;
                     const isPaidBatch = (adminSettings.paidBatches || []).includes(editRegAngkatan);
                     const costPerSks = adminSettings.costPerSks || 50000;

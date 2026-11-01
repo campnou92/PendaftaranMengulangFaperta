@@ -247,9 +247,7 @@ export function getSemesterStatus(
   // 1. Prioritas Utama: Cek apakah ada record RegistrationPeriod yang cocok
   if (settings?.registrationPeriods && settings.registrationPeriods.length > 0) {
     const period = settings.registrationPeriods.find(
-      p => String(p.semester) === semKey && (p.academicYear === activeYear || !p.academicYear)
-    ) || settings.registrationPeriods.find(
-      p => String(p.semester) === semKey
+      p => String(p.semester) === semKey && (!p.academicYear || p.academicYear === activeYear)
     );
 
     if (period) {

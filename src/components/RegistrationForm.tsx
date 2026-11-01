@@ -57,12 +57,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const activeAcademicYear = adminSettings.activeAcademicYear || '2025/2026';
   const activeTerm = adminSettings.activeTerm || 'Ganjil';
 
-  // Ambil seluruh periode pendaftaran yang ditentukan Admin: hanya yang showOnMainForm !== false dan isOpen !== false
+  // Ambil seluruh periode pendaftaran yang ditentukan Admin: hanya yang showOnMainForm !== false dan isOpen !== false untuk tahun ajaran aktif
   const openVisiblePeriods = useMemo(() => {
     if (adminSettings.isGlobalRegistrationOpen === false) return [];
     const allPeriods: RegistrationPeriod[] = adminSettings.registrationPeriods || [];
-    return allPeriods.filter(p => p.showOnMainForm !== false && p.isOpen !== false);
-  }, [adminSettings.registrationPeriods, adminSettings.isGlobalRegistrationOpen]);
+    return allPeriods.filter(p => 
+      p.showOnMainForm !== false && 
+      p.isOpen !== false && 
+      (!p.academicYear || p.academicYear === activeAcademicYear)
+    );
+  }, [adminSettings.registrationPeriods, adminSettings.isGlobalRegistrationOpen, activeAcademicYear]);
 
   // Ekstrak secara dinamis semester apa saja yang diaktifkan Admin untuk tampil di halaman utama
   const activeSemesters = useMemo(() => {
@@ -90,9 +94,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
 
     return Array.from(semSet).sort((a, b) => a - b);
-  }, [openVisiblePeriods, courses, activeAcademicYear]);
+  }, [openVisiblePeriods, courses, activeAcademicYear, adminSettings.isGlobalRegistrationOpen]);
 
-  // Helper mencari record periode pendaftaran yang cocok untuk suatu semester
+  // Helper mencari record periode pendaftaran yang cocok untuk suatu semester pada tahun ajaran aktif
   const findPeriodForSemester = useCallback((semNum: number | string | undefined | null): RegistrationPeriod | undefined => {
     if (!semNum) return undefined;
     const targetSem = Number(semNum);
@@ -100,14 +104,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem && (!p.academicYear || p.academicYear === activeAcademicYear));
   }, [openVisiblePeriods, adminSettings.registrationPeriods, activeAcademicYear]);
 
-  // Helper mencari record periode pendaftaran yang cocok untuk suatu mata kuliah
+  // Helper mencari record periode pendaftaran yang cocok untuk suatu mata kuliah pada tahun ajaran aktif
   const findPeriodForCourse = useCallback((course: CourseItem): RegistrationPeriod | undefined => {
     if (course.periodId) {
-      const byId = (adminSettings.registrationPeriods || []).find(p => p.id === course.periodId);
+      const byId = (adminSettings.registrationPeriods || []).find(p => p.id === course.periodId && (!p.academicYear || p.academicYear === activeAcademicYear));
       if (byId) return byId;
     }
     return findPeriodForSemester(course.semester);
-  }, [adminSettings.registrationPeriods, findPeriodForSemester]);
+  }, [adminSettings.registrationPeriods, activeAcademicYear, findPeriodForSemester]);
 
   // Ambil mata kuliah aktif: utamakan courses dari tiap periode yang dibuka dan tampil di halaman utama
   const activeYearCourses = useMemo(() => {
@@ -648,6 +652,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return selectedList.reduce((acc, curr) => acc + curr.sks, 0);
   }, [selectedList]);
 
+  // Semester unik yang mata kuliahnya dipilih mahasiswa
+  const uniqueChosenSemesters = useMemo(() => {
+    return Array.from(new Set(selectedList.map(c => c.semester))).sort((a, b) => (Number(a) || 0) - (Number(b) || 0));
+  }, [selectedList]);
+
+  // Mode Lintas Gabungan: Jika mahasiswa memilih opsi portal "Semua" (all) ATAU memilih mata kuliah dari lebih dari 1 semester
+  const isCrossSemesterCombined = selectedSemester === 'all' || uniqueChosenSemesters.length > 1;
+
   // Menentukan periode pendaftaran aktif berdasarkan pilihan semester atau mata kuliah yang dipilih
   const currentActivePeriod = useMemo(() => {
     if (selectedSemester !== 'all') {
@@ -660,10 +672,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return openVisiblePeriods[0];
   }, [selectedSemester, findPeriodForSemester, selectedList, findPeriodForCourse, openVisiblePeriods]);
 
-  // Max SKS for selected Angkatan (Mendukung override per-periode semester)
+  // Max SKS for selected Angkatan (Mendukung override per-periode semester & batas lintas gabungan mutlak 24 SKS)
   const currentMaxSks = useMemo(() => {
+    if (isCrossSemesterCombined) {
+      return 24; // Batas SKS lintas gabungan adalah 24 SKS
+    }
     return getMaxSksForBatch(angkatan, adminSettings, currentActivePeriod);
-  }, [angkatan, adminSettings, currentActivePeriod]);
+  }, [isCrossSemesterCombined, angkatan, adminSettings, currentActivePeriod]);
 
   // Fee calculation per SKS (Mendukung override per-periode semester)
   const isFeeSystemActive = currentActivePeriod?.feePerSksEnabled !== undefined 
@@ -921,7 +936,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       return 'Pilih minimal 1 mata kuliah yang ingin Anda daftarkan untuk diulang.';
     }
     if (totalSks > currentMaxSks) {
-      return `Total SKS (${totalSks} SKS) melebihi batas maksimal Angkatan ${angkatan} (${currentMaxSks} SKS). Kurangi pilihan mata kuliah Anda.`;
+      return `Total SKS (${totalSks} SKS) melebihi batas maksimal ${isCrossSemesterCombined ? 'Lintas Gabungan' : `Angkatan ${angkatan}`} (${currentMaxSks} SKS). Kurangi pilihan mata kuliah Anda.`;
     }
     return null;
   };
@@ -1395,7 +1410,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   {/* Single concise line for SKS limit & fee status */}
                   <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
                     <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      Batas maksimal: <strong>{currentMaxSks} SKS</strong>
+                      Batas maksimal: <strong>{currentMaxSks} SKS</strong> {isCrossSemesterCombined && <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal">(Batas Lintas Gabungan)</span>}
                     </p>
                     <p className={`text-[11px] mt-0.5 ${isPaidBatch ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-[#166534] dark:text-emerald-400 font-medium'}`}>
                       {isPaidBatch 
@@ -2382,7 +2397,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                <span>Angkatan {angkatan}</span>
+                <span>{isCrossSemesterCombined ? 'Lintas Gabungan' : `Angkatan ${angkatan}`}</span>
                 <span className={isOverSksLimit ? 'text-red-600 font-bold' : ''}>
                   {currentMaxSks - totalSks >= 0 
                     ? `Sisa kuota: ${currentMaxSks - totalSks} SKS` 

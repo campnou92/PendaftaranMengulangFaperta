@@ -599,6 +599,55 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
     setTimeout(() => setFeedback(null), 3000);
   };
 
+  // Otomatis Buat Periode untuk Tahun Ajaran jika belum ada
+  const handleAutoCreatePeriodsForYear = (targetYear: string) => {
+    const semList = [1, 3, 5];
+    const newPeriods: RegistrationPeriod[] = [];
+    const currentList = adminSettings.registrationPeriods || [];
+
+    semList.forEach((sem) => {
+      const existing = currentList.find(p => String(p.semester) === String(sem) && p.academicYear === targetYear);
+      if (!existing) {
+        const matchingCourseIds = courses
+          .filter(c => Number(c.semester) === sem && (!c.academicYear || c.academicYear === targetYear))
+          .map(c => c.id);
+
+        newPeriods.push({
+          id: `period-${targetYear.replace('/', '-')}-sem-${sem}`,
+          semester: sem,
+          academicYear: targetYear,
+          title: `Pendaftaran Mengulang Semester ${sem} — T.A. ${targetYear}`,
+          isOpen: true,
+          showOnMainForm: true,
+          useSchedule: true,
+          startDate: '2026-10-01T08:00',
+          endDate: sem === 1 ? '2026-11-20T23:59' : sem === 3 ? '2026-11-30T23:59' : '2026-12-15T23:59',
+          closedMessage: `Pendaftaran Mengulang Semester ${sem} saat ini telah ditutup oleh pihak Admin Fakultas Pertanian.`,
+          offeredCourseIds: matchingCourseIds,
+          createdAt: new Date().toISOString(),
+          notes: `Periode pendaftaran otomatis Semester ${sem} T.A. ${targetYear}.`
+        });
+      }
+    });
+
+    if (newPeriods.length === 0) {
+      setFeedback({ type: 'error', message: `Seluruh periode untuk T.A. ${targetYear} sudah tersedia.` });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+
+    onUpdateSettings({
+      ...adminSettings,
+      registrationPeriods: [...currentList, ...newPeriods]
+    });
+
+    setFeedback({
+      type: 'success',
+      message: `Berhasil membuat ${newPeriods.length} periode pendaftaran (Semester ${newPeriods.map(p => p.semester).join(', ')}) untuk T.A. ${targetYear}!`
+    });
+    setTimeout(() => setFeedback(null), 4000);
+  };
+
   // Toggle Show On Main Form (Tampil / Sembunyikan dari Form Mahasiswa)
   const handleToggleShowOnMainForm = (period: RegistrationPeriod) => {
     const newShow = period.showOnMainForm === false ? true : false;
@@ -835,14 +884,23 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
           <p className="text-xs text-slate-500 max-w-md mx-auto mb-5">
             Belum ada record pendaftaran mengulang yang dibuat untuk kriteria filter ini. Silakan buat periode baru untuk membuka pendaftaran semester &amp; tahun ajaran.
           </p>
-          <button
-            type="button"
-            onClick={() => handleOpenCreateModal(3)}
-            className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ Buka Pendaftaran Mengulang Sekarang</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleAutoCreatePeriodsForYear(filterYear === 'all' ? currentAcademicYear : filterYear)}
+              className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>⚡ Buat Periode Otomatis (Sem 1, 3, 5) untuk T.A. {filterYear === 'all' ? currentAcademicYear : filterYear}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenCreateModal(3)}
+              className="px-4 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>+ Buat Periode Manual</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
