@@ -57,6 +57,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
   const [customProdi, setCustomProdi] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'approved_only' | 'all'>('approved_only');
   const [proctorName, setProctorName] = useState<string>('');
+  const [manualParticipantCount, setManualParticipantCount] = useState<string>('');
 
   // Selected Course Object
   const currentCourse = useMemo(() => {
@@ -402,7 +403,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
       <!-- FOOTER / TANDA TANGAN PENGAWAS -->
       <div class="footer-section">
         <div class="footer-col-left">
-          <div style="margin-bottom: 2px;">Jumlah Peserta : <strong>${participantStudents.length} Mahasiswa</strong></div>
+          <div style="margin-bottom: 2px;">Jumlah Peserta : ${manualParticipantCount.trim() ? `<strong>${manualParticipantCount.trim()} Mahasiswa</strong>` : '.................... Mahasiswa'}</div>
           <div>Pengawas</div>
           <div class="sig-space"></div>
           <div>( ${proctorName ? proctorName : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' } )</div>
@@ -715,6 +716,20 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                 <option value="all">Semua Pendaftar Aktif</option>
               </select>
             </div>
+
+            {/* 9. Jumlah Peserta Ujian */}
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Jumlah Peserta (Ditulis Pengawas)
+              </label>
+              <input
+                type="text"
+                value={manualParticipantCount}
+                onChange={(e) => setManualParticipantCount(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                placeholder="Titik-titik (manual saat ujian)"
+              />
+            </div>
           </div>
 
           {/* Quick Stats banner */}
@@ -873,7 +888,11 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                 {/* Footer Kiri: Jumlah Peserta & Pengawas */}
                 <div>
                   <div className="mb-1">
-                    Jumlah Peserta : <span className="font-bold">{participantStudents.length} Mahasiswa</span>
+                    Jumlah Peserta : {manualParticipantCount.trim() ? (
+                      <span className="font-bold">{manualParticipantCount.trim()} Mahasiswa</span>
+                    ) : (
+                      <span className="tracking-widest font-normal">.................... Mahasiswa</span>
+                    )}
                   </div>
                   <div>Pengawas</div>
                   <div className="h-16"></div>

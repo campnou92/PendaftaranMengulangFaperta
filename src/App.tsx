@@ -258,10 +258,27 @@ export default function App() {
     // 4. Real-time settings sync from Firestore (Pengaturan Jadwal & Biaya)
     const unsubSettings = subscribeCloudSettings((cloudSettings) => {
       if (cloudSettings) {
-        setAdminSettings(prev => ({
-          ...prev,
-          ...cloudSettings
-        }));
+        setAdminSettings(prev => {
+          const cloudPeriods: RegistrationPeriod[] = Array.isArray(cloudSettings.registrationPeriods) 
+            ? cloudSettings.registrationPeriods 
+            : [];
+          const cloudPeriodIds = new Set(cloudPeriods.map(p => p.id));
+          const missingDefaults = (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []).filter(
+            p => !cloudPeriodIds.has(p.id)
+          );
+          const mergedPeriods = missingDefaults.length > 0 ? [...cloudPeriods, ...missingDefaults] : cloudPeriods;
+
+          return {
+            ...DEFAULT_ADMIN_SETTINGS,
+            ...prev,
+            ...cloudSettings,
+            registrationPeriods: mergedPeriods.length > 0 ? mergedPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
+            semesterSchedules: {
+              ...(DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
+              ...(cloudSettings.semesterSchedules || {})
+            }
+          };
+        });
       }
     });
 

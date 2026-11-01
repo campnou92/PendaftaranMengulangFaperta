@@ -61,11 +61,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const openVisiblePeriods = useMemo(() => {
     if (adminSettings.isGlobalRegistrationOpen === false) return [];
     const allPeriods: RegistrationPeriod[] = adminSettings.registrationPeriods || [];
-    return allPeriods.filter(p => 
+    const forYear = allPeriods.filter(p => 
       p.showOnMainForm !== false && 
       p.isOpen !== false && 
       (!p.academicYear || p.academicYear === activeAcademicYear)
     );
+    if (forYear.length > 0) return forYear;
+
+    // Fallback: jika belum ada record periode spesifik tahun ajaran aktif, tampilkan periode aktif yang tersedia
+    return allPeriods.filter(p => p.showOnMainForm !== false && p.isOpen !== false);
   }, [adminSettings.registrationPeriods, adminSettings.isGlobalRegistrationOpen, activeAcademicYear]);
 
   // Ekstrak secara dinamis semester apa saja yang diaktifkan Admin untuk tampil di halaman utama
@@ -101,7 +105,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (!semNum) return undefined;
     const targetSem = Number(semNum);
     return openVisiblePeriods.find(p => Number(p.semester) === targetSem) 
-      || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem && (!p.academicYear || p.academicYear === activeAcademicYear));
+      || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem && (!p.academicYear || p.academicYear === activeAcademicYear))
+      || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem && p.isOpen !== false)
+      || (adminSettings.registrationPeriods || []).find(p => Number(p.semester) === targetSem);
   }, [openVisiblePeriods, adminSettings.registrationPeriods, activeAcademicYear]);
 
   // Helper mencari record periode pendaftaran yang cocok untuk suatu mata kuliah pada tahun ajaran aktif
@@ -716,8 +722,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
       if (period.useSchedule) {
         const now = new Date();
-        const start = period.startDate ? new Date(period.startDate) : null;
-        const end = period.endDate ? new Date(period.endDate) : null;
+        const hasStart = Boolean(period.startDate);
+        const hasEnd = Boolean(period.endDate);
+        let start = hasStart ? new Date(period.startDate!) : null;
+        let end = hasEnd ? new Date(period.endDate!) : null;
+
+        // Auto-heal tahun lampau
+        if (end && !isNaN(end.getTime()) && end.getFullYear() < now.getFullYear()) {
+          const yearDiff = now.getFullYear() - end.getFullYear();
+          if (start && !isNaN(start.getTime())) {
+            start = new Date(start.setFullYear(start.getFullYear() + yearDiff));
+          }
+          end = new Date(end.setFullYear(end.getFullYear() + yearDiff));
+        }
+
         if (start && !isNaN(start.getTime()) && now < start) {
           return { isClosed: true, reason: `Pendaftaran Semester ${course.semester} belum dibuka (Jadwal: ${formatDateTimeId(period.startDate)}).` };
         }
@@ -725,6 +743,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           return { isClosed: true, reason: period.closedMessage || `Pendaftaran Semester ${course.semester} telah berakhir (${formatDateTimeId(period.endDate)}).` };
         }
       }
+
+      // Jika filter semester sedang aktif dan tidak cocok dengan semester mata kuliah ini
+      if (selectedSemester !== 'all' && String(course.semester) !== selectedSemester) {
+        return { isClosed: true, reason: `Mata kuliah bukan untuk Semester ${selectedSemester}.` };
+      }
+
+      return { isClosed: false, reason: '' };
     }
 
     // 2. Jika portal semester yang dipilih secara global saat ini ditutup
@@ -884,12 +909,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       }
     }
     const statuses = activeSemesters.map(s => getSemesterStatus(s, adminSettings, activeAcademicYear));
-    const anyOpen = statuses.some(s => s.isOpen);
+    const anyOpen = openVisiblePeriods.length > 0 || statuses.some(s => s.isOpen);
     return {
       isOpen: anyOpen,
       message: anyOpen ? 'Portal Gabungan Pendaftaran Mengulang' : 'Seluruh jadwal pendaftaran semester saat ini ditutup'
     };
-  }, [selectedSemester, activeSemesters, adminSettings, activeAcademicYear]);
+  }, [selectedSemester, activeSemesters, openVisiblePeriods, adminSettings, activeAcademicYear]);
 
   // Cek apakah ada matakuliah yang dipilih berada di semester yang sedang ditutup
   const closedCourseSelected = useMemo(() => {
