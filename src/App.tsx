@@ -10,7 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const FinancePanel = lazy(() => import('./components/FinancePanel').then(m => ({ default: m.FinancePanel })));
 import { DEFAULT_ADMIN_SETTINGS, INITIAL_COURSES_WITH_YEAR } from './data/courses';
-import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole, ManagedUser } from './types';
+import { CourseItem, SimpleRegistration, AdminSettings, AuthUser, PaymentStatus, UserRole, ManagedUser, RegistrationPeriod } from './types';
 import { CheckCircle2, X, Lock } from 'lucide-react';
 import { 
   testConnection, 

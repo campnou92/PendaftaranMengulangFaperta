@@ -1682,6 +1682,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     let rincianCounter = 1;
 
     exportData.forEach(r => {
+      const isCharged = isFeeSysActive && currentPaidBatches.includes(r.angkatan);
       r.selectedCourses.forEach(c => {
         rincianPesertaRows.push({
           'No': rincianCounter++,
