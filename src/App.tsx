@@ -4,6 +4,7 @@ import { RegistrationForm } from './components/RegistrationForm';
 import { RegistrationReceipt } from './components/RegistrationReceipt';
 import { StatusChecker } from './components/StatusChecker';
 import { LoginModal } from './components/LoginModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Code splitting: Lazy-load heavy administrative modules
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
@@ -643,56 +644,60 @@ export default function App() {
             )}
 
             {activeTab === 'admin' && (
-              <Suspense fallback={
-                <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
-                  <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Administrasi Akademik...</p>
-                </div>
-              }>
-                <AdminPanel
-                  courses={courses}
-                  registrations={registrations}
-                  adminSettings={adminSettings}
-                  currentUser={currentUser}
-                  onUpdateCourses={handleUpdateCourses}
-                  onDeleteCourse={handleDeleteCourse}
-                  onDeleteBatchCourses={handleDeleteBatchCourses}
-                  onClearAllCourses={handleClearAllCourses}
-                  onUpdateSettings={handleUpdateSettings}
-                  onDeleteRegistration={handleDeleteRegistration}
-                  onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
-                  onUpdateRegistration={handleUpdateRegistration}
-                  onViewReceipt={(r) => {
-                    setActiveReceipt(r);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  onSwitchToFinance={() => setActiveTab('finance')}
-                  onLogout={handleLogout}
-                />
-              </Suspense>
-            )}
-
-            {activeTab === 'finance' && (
-              currentUser ? (
+              <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Pengelola" onReset={() => setActiveTab('admin')}>
                 <Suspense fallback={
                   <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
                     <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Rekapitulasi Keuangan...</p>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Administrasi Akademik...</p>
                   </div>
                 }>
-                  <FinancePanel
-                    currentUser={currentUser}
+                  <AdminPanel
+                    courses={courses}
                     registrations={registrations}
                     adminSettings={adminSettings}
-                    courses={courses}
-                    onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                    currentUser={currentUser}
+                    onUpdateCourses={handleUpdateCourses}
+                    onDeleteCourse={handleDeleteCourse}
+                    onDeleteBatchCourses={handleDeleteBatchCourses}
+                    onClearAllCourses={handleClearAllCourses}
+                    onUpdateSettings={handleUpdateSettings}
+                    onDeleteRegistration={handleDeleteRegistration}
+                    onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
+                    onUpdateRegistration={handleUpdateRegistration}
                     onViewReceipt={(r) => {
                       setActiveReceipt(r);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
+                    onSwitchToFinance={() => setActiveTab('finance')}
                     onLogout={handleLogout}
                   />
                 </Suspense>
+              </ErrorBoundary>
+            )}
+
+            {activeTab === 'finance' && (
+              currentUser ? (
+                <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Keuangan" onReset={() => setActiveTab('finance')}>
+                  <Suspense fallback={
+                    <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
+                      <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Rekapitulasi Keuangan...</p>
+                    </div>
+                  }>
+                    <FinancePanel
+                      currentUser={currentUser}
+                      registrations={registrations}
+                      adminSettings={adminSettings}
+                      courses={courses}
+                      onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                      onViewReceipt={(r) => {
+                        setActiveReceipt(r);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onLogout={handleLogout}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               ) : (
                 <div className="max-w-md mx-auto my-12 p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-[#166534]/15 text-[#166534] dark:text-emerald-400 mx-auto flex items-center justify-center font-bold text-xl mb-3">
