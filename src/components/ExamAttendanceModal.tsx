@@ -234,12 +234,12 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
       width: 100%;
       border-collapse: collapse;
       border: 1.5px solid #000;
-      font-size: 9.5pt;
+      font-size: 10pt;
     }
     .attendance-table th, 
     .attendance-table td {
       border: 1px solid #000;
-      padding: 3px 5px;
+      padding: 4px 6px;
       vertical-align: middle;
     }
     .attendance-table th {
@@ -247,14 +247,14 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
       text-align: center;
       background-color: #f7f7f7;
     }
-    .col-no { width: 32px; text-align: center; }
-    .col-kelas { width: 75px; text-align: center; }
-    .col-nim { width: 95px; text-align: center; font-family: "Times New Roman", Times, serif; }
-    .col-nama { width: 220px; text-align: left; padding-left: 6px; }
-    .col-sub { width: 26px; text-align: center; }
-    .col-ttd { width: 90px; }
+    .col-no { width: 34px; text-align: center; }
+    .col-kelas { width: 78px; text-align: center; }
+    .col-nim { width: 100px; text-align: center; font-family: "Times New Roman", Times, serif; }
+    .col-nama { width: auto; text-align: left; padding-left: 8px; }
+    .col-sub { width: 44px; text-align: center; font-size: 9.5pt; }
+    .col-ttd { width: 100px; }
     .row-data {
-      height: 24px;
+      height: 32px;
     }
     .footer-section {
       margin-top: 14px;
@@ -374,7 +374,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
               <th rowspan="2" class="col-kelas">Kelas Asal</th>
               <th rowspan="2" class="col-nim">Nim</th>
               <th rowspan="2" class="col-nama">Nama</th>
-              <th colspan="3">Nilai</th>
+              <th colspan="3" style="width: 132px;">Nilai</th>
               <th rowspan="2" class="col-ttd">Tanda Tangan</th>
             </tr>
             <tr>
@@ -501,6 +501,16 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
     }
 
     const ws = XLSX.utils.json_to_sheet(dataRows);
+    ws['!cols'] = [
+      { wch: 6 },  // No
+      { wch: 14 }, // Kelas Asal
+      { wch: 16 }, // Nim
+      { wch: 32 }, // Nama
+      { wch: 12 }, // Nilai S
+      { wch: 12 }, // Nilai P
+      { wch: 12 }, // Nilai G
+      { wch: 18 }  // Tanda Tangan
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `Presensi_${examType}`);
 
@@ -831,34 +841,34 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                       <th rowSpan={2} className="border border-black px-2 py-1 text-center font-bold w-24">
                         Kelas Asal
                       </th>
-                      <th rowSpan={2} className="border border-black px-2 py-1 text-center font-bold w-32">
+                      <th rowSpan={2} className="border border-black px-2 py-1 text-center font-bold w-28">
                         Nim
                       </th>
                       <th rowSpan={2} className="border border-black px-3 py-1 text-center font-bold">
                         Nama
                       </th>
-                      <th colSpan={3} className="border border-black px-2 py-0.5 text-center font-bold w-24">
+                      <th colSpan={3} className="border border-black px-2 py-1 text-center font-bold w-[132px]">
                         Nilai
                       </th>
-                      <th rowSpan={2} className="border border-black px-2 py-1 text-center font-bold w-32">
+                      <th rowSpan={2} className="border border-black px-2 py-1 text-center font-bold w-28">
                         Tanda Tangan
                       </th>
                     </tr>
                     <tr className="bg-white">
-                      <th className="border border-black px-1.5 py-0.5 text-center font-bold w-8">
+                      <th className="border border-black px-1.5 py-1 text-center font-bold w-[44px]">
                         S
                       </th>
-                      <th className="border border-black px-1.5 py-0.5 text-center font-bold w-8">
+                      <th className="border border-black px-1.5 py-1 text-center font-bold w-[44px]">
                         P
                       </th>
-                      <th className="border border-black px-1.5 py-0.5 text-center font-bold w-8">
+                      <th className="border border-black px-1.5 py-1 text-center font-bold w-[44px]">
                         G
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {page.rows.map(r => (
-                      <tr key={r.rowNumber} className="h-7">
+                      <tr key={r.rowNumber} className="h-9 hover:bg-slate-50 transition-colors">
                         <td className="border border-black px-1 text-center font-serif text-[12px]">
                           {r.rowNumber}
                         </td>
@@ -868,13 +878,13 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                         <td className="border border-black px-2 text-center font-serif text-[12px] tracking-wide">
                           {r.student ? r.student.nim : ''}
                         </td>
-                        <td className="border border-black px-2 text-left font-serif text-[12px] uppercase">
+                        <td className="border border-black px-2.5 text-left font-serif text-[12px] uppercase">
                           {r.student ? r.student.nama : ''}
                         </td>
-                        <td className="border border-black text-center"></td>
-                        <td className="border border-black text-center"></td>
-                        <td className="border border-black text-center"></td>
-                        <td className="border border-black px-1 text-xs">
+                        <td className="border border-black text-center w-[44px]"></td>
+                        <td className="border border-black text-center w-[44px]"></td>
+                        <td className="border border-black text-center w-[44px]"></td>
+                        <td className="border border-black px-2 text-xs">
                           {/* Blank for student handwritten signature */}
                         </td>
                       </tr>
