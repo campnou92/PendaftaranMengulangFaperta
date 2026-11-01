@@ -28,7 +28,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
   const isCrossSemester = registration.targetSemester?.toLowerCase().includes('gabungan') || 
     (Array.isArray(registration.selectedCourses) && new Set(registration.selectedCourses.map(c => c.semester)).size > 1);
 
-  const maxAllowedSks = isCrossSemester ? 24 : getMaxSksForBatch(registration.angkatan, adminSettings);
+  const maxAllowedSks = getMaxSksForBatch(registration.angkatan, adminSettings);
 
   // Biaya per SKS calculation
   const isFeeSystemActive = adminSettings?.feePerSksEnabled ?? true;
@@ -182,7 +182,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
       <span style="background: #f3f4f6; padding: 4px 10px; font-weight: bold; border-right: 1px solid #111;">Total SKS Diambil</span>
       <span style="padding: 4px 12px; font-weight: 900; color: #00702F;">${registration.totalSks} SKS</span>
     </div>
-    <span style="font-size: 9pt; color: #555; font-style: italic;">(${isCrossSemester ? 'Batas Maksimal Lintas Gabungan: 24 SKS' : `Batas Maksimal Angkatan: ${maxAllowedSks} SKS`})</span>
+    <span style="font-size: 9pt; color: #555; font-style: italic;">(${isCrossSemester ? `Batas Maksimal Angkatan ${registration.angkatan} (Lintas Gabungan)` : `Batas Maksimal Angkatan ${registration.angkatan}`}: ${maxAllowedSks} SKS)</span>
   </div>
 
   ${feeSection}
@@ -529,7 +529,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
               </div>
             </div>
             <span className="text-slate-500 italic text-[11px] print:text-black">
-              ({isCrossSemester ? 'Batas Maksimal Lintas Gabungan: 24 SKS' : `Maksimal Angkatan ${registration.angkatan}: ${maxAllowedSks} SKS`})
+              ({isCrossSemester ? `Maksimal Angkatan ${registration.angkatan} (Lintas Gabungan)` : `Maksimal Angkatan ${registration.angkatan}`}: ${maxAllowedSks} SKS)
             </span>
           </div>
 

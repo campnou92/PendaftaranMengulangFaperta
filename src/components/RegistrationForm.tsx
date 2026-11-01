@@ -672,10 +672,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     return openVisiblePeriods[0];
   }, [selectedSemester, findPeriodForSemester, selectedList, findPeriodForCourse, openVisiblePeriods]);
 
-  // Max SKS for selected Angkatan (Mendukung override per-periode semester & batas lintas gabungan mutlak 24 SKS)
+  // Max SKS for selected Angkatan (Ditentukan berdasarkan settingan Admin untuk angkatan tersebut, baik untuk single semester maupun gabungan lintas semester)
   const currentMaxSks = useMemo(() => {
     if (isCrossSemesterCombined) {
-      return 24; // Batas SKS lintas gabungan adalah 24 SKS
+      // Gabungan lintas semester: batas SKS ditentukan oleh settingan Admin untuk Angkatan tersebut (misal Angkatan 2022 diatur 24 SKS, maka maksimalnya 24 SKS)
+      return getMaxSksForBatch(angkatan, adminSettings);
     }
     return getMaxSksForBatch(angkatan, adminSettings, currentActivePeriod);
   }, [isCrossSemesterCombined, angkatan, adminSettings, currentActivePeriod]);
@@ -936,7 +937,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       return 'Pilih minimal 1 mata kuliah yang ingin Anda daftarkan untuk diulang.';
     }
     if (totalSks > currentMaxSks) {
-      return `Total SKS (${totalSks} SKS) melebihi batas maksimal ${isCrossSemesterCombined ? 'Lintas Gabungan' : `Angkatan ${angkatan}`} (${currentMaxSks} SKS). Kurangi pilihan mata kuliah Anda.`;
+      return `Total SKS (${totalSks} SKS) melebihi batas maksimal Angkatan ${angkatan} (${currentMaxSks} SKS)${isCrossSemesterCombined ? ' untuk gabungan lintas semester' : ''}. Kurangi pilihan mata kuliah Anda.`;
     }
     return null;
   };
@@ -1410,7 +1411,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   {/* Single concise line for SKS limit & fee status */}
                   <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
                     <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      Batas maksimal: <strong>{currentMaxSks} SKS</strong> {isCrossSemesterCombined && <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal">(Batas Lintas Gabungan)</span>}
+                      Batas maksimal: <strong>{currentMaxSks} SKS</strong> (Angkatan {angkatan}{isCrossSemesterCombined ? ' — Lintas Gabungan' : ''})
                     </p>
                     <p className={`text-[11px] mt-0.5 ${isPaidBatch ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-[#166534] dark:text-emerald-400 font-medium'}`}>
                       {isPaidBatch 
@@ -2397,7 +2398,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                <span>{isCrossSemesterCombined ? 'Lintas Gabungan' : `Angkatan ${angkatan}`}</span>
+                <span>Angkatan {angkatan}{isCrossSemesterCombined ? ' (Lintas)' : ''}</span>
                 <span className={isOverSksLimit ? 'text-red-600 font-bold' : ''}>
                   {currentMaxSks - totalSks >= 0 
                     ? `Sisa kuota: ${currentMaxSks - totalSks} SKS` 

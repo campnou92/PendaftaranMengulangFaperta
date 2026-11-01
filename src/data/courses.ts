@@ -151,7 +151,12 @@ Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_insti
   defaultMaxSks: 24,
   batchMaxSks: {
     '2020': 20, // Angkatan 2020 batas maksimal 20 SKS
-    '2021': 22  // Angkatan 2021 batas maksimal 22 SKS
+    '2021': 22, // Angkatan 2021 batas maksimal 22 SKS
+    '2022': 24, // Angkatan 2022 batas maksimal 24 SKS
+    '2023': 24, // Angkatan 2023 batas maksimal 24 SKS
+    '2024': 24, // Angkatan 2024 batas maksimal 24 SKS
+    '2025': 24, // Angkatan 2025 batas maksimal 24 SKS
+    '2026': 24  // Angkatan 2026 batas maksimal 24 SKS
   },
   registrationPeriods: [
     {

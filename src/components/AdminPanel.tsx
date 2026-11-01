@@ -372,6 +372,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [flowCommitmentDraft, setFlowCommitmentDraft] = useState<string>(initialFlow.commitmentText);
   const [flowSavedFeedback, setFlowSavedFeedback] = useState<boolean>(false);
 
+  // Superadmin: Pengaturan Batas Maksimal SKS (Standar & Khusus Per Angkatan)
+  const [defaultMaxSksDraft, setDefaultMaxSksDraft] = useState<number>(
+    adminSettings.defaultMaxSks ?? DEFAULT_ADMIN_SETTINGS.defaultMaxSks ?? 24
+  );
+  const [batchMaxSksDraft, setBatchMaxSksDraft] = useState<Record<string, number>>(
+    adminSettings.batchMaxSks ?? (DEFAULT_ADMIN_SETTINGS.batchMaxSks || { '2020': 20, '2021': 22, '2022': 24 })
+  );
+  const [newBatchYearInput, setNewBatchYearInput] = useState<string>('');
+  const [newBatchSksInput, setNewBatchSksInput] = useState<number>(24);
+  const [sksSettingsSavedFeedback, setSksSettingsSavedFeedback] = useState<boolean>(false);
+
   // Sync if adminSettings changes externally
   useEffect(() => {
     setFeeEnabled(adminSettings.feePerSksEnabled ?? true);
@@ -384,6 +395,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setActiveAcademicYearDraft(adminSettings.activeAcademicYear ?? '2025/2026');
     setActiveTermDraft(adminSettings.activeTerm ?? 'Ganjil');
     setAvailableYearsDraft(adminSettings.availableAcademicYears ?? ['2023/2024', '2024/2025', '2025/2026', '2026/2027']);
+    setDefaultMaxSksDraft(adminSettings.defaultMaxSks ?? DEFAULT_ADMIN_SETTINGS.defaultMaxSks ?? 24);
+    setBatchMaxSksDraft(adminSettings.batchMaxSks ?? (DEFAULT_ADMIN_SETTINGS.batchMaxSks || { '2020': 20, '2021': 22, '2022': 24 }));
 
     const rf = adminSettings.registrationFlow ?? DEFAULT_REGISTRATION_FLOW;
     setFlowTitleDraft(rf.title);
@@ -931,12 +944,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
     const isEditRegCrossSem = (editRegTargetSemester && editRegTargetSemester.toLowerCase().includes('gabungan')) ||
       (Array.isArray(editRegSelectedCourses) && new Set(editRegSelectedCourses.map(c => c.semester)).size > 1);
-    const maxSksAllowed = isEditRegCrossSem ? 24 : getMaxSksForBatch(editRegAngkatan, adminSettings);
+    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
 
     if (currentTotalSks > maxSksAllowed) {
       setEditRegFeedback({
         type: 'error',
-        message: `Total beban SKS (${currentTotalSks} SKS) melebihi batas kuota ${isEditRegCrossSem ? 'Lintas Gabungan' : `Angkatan ${editRegAngkatan}`} (maksimal ${maxSksAllowed} SKS).`
+        message: `Total beban SKS (${currentTotalSks} SKS) melebihi batas kuota Angkatan ${editRegAngkatan} (maksimal ${maxSksAllowed} SKS${isEditRegCrossSem ? ' gabungan lintas semester' : ''}).`
       });
       return;
     }
@@ -1154,6 +1167,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
     setFeeSavedFeedback(true);
     setTimeout(() => setFeeSavedFeedback(false), 2500);
+  };
+
+  // ==========================================
+  // HANDLERS: BATAS MAKSIMAL SKS PER ANGKATAN & LINTAS GABUNGAN
+  // ==========================================
+  const handleSaveSksSettings = () => {
+    onUpdateSettings({
+      ...adminSettings,
+      defaultMaxSks: Number(defaultMaxSksDraft) || 24,
+      batchMaxSks: batchMaxSksDraft
+    });
+    setSksSettingsSavedFeedback(true);
+    setTimeout(() => setSksSettingsSavedFeedback(false), 2500);
+  };
+
+  const handleAddBatchSks = (e: React.FormEvent) => {
+    e.preventDefault();
+    const yr = newBatchYearInput.trim();
+    if (!yr) return;
+    const val = Number(newBatchSksInput) || 24;
+    setBatchMaxSksDraft(prev => ({
+      ...prev,
+      [yr]: val
+    }));
+    setNewBatchYearInput('');
+    setNewBatchSksInput(24);
+  };
+
+  const handleRemoveBatchSks = (yr: string) => {
+    setBatchMaxSksDraft(prev => {
+      const next = { ...prev };
+      delete next[yr];
+      return next;
+    });
+  };
+
+  const handleUpdateBatchSksValue = (yr: string, val: number) => {
+    setBatchMaxSksDraft(prev => ({
+      ...prev,
+      [yr]: val
+    }));
   };
 
   // ==========================================
@@ -4254,38 +4308,170 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* ============================================================== */}
-            {/* INTEGRASI KUOTA SKS (DIKELOLA DI MENU PERIODE PENDAFTARAN) */}
+            {/* PENGATURAN KUOTA & BATAS MAKSIMAL SKS BERDASARKAN ANGKATAN & LINTAS GABUNGAN */}
             {/* ============================================================== */}
-            <div className="bg-gradient-to-br from-indigo-50/80 via-blue-50/40 to-white dark:from-indigo-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-indigo-300 dark:border-indigo-700 rounded-2xl p-5 sm:p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-                    <Gauge className="w-5 h-5 text-indigo-100" />
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                    <Gauge className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                        Pengaturan Kuota &amp; Batas Maksimal SKS
+                        Pengaturan Kuota &amp; Batas Maksimal SKS (Berdasarkan Angkatan &amp; Lintas Gabungan)
                       </h3>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-900 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
-                        Terkoneksi ke Periode Pendaftaran
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                        Superadmin
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-                      Batas maksimal SKS dan kuota khusus per angkatan kini dikonfigurasi secara mandiri di menu <strong>Periode Pendaftaran</strong> per masing-masing semester (misal: Semester 1, 3, 5 dapat memiliki batasan SKS yang berbeda sesuai beban kurikulum).
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                      Atur batas maksimal pengambilan SKS standar serta batas khusus per angkatan mahasiswa. Pengaturan ini berlaku secara penuh saat mahasiswa mengambil mata kuliah dalam satu semester maupun saat mengambil <strong>gabungan lintas semester</strong> (misal Semester 3 dan Semester 5).
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('periods')}
-                  className="px-4 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
-                >
-                  <Sliders className="w-4 h-4" />
-                  <span>Atur Kuota SKS di Periode Pendaftaran</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  {sksSettingsSavedFeedback && (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-fade-in">
+                      <Check className="w-4 h-4" /> Tersimpan!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveSksSettings}
+                    className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Pengaturan SKS</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Batas Standar / Default SKS */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/80 mb-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-900 dark:text-white block">
+                      Batas Standar Maksimal SKS (Default)
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Batas SKS umum bagi seluruh angkatan yang tidak memiliki batas kuota khusus.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number"
+                      min={1}
+                      max={36}
+                      value={defaultMaxSksDraft}
+                      onChange={(e) => setDefaultMaxSksDraft(Number(e.target.value) || 24)}
+                      className="w-24 h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black text-slate-900 dark:text-white text-center focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                    />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">SKS</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Batas Khusus Per Angkatan */}
+              <div className="space-y-3 mb-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                    Daftar Batas Maksimal SKS per Angkatan Mahasiswa:
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {Object.keys(batchMaxSksDraft).length} Angkatan Dikonfigurasi
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {Object.entries(batchMaxSksDraft).sort(([a], [b]) => a.localeCompare(b)).map(([yr, val]) => (
+                    <div
+                      key={yr}
+                      className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-2xs"
+                    >
+                      <div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white block">
+                          Angkatan {yr}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                          Batas: <strong>{val} SKS</strong>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <input
+                          type="number"
+                          min={1}
+                          max={36}
+                          value={val}
+                          onChange={(e) => handleUpdateBatchSksValue(yr, Number(e.target.value) || 24)}
+                          className="w-16 h-8 px-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-black text-center text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#008744]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBatchSks(yr)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                          title={`Hapus aturan khusus Angkatan ${yr} (kembali ke standar)`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Form Tambah Batas Angkatan Baru */}
+                <form onSubmit={handleAddBatchSks} className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <PlusCircle className="w-3.5 h-3.5 text-[#008744]" />
+                    Atur Batas Angkatan Lain:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={newBatchYearInput}
+                      onChange={(e) => setNewBatchYearInput(e.target.value)}
+                      className="h-9 px-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-white"
+                    >
+                      <option value="">Pilih Angkatan...</option>
+                      {ANGKATAN_OPTIONS.filter(opt => !batchMaxSksDraft[opt]).map(opt => (
+                        <option key={opt} value={opt}>Angkatan {opt}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Atau ketik tahun..."
+                      value={newBatchYearInput}
+                      onChange={(e) => setNewBatchYearInput(e.target.value)}
+                      className="w-28 h-9 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={1}
+                      max={36}
+                      value={newBatchSksInput}
+                      onChange={(e) => setNewBatchSksInput(Number(e.target.value) || 24)}
+                      className="w-16 h-9 px-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-black text-center text-slate-900 dark:text-white"
+                    />
+                    <span className="text-xs text-slate-500 font-bold">SKS</span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!newBatchYearInput.trim()}
+                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>+ Simpan Batas Angkatan</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Note Informasi Aturan Lintas Gabungan */}
+              <div className="p-3.5 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900/60 text-xs flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <div className="text-blue-900 dark:text-blue-200 text-[11px] leading-relaxed">
+                  <strong>Ketentuan Lintas Gabungan:</strong> Ketika mahasiswa memilih opsi portal <em>Semua Semester</em> atau mengambil kombinasi mata kuliah lintas semester (misal mahasiswa <strong>Angkatan 2022</strong> mengulang semester 3 dan 5), batas total SKS yang diizinkan untuk diambil ditentukan berdasarkan nilai pada konfigurasi angkatannya di atas (misal Angkatan 2022 diatur <strong>24 SKS</strong>, maka batas maksimal gabungannya adalah 24 SKS).
+                </div>
               </div>
             </div>
 
@@ -6812,7 +6998,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     const currentTotalSks = editRegSelectedCourses.reduce((sum, c) => sum + (Number(c.sks) || 0), 0);
                     const isEditRegCrossSem = (editRegTargetSemester && editRegTargetSemester.toLowerCase().includes('gabungan')) ||
                       (Array.isArray(editRegSelectedCourses) && new Set(editRegSelectedCourses.map(c => c.semester)).size > 1);
-                    const maxSksAllowed = isEditRegCrossSem ? 24 : getMaxSksForBatch(editRegAngkatan, adminSettings);
+                    const maxSksAllowed = getMaxSksForBatch(editRegAngkatan, adminSettings);
                     const isOverLimit = currentTotalSks > maxSksAllowed;
                     const isPaidBatch = (adminSettings.paidBatches || []).includes(editRegAngkatan);
                     const costPerSks = adminSettings.costPerSks || 50000;
