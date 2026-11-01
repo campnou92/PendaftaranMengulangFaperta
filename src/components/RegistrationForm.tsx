@@ -1441,7 +1441,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     <p className={`text-[11px] mt-0.5 ${isPaidBatch ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-[#166534] dark:text-emerald-400 font-medium'}`}>
                       {isPaidBatch 
                         ? `⚠️ Dikenakan biaya Rp ${costPerSks.toLocaleString('id-ID')} / SKS (wajib melampirkan bukti fisik pembayaran ke loket).` 
-                        : `✓ Angkatan ${angkatan} bebas biaya SKS mengulang (tidak perlu bukti pembayaran).`}
+                        : `✓ Angkatan ${angkatan} bebas biaya SKS mengulang (wajib melampirkan bukti pembayaran semester berjalan / SPP aktif).`}
                     </p>
                   </div>
                 </div>

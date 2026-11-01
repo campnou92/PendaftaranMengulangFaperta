@@ -476,6 +476,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     onUpdateCourses(updated);
+
+    // Sinkronisasi otomatis ke registrationPeriods jika ada periode yang memuat mata kuliah ini
+    if (adminSettings.registrationPeriods && onUpdateSettings) {
+      const updatedPeriods = adminSettings.registrationPeriods.map(p => {
+        if (!p.courses || p.courses.length === 0) return p;
+        const updatedPeriodCourses = p.courses.map(pc => {
+          const match = updated.find(u => u.id === pc.id);
+          return match || pc;
+        });
+        return { ...p, courses: updatedPeriodCourses };
+      });
+      onUpdateSettings({ ...adminSettings, registrationPeriods: updatedPeriods });
+    }
+
     setIsEditCourseModalOpen(false);
     setCourseBeingEdited(null);
     setCourseFeedback({
@@ -526,6 +540,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     onUpdateCourses(updated);
+
+    // Sinkronisasi otomatis ke registrationPeriods jika ada periode yang memuat mata kuliah ini
+    if (adminSettings.registrationPeriods && onUpdateSettings) {
+      const updatedPeriods = adminSettings.registrationPeriods.map(p => {
+        if (!p.courses || p.courses.length === 0) return p;
+        const updatedPeriodCourses = p.courses.map(pc => {
+          const match = updated.find(u => u.id === pc.id);
+          return match || pc;
+        });
+        return { ...p, courses: updatedPeriodCourses };
+      });
+      onUpdateSettings({ ...adminSettings, registrationPeriods: updatedPeriods });
+    }
+
     setIsBatchQuotaModalOpen(false);
     setCourseFeedback({
       type: 'success',
@@ -737,6 +765,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       } else {
         onUpdateCourses(courses.filter(c => c.id !== targetId));
       }
+      // Sinkronisasi hapus dari registrationPeriods
+      if (adminSettings.registrationPeriods && onUpdateSettings) {
+        const updatedPeriods = adminSettings.registrationPeriods.map(p => ({
+          ...p,
+          courses: (p.courses || []).filter(c => c.id !== targetId)
+        }));
+        onUpdateSettings({ ...adminSettings, registrationPeriods: updatedPeriods });
+      }
       setSelectedCourseIds(prev => prev.filter(id => id !== targetId));
       setCourseToDelete(null);
       setCourseFeedback({
@@ -792,6 +828,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       } else {
         const remaining = courses.filter(c => !idsToDelete.includes(c.id));
         onUpdateCourses(remaining);
+      }
+      // Sinkronisasi hapus dari registrationPeriods
+      if (adminSettings.registrationPeriods && onUpdateSettings) {
+        const idSet = new Set(idsToDelete);
+        const updatedPeriods = adminSettings.registrationPeriods.map(p => ({
+          ...p,
+          courses: (p.courses || []).filter(c => !idSet.has(c.id))
+        }));
+        onUpdateSettings({ ...adminSettings, registrationPeriods: updatedPeriods });
       }
       setSelectedCourseIds([]);
       setIsBatchDeleteModalOpen(false);
@@ -1566,8 +1611,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         'NIM': r.nim,
         'Nama Mahasiswa': r.nama,
         'Angkatan': r.angkatan,
+        'Status Berkas Loket': r.status === 'approved' ? 'Disetujui (Sah)' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu Validasi',
         'Status Biaya SKS': isCharged ? 'Dikenakan Biaya SKS' : 'Bebas Biaya SKS',
         'Total Tagihan Biaya (Rp)': tagihanBiaya,
+        'Status Pembayaran Keuangan': isCharged ? (r.paymentStatus === 'verified' ? 'Lunas Terverifikasi' : 'Belum Lunas') : 'Bebas Biaya SKS (Wajib SPP Aktif)',
+        'Catatan / Alasan Penolakan': r.rejectionReason || r.adminNotes || '',
         'Kelas Asal': r.kelasAsal,
         'No WhatsApp': r.noWa,
         'Email': r.email,
@@ -1588,8 +1636,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       { wch: 16 },  // NIM
       { wch: 26 },  // Nama
       { wch: 10 },  // Angkatan
+      { wch: 22 },  // Status Berkas Loket
       { wch: 20 },  // Status Biaya SKS
       { wch: 24 },  // Total Tagihan Biaya (Rp)
+      { wch: 26 },  // Status Pembayaran Keuangan
+      { wch: 30 },  // Catatan / Alasan Penolakan
       { wch: 12 },  // Kelas Asal
       { wch: 16 },  // No WA
       { wch: 26 },  // Email
@@ -1614,6 +1665,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           'NIM': r.nim,
           'Nama Mahasiswa': r.nama,
           'Angkatan': r.angkatan,
+          'Status Berkas Loket': r.status === 'approved' ? 'Disetujui (Sah)' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu Validasi',
+          'Status Pembayaran': isCharged ? (r.paymentStatus === 'verified' ? 'Lunas Terverifikasi' : 'Belum Lunas') : 'Bebas Biaya SKS',
           'Kelas Asal': r.kelasAsal,
           'No WhatsApp': r.noWa,
           'Tanggal Daftar': r.registrationDate,
@@ -1626,17 +1679,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     wsRincian['!cols'] = [
       { wch: 5 },
       { wch: 16 }, // Tahun Akademik
-      { wch: 14 },
-      { wch: 32 },
-      { wch: 8 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 26 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 16 },
-      { wch: 18 },
-      { wch: 18 }
+      { wch: 14 }, // Semester MK
+      { wch: 32 }, // Nama Mata Kuliah
+      { wch: 8 },  // SKS
+      { wch: 18 }, // Opsi Kelas
+      { wch: 16 }, // NIM
+      { wch: 26 }, // Nama Mahasiswa
+      { wch: 10 }, // Angkatan
+      { wch: 20 }, // Status Berkas Loket
+      { wch: 22 }, // Status Pembayaran
+      { wch: 12 }, // Kelas Asal
+      { wch: 16 }, // No WA
+      { wch: 18 }, // Tanggal Daftar
+      { wch: 18 }  // ID Registrasi
     ];
 
     // Sheet 3: Rekap Statistik Peminat Mata Kuliah
@@ -1691,21 +1746,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Export registrations to CSV (fallback)
   const handleExportCSV = () => {
-    const headers = ['ID Registrasi', 'Tahun Akademik', 'Tanggal Daftar', 'Portal Semester', 'Email', 'Angkatan', 'Nama', 'NIM', 'No WA', 'Kelas Asal', 'Total SKS', 'Matakuliah Terpilih'];
-    const rows = filteredRegistrations.map(r => [
-      r.id,
-      `"${r.academicYear || adminSettings.activeAcademicYear || '2025/2026'}"`,
-      `"${r.registrationDate}"`,
-      `"${r.targetSemester || '-'}"`,
-      `"${r.email}"`,
-      r.angkatan,
-      `"${r.nama}"`,
-      `"${r.nim}"`,
-      `"${r.noWa}"`,
-      `"${r.kelasAsal}"`,
-      r.totalSks,
-      `"${r.selectedCourses.map(c => `${c.name} (${c.selectedClass}, ${c.sks} SKS)`).join('; ')}"`
-    ]);
+    const isFeeSysActive = adminSettings.feePerSksEnabled ?? true;
+    const currentPaidBatches = adminSettings.paidBatches ?? ['2020', '2021', '2022'];
+    const headers = ['ID Registrasi', 'Tahun Akademik', 'Tanggal Daftar', 'Portal Semester', 'Status Berkas', 'Status Pembayaran', 'Email', 'Angkatan', 'Nama', 'NIM', 'No WA', 'Kelas Asal', 'Total SKS', 'Matakuliah Terpilih'];
+    const rows = filteredRegistrations.map(r => {
+      const isCharged = isFeeSysActive && currentPaidBatches.includes(r.angkatan);
+      return [
+        r.id,
+        `"${r.academicYear || adminSettings.activeAcademicYear || '2025/2026'}"`,
+        `"${r.registrationDate}"`,
+        `"${r.targetSemester || '-'}"`,
+        `"${r.status === 'approved' ? 'Disetujui (Sah)' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu Validasi'}"`,
+        `"${isCharged ? (r.paymentStatus === 'verified' ? 'Lunas Terverifikasi' : 'Belum Lunas') : 'Bebas Biaya SKS (SPP Aktif)'}"`,
+        `"${r.email}"`,
+        r.angkatan,
+        `"${r.nama}"`,
+        `"${r.nim}"`,
+        `"${r.noWa}"`,
+        `"${r.kelasAsal}"`,
+        r.totalSks,
+        `"${r.selectedCourses.map(c => `${c.name} (${c.selectedClass}, ${c.sks} SKS)`).join('; ')}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -1886,6 +1948,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     return true;
   });
+
+  if (currentUser?.role === 'finance') {
+    return (
+      <div className="w-full max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-red-200 dark:border-red-800 text-center">
+        <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center mb-3">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Akses Terbatas: Portal Pengelola</h3>
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+          Akun Staf Keuangan tidak memiliki hak akses ke Portal Pengelola Akademik Fakultas. Silakan buka Portal Keuangan.
+        </p>
+        {onSwitchToFinance && (
+          <button
+            type="button"
+            onClick={onSwitchToFinance}
+            className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+          >
+            Buka Portal Keuangan
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[1600px] mx-auto py-4 sm:py-6 px-2 sm:px-4 lg:px-6">
@@ -4893,13 +4978,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               Kelas Asal: {r.kelasAsal}
                             </span>
                             {adminSettings.feePerSksEnabled && (adminSettings.paidBatches || []).includes(r.angkatan) ? (
-                              <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
-                                Tagihan: Rp {(r.totalSks * (adminSettings.costPerSks || 50000)).toLocaleString('id-ID')}
-                              </span>
+                              <div className="mt-1.5 space-y-1">
+                                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                                  Tagihan: Rp {(r.totalSks * (adminSettings.costPerSks || 50000)).toLocaleString('id-ID')}
+                                </span>
+                                <div>
+                                  {r.paymentStatus === 'verified' ? (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                      ✓ Lunas Keuangan
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9.5px] font-bold bg-amber-50 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+                                      ⏳ Belum Lunas
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             ) : (
-                              <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
-                                Bebas Biaya
-                              </span>
+                              <div className="mt-1.5 space-y-1">
+                                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                                  Bebas Biaya SKS
+                                </span>
+                                <span className="block text-[9.5px] text-slate-500 dark:text-slate-400">
+                                  (Wajib Bukti SPP Aktif)
+                                </span>
+                              </div>
                             )}
                           </td>
                           <td className="py-3 px-4 align-top">
@@ -6573,6 +6676,50 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   Angkatan {statusModalReg.angkatan} • {statusModalReg.selectedCourses.length} Mata Kuliah ({statusModalReg.totalSks} SKS)
                 </p>
               </div>
+
+              {/* Ringkasan Status Keuangan Terintegrasi */}
+              {(() => {
+                const isPaidBatch = adminSettings.feePerSksEnabled && (adminSettings.paidBatches || []).includes(statusModalReg.angkatan);
+                const totalTagihan = statusModalReg.totalSks * (adminSettings.costPerSks || 50000);
+                return (
+                  <div className="space-y-2">
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Kewajiban Biaya:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {isPaidBatch ? `Rp ${totalTagihan.toLocaleString('id-ID')} (${statusModalReg.totalSks} SKS)` : 'Bebas Biaya SKS (Wajib SPP Aktif)'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">Status Pembayaran Keuangan:</span>
+                        <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                          statusModalReg.paymentStatus === 'verified'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                            : isPaidBatch
+                              ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                        }`}>
+                          {statusModalReg.paymentStatus === 'verified'
+                            ? '✓ Lunas Terverifikasi'
+                            : isPaidBatch
+                              ? '⏳ Belum Lunas / Belum Diverifikasi'
+                              : 'Bebas Biaya SKS'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedNewStatus === 'approved' && isPaidBatch && statusModalReg.paymentStatus !== 'verified' && (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/80 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2 animate-fade-in">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">Peringatan Pembayaran:</span>
+                          Mahasiswa ini dikenakan biaya SKS mengulang, namun pembayaran di Bagian Keuangan <strong>belum berstatus Lunas</strong>. Pastikan slip setoran/transfer bank fisik telah Anda periksa di loket sebelum mengesahkan berkas.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">

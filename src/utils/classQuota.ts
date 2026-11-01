@@ -13,18 +13,23 @@ export interface ClassQuotaStatus {
  * Pendaftaran berstatus 'rejected' diabaikan (kuota dikembalikan).
  */
 export const getEnrolledClassCount = (
-  course: CourseItem | { id: string; name: string },
+  course: CourseItem | { id: string; name: string; academicYear?: string },
   className: string,
-  registrations: SimpleRegistration[]
+  registrations: SimpleRegistration[],
+  targetAcademicYear?: string
 ): number => {
   if (!registrations || !Array.isArray(registrations)) return 0;
   
   const courseId = course.id;
   const courseNameLower = course.name ? course.name.toLowerCase().trim() : '';
+  const filterYear = targetAcademicYear || ('academicYear' in course ? course.academicYear : undefined);
 
   return registrations.filter(r => {
     if (r.status === 'rejected') return false;
-    return r.courses?.some(c => 
+    if (filterYear && r.academicYear && r.academicYear !== filterYear) return false;
+
+    const courseList = r.selectedCourses || (r as any).courses || [];
+    return courseList.some((c: any) => 
       (c.courseId === courseId || (c.name && c.name.toLowerCase().trim() === courseNameLower)) &&
       c.selectedClass?.trim().toLowerCase() === className.trim().toLowerCase()
     );
@@ -56,10 +61,11 @@ export const getClassQuotaStatus = (
   course: CourseItem,
   className: string,
   registrations: SimpleRegistration[],
-  adminSettings?: AdminSettings
+  adminSettings?: AdminSettings,
+  targetAcademicYear?: string
 ): ClassQuotaStatus => {
   const quota = getClassQuota(course, className, adminSettings);
-  const enrolled = getEnrolledClassCount(course, className, registrations);
+  const enrolled = getEnrolledClassCount(course, className, registrations, targetAcademicYear || course.academicYear || adminSettings?.activeAcademicYear);
   const hasQuota = quota > 0;
   const remaining = hasQuota ? Math.max(0, quota - enrolled) : Infinity;
   const isFull = hasQuota && enrolled >= quota;

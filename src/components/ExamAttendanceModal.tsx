@@ -112,6 +112,11 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
         return false;
       }
 
+      // Filter tahun akademik: hanya mahasiswa pada tahun akademik ujian ini
+      if (academicYear && reg.academicYear && reg.academicYear !== academicYear) {
+        return false;
+      }
+
       // Check if student enrolled in this course & class
       const hasCourse = reg.selectedCourses.some(sc => {
         const matchesCourse = sc.courseId === currentCourse.id;
@@ -132,7 +137,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
         status: reg.status
       };
     }).sort((a, b) => a.nim.localeCompare(b.nim));
-  }, [registrations, currentCourse, selectedClass, statusFilter]);
+  }, [registrations, currentCourse, selectedClass, statusFilter, academicYear]);
 
   // Prepare table rows (Batches of 20 rows per page to match standard A4 page template)
   const rowsPerPage = 20;

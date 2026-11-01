@@ -192,7 +192,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
     <strong>ALUR PENDAFTARAN RESMI FAKULTAS PERTANIAN:</strong>
     <ol style="margin: 4px 0 0 16px; padding: 0;">
       <li>Cetak lembar KRS Pengulangan ini pada kertas ukuran A4.</li>
-      <li>${isPaidBatch ? `Lampirkan <strong>bukti fisik pembayaran</strong> biaya mengulang sebesar <strong>Rp ${totalBiaya.toLocaleString('id-ID')}</strong> (slip setoran/transfer bank).` : `Mahasiswa Angkatan ${registration.angkatan} bebas biaya SKS mengulang (tidak perlu bukti pembayaran).`}</li>
+      <li>${isPaidBatch ? `Lampirkan <strong>bukti fisik pembayaran</strong> biaya mengulang sebesar <strong>Rp ${totalBiaya.toLocaleString('id-ID')}</strong> (slip setoran/transfer bank).` : `Mahasiswa Angkatan ${registration.angkatan} bebas biaya SKS mengulang. <strong>Wajib melampirkan bukti pembayaran semester berjalan (SPP/UKT)</strong> yang menandakan status mahasiswa aktif.`}</li>
       <li>Serahkan dokumen cetak fisik ini beserta bukti pembayaran langsung ke loket <strong>Administrasi Fakultas Pertanian INSTIPER</strong> untuk verifikasi berkas dan pengesahan tanda tangan.</li>
     </ol>
   </div>
@@ -352,13 +352,13 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
           <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/80 shadow-2xs">
             <div className="flex items-center gap-2 font-bold text-[#CA8A04] dark:text-[#EAB308] mb-1">
               <span className="w-5 h-5 rounded-full bg-[#CA8A04] text-white flex items-center justify-center text-[10px]">2</span>
-              <span>Bukti Pembayaran SKS</span>
+              <span>{isPaidBatch ? 'Bukti Bayar SKS' : 'Bukti SPP Aktif'}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-normal">
               {isPaidBatch ? (
                 <>Siapkan <strong>bukti fisik pembayaran</strong> biaya mengulang sebesar <strong>Rp {totalBiaya.toLocaleString('id-ID')}</strong> (slip bank/transfer).</>
               ) : (
-                <>Mahasiswa Angkatan {registration.angkatan} <strong>bebas biaya SKS</strong>, tidak perlu melampirkan bukti pembayaran.</>
+                <>Mahasiswa Angkatan {registration.angkatan} <strong>bebas biaya SKS</strong>. Wajib melampirkan <strong>bukti pembayaran semester berjalan (SPP/UKT)</strong> yang menandakan status aktif.</>
               )}
             </p>
           </div>
@@ -575,12 +575,12 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
                 </span>
               ) : (
                 <span>
-                  Mahasiswa Angkatan {registration.angkatan} <strong>bebas biaya SKS mengulang</strong> (tidak perlu bukti pembayaran).
+                  Mahasiswa Angkatan {registration.angkatan} <strong>bebas biaya SKS mengulang</strong>. Wajib melampirkan <strong>bukti pembayaran semester berjalan (SPP/UKT)</strong> yang menandakan status mahasiswa aktif.
                 </span>
               )}
             </li>
             <li>
-              Serahkan lembar cetak formulir ini beserta bukti fisik pembayaran langsung ke loket <strong>Administrasi Fakultas Pertanian INSTIPER</strong> untuk verifikasi data dan pengesahan tanda tangan resmi.
+              Serahkan lembar cetak formulir ini beserta bukti fisik pembayaran (slip bayar SKS bagi angkatan berbayar, atau bukti pembayaran SPP semester berjalan bagi angkatan bebas biaya) langsung ke loket <strong>Administrasi Fakultas Pertanian INSTIPER</strong> untuk verifikasi data dan pengesahan tanda tangan resmi.
             </li>
           </ol>
         </div>

@@ -230,6 +230,13 @@ export default function App() {
     }
   }, [currentUser]);
 
+  // RBAC Tab Protection Guard: Staf Keuangan dilarang berada di Portal Pengelola (admin)
+  useEffect(() => {
+    if (currentUser?.role === 'finance' && activeTab === 'admin') {
+      setActiveTab('finance');
+    }
+  }, [currentUser, activeTab]);
+
   // Cloud Firestore Real-time Synchronization on Mount
   useEffect(() => {
     // 1. Connection check on boot
@@ -600,6 +607,17 @@ export default function App() {
             handleOpenLoginModal('baak');
             return;
           }
+
+          // RBAC Access Control Guard
+          if (tab === 'admin' && currentUser?.role === 'finance') {
+            showToast('Akses Ditolak: Staf Keuangan tidak diizinkan mengakses Portal Pengelola Akademik.');
+            return;
+          }
+          if (tab === 'finance' && currentUser?.role === 'baak') {
+            showToast('Akses Ditolak: Akun BAAK tidak memiliki wewenang verifikasi Keuangan.');
+            return;
+          }
+
           setActiveTab(tab);
         }}
         registrationsCount={registrations.length}
@@ -661,60 +679,98 @@ export default function App() {
             )}
 
             {activeTab === 'admin' && (
-              <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Pengelola" onReset={() => setActiveTab('admin')}>
-                <Suspense fallback={
-                  <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
-                    <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Administrasi Akademik...</p>
+              currentUser?.role === 'finance' ? (
+                <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-red-200 dark:border-red-800 text-center">
+                  <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center mb-3">
+                    <Lock className="w-6 h-6" />
                   </div>
-                }>
-                  <AdminPanel
-                    courses={courses}
-                    registrations={registrations}
-                    adminSettings={adminSettings}
-                    currentUser={currentUser}
-                    onUpdateCourses={handleUpdateCourses}
-                    onDeleteCourse={handleDeleteCourse}
-                    onDeleteBatchCourses={handleDeleteBatchCourses}
-                    onClearAllCourses={handleClearAllCourses}
-                    onUpdateSettings={handleUpdateSettings}
-                    onDeleteRegistration={handleDeleteRegistration}
-                    onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
-                    onUpdateRegistration={handleUpdateRegistration}
-                    onViewReceipt={(r) => {
-                      setActiveReceipt(r);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onSwitchToFinance={() => setActiveTab('finance')}
-                    onLogout={handleLogout}
-                  />
-                </Suspense>
-              </ErrorBoundary>
-            )}
-
-            {activeTab === 'finance' && (
-              currentUser ? (
-                <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Keuangan" onReset={() => setActiveTab('finance')}>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Akses Terbatas: Portal Pengelola</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+                    Akun Staf Keuangan tidak memiliki hak akses ke Portal Pengelola Akademik Fakultas.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('finance')}
+                    className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                  >
+                    Buka Portal Keuangan
+                  </button>
+                </div>
+              ) : (
+                <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Pengelola" onReset={() => setActiveTab('admin')}>
                   <Suspense fallback={
                     <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
                       <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Rekapitulasi Keuangan...</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Administrasi Akademik...</p>
                     </div>
                   }>
-                    <FinancePanel
-                      currentUser={currentUser}
+                    <AdminPanel
+                      courses={courses}
                       registrations={registrations}
                       adminSettings={adminSettings}
-                      courses={courses}
-                      onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                      currentUser={currentUser}
+                      onUpdateCourses={handleUpdateCourses}
+                      onDeleteCourse={handleDeleteCourse}
+                      onDeleteBatchCourses={handleDeleteBatchCourses}
+                      onClearAllCourses={handleClearAllCourses}
+                      onUpdateSettings={handleUpdateSettings}
+                      onDeleteRegistration={handleDeleteRegistration}
+                      onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
+                      onUpdateRegistration={handleUpdateRegistration}
                       onViewReceipt={(r) => {
                         setActiveReceipt(r);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
+                      onSwitchToFinance={() => setActiveTab('finance')}
                       onLogout={handleLogout}
                     />
                   </Suspense>
                 </ErrorBoundary>
+              )
+            )}
+
+            {activeTab === 'finance' && (
+              currentUser ? (
+                currentUser.role === 'baak' ? (
+                  <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-red-200 dark:border-red-800 text-center">
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center mb-3">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Akses Terbatas: Portal Keuangan</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+                      Akun BAAK / Staf Akademik tidak memiliki hak akses verifikasi pembayaran di Portal Keuangan. Portal ini dikhususkan untuk Staf Keuangan dan Superadmin.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('admin')}
+                      className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    >
+                      Kembali ke Admin Fakultas
+                    </button>
+                  </div>
+                ) : (
+                  <ErrorBoundary fallbackTitle="Terjadi Kendala Memuat Portal Keuangan" onReset={() => setActiveTab('finance')}>
+                    <Suspense fallback={
+                      <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
+                        <div className="w-10 h-10 border-3 border-[#166534] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Memuat Panel Rekapitulasi Keuangan...</p>
+                      </div>
+                    }>
+                      <FinancePanel
+                        currentUser={currentUser}
+                        registrations={registrations}
+                        adminSettings={adminSettings}
+                        courses={courses}
+                        onUpdatePaymentStatus={handleUpdatePaymentStatus}
+                        onViewReceipt={(r) => {
+                          setActiveReceipt(r);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        onLogout={handleLogout}
+                      />
+                    </Suspense>
+                  </ErrorBoundary>
+                )
               ) : (
                 <div className="max-w-md mx-auto my-12 p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-[#166534]/15 text-[#166534] dark:text-emerald-400 mx-auto flex items-center justify-center font-bold text-xl mb-3">

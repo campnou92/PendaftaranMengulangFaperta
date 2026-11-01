@@ -18,14 +18,14 @@ export const DEFAULT_REGISTRATION_FLOW: RegistrationFlowSettings = {
     },
     {
       step: 3,
-      title: 'Bukti Pembayaran SKS',
-      desc: 'Bagi angkatan lama (2022 ke bawah), bayar biaya per SKS dan siapkan slip fisik transfer/bank. (Angkatan 2023+ bebas biaya).',
-      tag: 'Slip Bank'
+      title: 'Bukti Pembayaran / SPP Aktif',
+      desc: 'Bagi angkatan berbayar (2022 ke bawah), bayar biaya per SKS dan siapkan slip fisik transfer/bank. Bagi angkatan bebas biaya SKS (2023+), wajib menyiapkan bukti pembayaran semester berjalan (SPP/UKT) yang menandakan status mahasiswa aktif.',
+      tag: 'Slip / Bukti SPP'
     },
     {
       step: 4,
       title: 'Serahkan ke Loket FP',
-      desc: 'Bawa lembar cetak formulir beserta bukti fisik pembayaran (jika ada) ke Administrasi Fakultas Pertanian untuk validasi.',
+      desc: 'Bawa lembar cetak formulir (KRS Mengulang) beserta bukti fisik pembayaran (slip bayar SKS bagi angkatan berbayar, atau bukti pembayaran SPP semester berjalan bagi angkatan bebas biaya) ke Administrasi Fakultas Pertanian untuk validasi.',
       tag: 'Loket Admin FP'
     }
   ],

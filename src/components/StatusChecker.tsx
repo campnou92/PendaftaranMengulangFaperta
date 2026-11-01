@@ -12,6 +12,7 @@ interface StatusCheckerProps {
 
 export const StatusChecker: React.FC<StatusCheckerProps> = ({
   registrations = [],
+  adminSettings,
   onViewReceipt,
   onGoToForm
 }) => {
@@ -219,13 +220,21 @@ export const StatusChecker: React.FC<StatusCheckerProps> = ({
                             <span className={`text-[10px] font-bold px-2 py-0.2 rounded-md ${
                               reg.paymentStatus === 'verified'
                                 ? 'bg-emerald-100 text-[#166534] dark:bg-emerald-950/60 dark:text-emerald-400'
-                                : 'bg-amber-100 text-amber-800'
+                                : (adminSettings?.paidBatches || ['2020', '2021', '2022']).includes(reg.angkatan)
+                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
                             }`}>
-                              {reg.paymentStatus === 'verified' ? 'Lunas & Diverifikasi' : 'Menunggu Penyerahan Fisik'}
+                              {reg.paymentStatus === 'verified' 
+                                ? 'Lunas & Diverifikasi' 
+                                : (adminSettings?.paidBatches || ['2020', '2021', '2022']).includes(reg.angkatan)
+                                  ? 'Menunggu Bukti Bayar SKS'
+                                  : 'Bebas Biaya SKS (Cek Bukti SPP Aktif)'}
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                            Mahasiswa membawa lembar cetak formulir (A4) ke loket Administrasi Fakultas Pertanian INSTIPER, disertai bukti fisik pembayaran bagi mahasiswa angkatan berbayar per SKS.
+                            {(adminSettings?.paidBatches || ['2020', '2021', '2022']).includes(reg.angkatan)
+                              ? 'Mahasiswa membawa lembar cetak formulir (A4) ke loket Administrasi Fakultas Pertanian INSTIPER, disertai slip bukti fisik pembayaran per SKS.'
+                              : 'Mahasiswa membawa lembar cetak formulir (A4) ke loket Administrasi Fakultas Pertanian INSTIPER, disertai bukti fisik pembayaran semester berjalan (SPP/UKT) yang menandakan status mahasiswa aktif.'}
                           </p>
                         </div>
                       </div>
@@ -265,7 +274,7 @@ export const StatusChecker: React.FC<StatusCheckerProps> = ({
 
                           {isPending && (
                             <div className="mt-1 p-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg text-[11px] text-amber-900 dark:text-amber-200">
-                              Pastikan Anda sudah mencetak KRS dan menyerahkannya ke loket Administrasi Fakultas Pertanian INSTIPER disertai bukti pembayaran (bagi angkatan berbayar).
+                              Pastikan Anda sudah mencetak KRS dan menyerahkannya ke loket Administrasi Fakultas Pertanian INSTIPER disertai {(adminSettings?.paidBatches || ['2020', '2021', '2022']).includes(reg.angkatan) ? 'slip bukti pembayaran SKS' : 'bukti pembayaran semester berjalan (SPP/UKT aktif)'}.
                             </div>
                           )}
                         </div>
