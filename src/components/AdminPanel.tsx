@@ -86,6 +86,7 @@ interface AdminPanelProps {
   onClearAllCourses?: () => Promise<void> | void;
   onUpdateSettings: (newSettings: AdminSettings) => void;
   onDeleteRegistration: (id: string) => void;
+  onClearAllRegistrations?: () => Promise<void> | void;
   onUpdateRegistrationStatus?: (id: string, status: RegistrationStatus, rejectionReason?: string) => void;
   onUpdateRegistration?: (updatedRegistration: SimpleRegistration) => void;
   onViewReceipt: (registration: SimpleRegistration) => void;
@@ -104,6 +105,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onClearAllCourses,
   onUpdateSettings,
   onDeleteRegistration,
+  onClearAllRegistrations,
   onUpdateRegistrationStatus,
   onUpdateRegistration,
   onViewReceipt,
@@ -300,6 +302,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // In-app Confirmations for Registrations and Users (No blocked window.confirm)
   const [registrationToDelete, setRegistrationToDelete] = useState<SimpleRegistration | null>(null);
+  const [isClearAllRegsModalOpen, setIsClearAllRegsModalOpen] = useState(false);
+  const [isClearingAllRegs, setIsClearingAllRegs] = useState(false);
   const [statusModalReg, setStatusModalReg] = useState<SimpleRegistration | null>(null);
   const [selectedNewStatus, setSelectedNewStatus] = useState<RegistrationStatus>('approved');
   const [rejectionReasonInput, setRejectionReasonInput] = useState<string>('');
@@ -896,6 +900,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       });
     } finally {
       setIsClearingAllCourses(false);
+      setTimeout(() => setCourseFeedback(null), 3500);
+    }
+  };
+
+  // Confirm clear ALL registrations
+  const handleConfirmClearAllRegistrations = async () => {
+    setIsClearingAllRegs(true);
+    try {
+      if (onClearAllRegistrations) {
+        await onClearAllRegistrations();
+      }
+      setIsClearAllRegsModalOpen(false);
+      setCourseFeedback({
+        type: 'success',
+        message: 'Seluruh data pendaftaran berhasil dikosongkan total dari sistem & Cloud.'
+      });
+    } catch (err) {
+      console.error('Failed to clear registrations:', err);
+      setCourseFeedback({
+        type: 'error',
+        message: 'Gagal mengosongkan data pendaftar. Silakan coba kembali.'
+      });
+    } finally {
+      setIsClearingAllRegs(false);
       setTimeout(() => setCourseFeedback(null), 3500);
     }
   };
@@ -4562,6 +4590,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* FITUR KHUSUS: PEMBERSIHAN & RESET DATA SISTEM (SIAP DATA BARU) */}
+            <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex items-center gap-3 pb-3 mb-4 border-b border-rose-100 dark:border-rose-900/40">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-[#E4202A] dark:text-rose-400 flex items-center justify-center font-bold shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                    Pembersihan &amp; Persiapan Data Baru
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Gunakan fitur ini ketika periode pendaftaran semester baru dimulai untuk membersihkan data transaksi lama.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Opsi 1: Kosongkan Data Pendaftar */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1">
+                      <span>👥</span> Kosongkan Seluruh Pendaftar ({registrations.length} Mahasiswa)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                      Menghapus seluruh transaksi formulir mahasiswa, berkas loket, dan riwayat tagihan keuangan sehingga sistem kembali menjadi 0 pendaftar.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsClearAllRegsModalOpen(true)}
+                    className="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Kosongkan Seluruh Pendaftar</span>
+                  </button>
+                </div>
+
+                {/* Opsi 2: Kosongkan Katalog Mata Kuliah */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1">
+                      <span>📚</span> Kosongkan Katalog Mata Kuliah ({courses.length} MK)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                      Menghapus seluruh katalog mata kuliah yang tersimpan saat ini jika pengelola ingin mengunggah file Excel master kurikulum baru dari nol.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsClearAllCoursesModalOpen(true)}
+                    className="w-full py-2.5 px-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Kosongkan Seluruh MK</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -4810,6 +4897,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Download className="w-4 h-4 text-slate-500" />
                     <span>CSV</span>
                   </button>
+
+                  {registrations.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsClearAllRegsModalOpen(true)}
+                      title="Kosongkan seluruh data pendaftar mahasiswa (reset pendaftar ke 0)"
+                      className="flex items-center gap-1.5 h-11 px-3.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-[#E4202A] dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Kosongkan ({registrations.length})</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -6629,6 +6728,58 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Ya, Hapus</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 4A: KONFIRMASI KOSONGKAN SELURUH DATA PENDAFTAR */}
+      {/* ============================================================== */}
+      {isClearAllRegsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/60 text-[#E4202A] dark:text-rose-400 flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-800 shadow-xs">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1">
+                Kosongkan Seluruh Data Pendaftar?
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Anda akan menghapus seluruh <strong>{registrations.length} data pendaftaran mahasiswa</strong> secara permanen dari sistem &amp; Cloud Database.
+              </p>
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/40 rounded-xl text-[11px] text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-left mb-5">
+                ⚠️ <strong>Peringatan:</strong> Seluruh riwayat transaksi formulir, status verifikasi loket, dan pencatatan keuangan mahasiswa akan dibersihkan ke nol (0 pendaftar).
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={isClearingAllRegs}
+                  onClick={() => setIsClearAllRegsModalOpen(false)}
+                  className="w-1/2 py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isClearingAllRegs}
+                  onClick={handleConfirmClearAllRegistrations}
+                  className="w-1/2 py-2.5 px-4 rounded-xl bg-[#E4202A] hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {isClearingAllRegs ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Mengosongkan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Ya, Kosongkan Semua</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

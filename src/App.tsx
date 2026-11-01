@@ -17,6 +17,7 @@ import {
   subscribeCloudRegistrations, 
   saveCloudRegistration, 
   deleteCloudRegistration, 
+  clearAllCloudRegistrations,
   subscribeCloudCourses, 
   syncAllCoursesToCloud, 
   deleteCloudCourse,
@@ -175,12 +176,25 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_REGISTRATIONS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Bersihkan data dummy/mockup pendaftaran masa pengembangan jika masih ada
+          const isMockData = parsed.some((r: any) => 
+            r.id === 'REG-2026-001' || 
+            r.id === 'REG-2026-002' || 
+            r.nama === 'Dimas Kurniawan' || 
+            r.nama === 'Sarah Amanda'
+          );
+          if (isMockData) {
+            localStorage.setItem(STORAGE_REGISTRATIONS_KEY, '[]');
+            return [];
+          }
+          return parsed;
+        }
       }
     } catch (e) {
       console.error('Failed to load registrations', e);
     }
-    // Mulai dengan array kosong — jangan tampilkan data mock ke produksi
+    // Mulai dengan array kosong (0 pendaftar) — bersih siap untuk data pendaftar baru
     return [];
   });
 
@@ -502,6 +516,18 @@ export default function App() {
     showToast('Data pendaftaran berhasil dihapus dari Cloud. NIM kini dapat dipakai kembali.');
   };
 
+  // Admin clears ALL registrations (kosongkan semua pendaftar) with Cloud sync
+  const handleClearAllRegistrations = async () => {
+    setRegistrations([]);
+    try {
+      localStorage.setItem(STORAGE_REGISTRATIONS_KEY, '[]');
+      await clearAllCloudRegistrations();
+    } catch (err) {
+      console.warn('Cloud clear registrations warning:', err);
+    }
+    showToast('Seluruh data pendaftaran berhasil dikosongkan. Aplikasi bersih siap untuk data baru.');
+  };
+
   // Finance updates payment status with Cloud sync
   const handleUpdatePaymentStatus = (registrationId: string, status: PaymentStatus, note?: string) => {
     const now = new Date().toLocaleDateString('id-ID', {
@@ -715,6 +741,7 @@ export default function App() {
                       onClearAllCourses={handleClearAllCourses}
                       onUpdateSettings={handleUpdateSettings}
                       onDeleteRegistration={handleDeleteRegistration}
+                      onClearAllRegistrations={handleClearAllRegistrations}
                       onUpdateRegistrationStatus={handleUpdateRegistrationStatus}
                       onUpdateRegistration={handleUpdateRegistration}
                       onViewReceipt={(r) => {

@@ -121,6 +121,22 @@ export async function deleteCloudRegistration(id: string): Promise<void> {
   }
 }
 
+export async function clearAllCloudRegistrations(): Promise<void> {
+  try {
+    const colRef = collection(db, 'registrations');
+    const snapshot = await getDocs(colRef);
+    if (snapshot.empty) return;
+    const batch = writeBatch(db);
+    snapshot.forEach((d) => {
+      batch.delete(d.ref);
+    });
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, 'registrations/all');
+    throw error;
+  }
+}
+
 /**
  * Targeted query: Fetch only registrations matching exact NIM.
  * Consumes only 1 read per matched document, preventing full collection scans.
