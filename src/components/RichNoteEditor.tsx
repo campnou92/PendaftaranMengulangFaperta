@@ -464,7 +464,7 @@ export const RichNoteEditor: React.FC<RichNoteEditorProps> = ({
             <button
               type="button"
               onClick={() => {
-                const sampleLink = '\nLink Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_instiper_jadwal_kuliah/edit)';
+                const sampleLink = '\nLink Jadwal Kuliah: [Klik Disini](https://instiperjogja.ac.id)';
                 onChange(value + sampleLink);
               }}
               className="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 flex items-center gap-1 cursor-pointer transition-colors"

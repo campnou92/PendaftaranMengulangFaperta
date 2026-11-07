@@ -537,6 +537,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   }, [nim, existingRegistrations, activeAcademicYear]);
 
   const [cloudDuplicate, setCloudDuplicate] = useState<SimpleRegistration | null>(null);
+  const [cloudRejected, setCloudRejected] = useState<SimpleRegistration | null>(null);
   const [isCheckingCloudNim, setIsCheckingCloudNim] = useState<boolean>(false);
 
   // Debounced cloud check for NIM to prevent cross-device duplicate submission
@@ -544,12 +545,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const clean = nim.trim().toUpperCase();
     if (clean.length < 5) {
       setCloudDuplicate(null);
+      setCloudRejected(null);
       setIsCheckingCloudNim(false);
       return;
     }
 
     if (localDuplicate) {
       setCloudDuplicate(localDuplicate);
+      setCloudRejected(null);
       return;
     }
 
@@ -561,8 +564,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         setIsCheckingCloudNim(false);
         if (res.exists && res.registration) {
           setCloudDuplicate(res.registration);
+          setCloudRejected(null);
         } else {
           setCloudDuplicate(null);
+          if (res.registration && res.registration.status === 'rejected') {
+            setCloudRejected(res.registration);
+          } else {
+            setCloudRejected(null);
+          }
         }
       }).catch(() => {
         if (isMounted) setIsCheckingCloudNim(false);
@@ -580,10 +589,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Mahasiswa yang pendaftarannya ditolak diberi izin mendaftar ulang perbaikan
   const previousRejectedRegistration = useMemo(() => {
     if (!nim.trim()) return null;
-    return existingRegistrations.find(
+    const local = existingRegistrations.find(
       (r) => r.nim.toLowerCase().trim() === nim.toLowerCase().trim() && r.status === 'rejected'
     );
-  }, [nim, existingRegistrations]);
+    return local || cloudRejected;
+  }, [nim, existingRegistrations, cloudRejected]);
 
   // Filter courses based on activeYearCourses, dynamic semester, prodi tab & smart similar search
   const filteredCourses = useMemo(() => {

@@ -244,7 +244,7 @@ export function getSemesterStatus(
     };
   }
 
-  // 1. Prioritas Utama: Cek apakah ada record RegistrationPeriod yang cocok
+  // 1. Prioritas Utama: Cek apakah ada record RegistrationPeriod yang cocok dengan tahun ajaran aktif
   if (settings?.registrationPeriods && settings.registrationPeriods.length > 0) {
     let period = settings.registrationPeriods.find(
       p => String(p.semester) === semKey && p.academicYear === activeYear && p.isOpen !== false
@@ -257,16 +257,6 @@ export function getSemesterStatus(
     if (!period) {
       period = settings.registrationPeriods.find(
         p => String(p.semester) === semKey && (!p.academicYear || p.academicYear === activeYear)
-      );
-    }
-    if (!period) {
-      period = settings.registrationPeriods.find(
-        p => String(p.semester) === semKey && p.isOpen !== false
-      );
-    }
-    if (!period) {
-      period = settings.registrationPeriods.find(
-        p => String(p.semester) === semKey
       );
     }
 
@@ -286,18 +276,8 @@ export function getSemesterStatus(
         const now = new Date();
         const hasStart = Boolean(period.startDate);
         const hasEnd = Boolean(period.endDate);
-        let start = hasStart ? new Date(period.startDate!) : null;
-        let end = hasEnd ? new Date(period.endDate!) : null;
-
-        // Auto-heal tahun lampau: jika tanggal pendaftaran tertulis di tahun lalu (misal 2025 saat sistem berada di 2026),
-        // sesuaikan tahun tanggal ke tahun sistem sekarang agar tidak expired akibat data mockup lama
-        if (end && !isNaN(end.getTime()) && end.getFullYear() < now.getFullYear()) {
-          const yearDiff = now.getFullYear() - end.getFullYear();
-          if (start && !isNaN(start.getTime())) {
-            start = new Date(start.setFullYear(start.getFullYear() + yearDiff));
-          }
-          end = new Date(end.setFullYear(end.getFullYear() + yearDiff));
-        }
+        const start = hasStart ? new Date(period.startDate!) : null;
+        const end = hasEnd ? new Date(period.endDate!) : null;
 
         if (start && !isNaN(start.getTime()) && now < start) {
           return {
@@ -379,17 +359,8 @@ export function getSemesterStatus(
     const now = new Date();
     const hasStart = Boolean(schedule.startDate);
     const hasEnd = Boolean(schedule.endDate);
-    let start = hasStart ? new Date(schedule.startDate) : null;
-    let end = hasEnd ? new Date(schedule.endDate) : null;
-
-    // Auto-heal tahun lampau
-    if (end && !isNaN(end.getTime()) && end.getFullYear() < now.getFullYear()) {
-      const yearDiff = now.getFullYear() - end.getFullYear();
-      if (start && !isNaN(start.getTime())) {
-        start = new Date(start.setFullYear(start.getFullYear() + yearDiff));
-      }
-      end = new Date(end.setFullYear(end.getFullYear() + yearDiff));
-    }
+    const start = hasStart ? new Date(schedule.startDate) : null;
+    const end = hasEnd ? new Date(schedule.endDate) : null;
 
     if (start && !isNaN(start.getTime()) && now < start) {
       return {

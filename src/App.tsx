@@ -155,7 +155,7 @@ export default function App() {
             defaultMaxSks: typeof parsed.defaultMaxSks === 'number' && parsed.defaultMaxSks > 0 ? parsed.defaultMaxSks : DEFAULT_ADMIN_SETTINGS.defaultMaxSks,
             batchMaxSks: parsed.batchMaxSks && typeof parsed.batchMaxSks === 'object' && !Array.isArray(parsed.batchMaxSks) ? parsed.batchMaxSks : (DEFAULT_ADMIN_SETTINGS.batchMaxSks || {}),
             semesterSchedules: parsed.semesterSchedules && typeof parsed.semesterSchedules === 'object' && !Array.isArray(parsed.semesterSchedules) ? parsed.semesterSchedules : (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
-            registrationPeriods: Array.isArray(parsed.registrationPeriods) && parsed.registrationPeriods.length > 0 ? parsed.registrationPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
+            registrationPeriods: Array.isArray(parsed.registrationPeriods) ? parsed.registrationPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
             restrictedRepeatClasses: parsed.restrictedRepeatClasses && typeof parsed.restrictedRepeatClasses === 'object' && !Array.isArray(parsed.restrictedRepeatClasses) ? parsed.restrictedRepeatClasses : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses,
             restrictedRepeatClassReason: parsed.restrictedRepeatClassReason && typeof parsed.restrictedRepeatClassReason === 'object' && !Array.isArray(parsed.restrictedRepeatClassReason) ? parsed.restrictedRepeatClassReason : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClassReason,
             kelasAsalMode: parsed.kelasAsalMode || DEFAULT_ADMIN_SETTINGS.kelasAsalMode || 'input_with_chips',
@@ -177,18 +177,17 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Bersihkan data dummy/mockup pendaftaran masa pengembangan jika masih ada
-          const isMockData = parsed.some((r: any) => 
-            r.id === 'REG-2026-001' || 
-            r.id === 'REG-2026-002' || 
-            r.nama === 'Dimas Kurniawan' || 
-            r.nama === 'Sarah Amanda'
+          // Bersihkan data dummy/mockup registrasi jika masih ada
+          const filtered = parsed.filter((r: any) => 
+            r && typeof r === 'object' && r.id &&
+            !r.id.startsWith('REG-MOCK') &&
+            r.id !== 'REG-2026-001' && 
+            r.id !== 'REG-2026-002'
           );
-          if (isMockData) {
-            localStorage.setItem(STORAGE_REGISTRATIONS_KEY, '[]');
-            return [];
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem(STORAGE_REGISTRATIONS_KEY, JSON.stringify(filtered));
           }
-          return parsed;
+          return filtered;
         }
       }
     } catch (e) {
@@ -280,24 +279,16 @@ export default function App() {
     const unsubSettings = subscribeCloudSettings((cloudSettings) => {
       if (cloudSettings) {
         setAdminSettings(prev => {
-          const cloudPeriods: RegistrationPeriod[] = Array.isArray(cloudSettings.registrationPeriods) 
-            ? cloudSettings.registrationPeriods 
-            : [];
-          const cloudPeriodIds = new Set(cloudPeriods.map(p => p.id));
-          const missingDefaults = (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []).filter(
-            p => !cloudPeriodIds.has(p.id)
-          );
-          const mergedPeriods = missingDefaults.length > 0 ? [...cloudPeriods, ...missingDefaults] : cloudPeriods;
-
           return {
             ...DEFAULT_ADMIN_SETTINGS,
             ...prev,
             ...cloudSettings,
-            registrationPeriods: mergedPeriods.length > 0 ? mergedPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
-            semesterSchedules: {
-              ...(DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
-              ...(cloudSettings.semesterSchedules || {})
-            }
+            registrationPeriods: Array.isArray(cloudSettings.registrationPeriods)
+              ? cloudSettings.registrationPeriods
+              : (prev.registrationPeriods || DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
+            semesterSchedules: cloudSettings.semesterSchedules
+              ? cloudSettings.semesterSchedules
+              : (prev.semesterSchedules || DEFAULT_ADMIN_SETTINGS.semesterSchedules || {})
           };
         });
       }

@@ -77,8 +77,8 @@ export const INITIAL_COURSES: CourseItem[] = [
   { id: 'agri-18', name: 'PU perkebunan dan kehutanan berkelanjutan', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   { id: 'agri-5a', name: 'Analisis Kelayakan Usaha Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   { id: 'agri-5b', name: 'Manajemen Pemasaran Hasil Pertanian', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
-  { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
-  { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'], academicYear: '2025/2026' },
+  { id: 'agri-5c', name: 'Manajemen Rantai Pasok Agribisnis', sks: 3, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
+  { id: 'agri-5d', name: 'Kewirausahaan Agribisnis Digital', sks: 2, prodi: 'agribisnis', semester: 5, availableClasses: ['Kelas A', 'Kelas B', 'Kelas C', 'Kelas D', 'Kelas Karyawan'] },
   // ==========================================
   // PRODI AGROTEKNOLOGI - SEMESTER 1
   // ==========================================
@@ -142,12 +142,12 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
 3. NIM yang sudah dipakai untuk melakukan pendaftaran tidak bisa dipakai lagi (ada notifikasi peringatan).
 4. Setelah berhasil mendaftar, pendaftar dapat mencetak hasil matakuliah yang dipilih. Batas maksimal pengambilan adalah 24 SKS.
 5. Perhatian: Kelas berstatus "Kelas Beasiswa" tidak dapat dipilih untuk kelas mengulang.
-Link Jadwal Kuliah: [Klik Disini](https://docs.google.com/spreadsheets/d/1_instiper_jadwal_kuliah/edit)`,
+Informasi Jadwal Kuliah: Silakan cek pengumuman resmi jadwal kuliah di papan pengumuman Fakultas Pertanian atau portal akademik INSTIPER.`,
   feePerSksEnabled: true,
   costPerSks: 50000,
   paidBatches: ['2020', '2021', '2022'], // Mahasiswa angkatan lama dikenakan biaya per SKS
   paymentInstructions: `Pemberitahuan: Mahasiswa angkatan yang terdaftar dikenakan kewajiban pembayaran biaya mengulang mata kuliah sebesar Rp 50.000 per SKS. Harap segera melunasi pembayaran sebelum batas akhir validasi KRS dan mengirimkan bukti transfer ke Bagian Keuangan / Tata Usaha Fakultas Pertanian.`,
-  paymentAccountInfo: `Bank Mandiri / BNI No. Rek: 137-00-1928374-1 a.n. Bendahara Fakultas Pertanian (Konfirmasi WA Keuangan: 0812-8877-6655)`,
+  paymentAccountInfo: `Bank Mandiri / BNI Rekening Resmi Fakultas Pertanian INSTIPER Yogyakarta (Konfirmasi: Loket Bagian Keuangan / TU Fakultas Pertanian)`,
   defaultMaxSks: 24,
   batchMaxSks: {
     '2020': 20, // Angkatan 2020 batas maksimal 20 SKS

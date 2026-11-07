@@ -267,17 +267,6 @@ export async function authenticateUser(usernameInput: string, passwordInput: str
     } catch { /* ignore */ }
   }
 
-  // Failsafe pemulihan: jika verifikasi gagal namun password default resmi cocok
-  const defaultPass = KNOWN_DEFAULT_PASSWORDS[cleanUser];
-  if (!passwordMatches && defaultPass && cleanPass === defaultPass) {
-    passwordMatches = true;
-    // Otomatis sinkronkan dan perbaiki hash yang tersimpan di browser
-    const correctHash = KNOWN_DEFAULT_HASHES[cleanUser] || (await hashPassword(cleanPass));
-    matched.password = correctHash;
-    const healedUsers = users.map(u => u.id === matched.id ? { ...u, password: correctHash } : u);
-    saveStoredUsers(healedUsers);
-  }
-
   if (!passwordMatches) {
     return {
       success: false,

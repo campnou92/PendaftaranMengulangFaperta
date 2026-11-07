@@ -691,7 +691,10 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
 
     const updatedPeriods = periods.filter(p => p.id !== targetId);
     const updatedSchedules = { ...(adminSettings.semesterSchedules || {}) };
-    delete updatedSchedules[String(periodToDelete.semester)];
+    const hasRemainingForSemester = updatedPeriods.some(p => String(p.semester) === String(periodToDelete.semester));
+    if (!hasRemainingForSemester) {
+      delete updatedSchedules[String(periodToDelete.semester)];
+    }
 
     onUpdateSettings({
       ...adminSettings,
