@@ -1810,7 +1810,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
               {/* Panduan Khusus Layar HP / Mobile: Pilihan Kelas Otomatis */}
               <div className="sm:hidden p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border border-emerald-200/90 dark:border-emerald-800 text-xs shadow-2xs flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                <div className="w-7 h-7 rounded-lg bg-[#166534] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                   <GraduationCap className="w-4 h-4" />
                 </div>
                 <div className="flex-1 leading-relaxed text-slate-700 dark:text-slate-300">
@@ -2062,7 +2062,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                                     isCourseClosed 
                                       ? 'cursor-not-allowed opacity-50 text-slate-400' 
                                       : isChecked 
-                                      ? 'bg-emerald-600 text-white shadow-xs' 
+                                      ? 'bg-[#166534] text-white shadow-xs' 
                                       : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                                   }`}
                                   title={isCourseClosed ? closedReason : isChecked ? 'Batal memilih' : 'Pilih mata kuliah ini'}

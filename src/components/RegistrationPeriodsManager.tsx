@@ -891,7 +891,7 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
             <button
               type="button"
               onClick={() => handleAutoCreatePeriodsForYear(filterYear === 'all' ? currentAcademicYear : filterYear)}
-              className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>⚡ Buat Periode Otomatis (Sem 1, 3, 5) untuk T.A. {filterYear === 'all' ? currentAcademicYear : filterYear}</span>
@@ -955,7 +955,7 @@ export const RegistrationPeriodsManager: React.FC<RegistrationPeriodsManagerProp
                     onClick={() => handleTogglePeriodStatus(period)}
                     className={`px-2.5 py-1 rounded-xl text-[11px] font-black tracking-wider uppercase transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                       period.isOpen
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                        ? 'bg-[#166534] hover:bg-[#14532D] text-white shadow-xs'
                         : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
                     }`}
                     title={period.isOpen ? 'Klik untuk menutup pendaftaran' : 'Klik untuk membuka pendaftaran'}

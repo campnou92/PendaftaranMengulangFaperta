@@ -57,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={this.handleReset}
-              className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+              className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 cursor-pointer transition-all active:scale-95"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Muat Ulang Panel</span>

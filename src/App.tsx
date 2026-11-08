@@ -708,7 +708,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('finance')}
-                    className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                    className="px-4 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                   >
                     Buka Portal Keuangan
                   </button>
@@ -761,7 +761,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setActiveTab('admin')}
-                      className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                      className="px-4 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                     >
                       Kembali ke Admin Fakultas
                     </button>

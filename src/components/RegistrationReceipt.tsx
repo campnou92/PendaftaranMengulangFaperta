@@ -54,7 +54,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
         </td>
         <td style="padding: 6px 8px; border: 1px solid #333; text-transform: capitalize;">${c.prodi}</td>
         <td style="text-align:center; padding: 6px 8px; border: 1px solid #333; font-weight: 600;">Sem ${c.semester || '-'}</td>
-        <td style="text-align:center; padding: 6px 8px; border: 1px solid #333; font-weight: bold; color: #00702F;">${c.selectedClass}</td>
+        <td style="text-align:center; padding: 6px 8px; border: 1px solid #333; font-weight: bold; color: #166534;">${c.selectedClass}</td>
         <td style="text-align:center; padding: 6px 8px; border: 1px solid #333; font-weight: bold;">${c.sks} SKS</td>
       </tr>
     `).join('');
@@ -180,7 +180,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
   <div style="display:flex; justify-content:space-between; align-items:center; margin: 8px 0; font-size: 10pt;">
     <div style="display:inline-flex; border: 1px solid #111; border-radius: 4px; overflow: hidden;">
       <span style="background: #f3f4f6; padding: 4px 10px; font-weight: bold; border-right: 1px solid #111;">Total SKS Diambil</span>
-      <span style="padding: 4px 12px; font-weight: 900; color: #00702F;">${registration.totalSks} SKS</span>
+      <span style="padding: 4px 12px; font-weight: 900; color: #166534;">${registration.totalSks} SKS</span>
     </div>
     <span style="font-size: 9pt; color: #555; font-style: italic;">(${isCrossSemester ? `Batas Maksimal Angkatan ${registration.angkatan} (Lintas Gabungan)` : `Batas Maksimal Angkatan ${registration.angkatan}`}: ${maxAllowedSks} SKS)</span>
   </div>
@@ -509,7 +509,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
                   <td className="p-2 text-center font-semibold border-r border-slate-300 print:border-black">
                     Sem {c.semester || '-'}
                   </td>
-                  <td className="p-2 text-center font-black text-[#009A44] print:text-black border-r border-slate-300 print:border-black">
+                  <td className="p-2 text-center font-black text-[#166534] print:text-black border-r border-slate-300 print:border-black">
                     {c.selectedClass}
                   </td>
                   <td className="p-2 text-center font-black">{c.sks} SKS</td>
@@ -524,7 +524,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span>Total Beban Mengulang:</span>
-              <div className="px-2.5 py-0.5 bg-[#009A44] text-white print:text-black print:bg-transparent print:border print:border-black rounded-md font-extrabold">
+              <div className="px-2.5 py-0.5 bg-[#166534] text-white print:text-black print:bg-transparent print:border print:border-black rounded-md font-extrabold">
                 {registration.totalSks} SKS
               </div>
             </div>
@@ -562,7 +562,7 @@ export const RegistrationReceipt: React.FC<RegistrationReceiptProps> = ({
         )}
 
         {/* Petunjuk Alur Prosedur Resmi (Tercetak di Lembar A4) */}
-        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border-l-4 border-[#009A44] border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 print:border-black print:border-l-4 print:bg-transparent print:p-2.5 print:my-2 print-avoid-break">
+        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border-l-4 border-[#166534] border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 print:border-black print:border-l-4 print:bg-transparent print:p-2.5 print:my-2 print-avoid-break">
           <p className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-[11px] print:text-black">
             Petunjuk &amp; Prosedur Alur Pendaftaran:
           </p>

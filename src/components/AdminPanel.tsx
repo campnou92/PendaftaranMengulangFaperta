@@ -1992,7 +1992,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <button
             type="button"
             onClick={onSwitchToFinance}
-            className="px-4 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+            className="px-4 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             Buka Portal Keuangan
           </button>
@@ -2022,11 +2022,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span className="font-black text-sm tracking-tight text-slate-900 dark:text-white uppercase">
                     PORTAL PENGELOLA
                   </span>
-                  <span className="bg-[#008744] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="bg-[#166534] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
                     ADMIN
                   </span>
                 </div>
-                <p className="text-[11px] font-black text-[#008744] dark:text-emerald-400 mt-0.5 tracking-tight uppercase">
+                <p className="text-[11px] font-black text-[#166534] dark:text-emerald-400 mt-0.5 tracking-tight uppercase">
                   FAPERTA INSTIPER
                 </p>
               </div>
@@ -2044,7 +2044,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onClick={() => setActiveTab('registrations')}
                   className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                     activeTab === 'registrations'
-                      ? 'bg-[#008744] text-white font-bold shadow-xs'
+                      ? 'bg-[#166534] text-white font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                   }`}
                 >
@@ -2067,12 +2067,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onClick={() => setActiveTab('periods')}
                   className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                     activeTab === 'periods'
-                      ? 'bg-[#008744] text-white font-bold shadow-xs'
+                      ? 'bg-[#166534] text-white font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <Calendar className={`w-4 h-4 shrink-0 ${activeTab === 'periods' ? 'text-white' : 'text-[#008744]'}`} />
+                    <Calendar className={`w-4 h-4 shrink-0 ${activeTab === 'periods' ? 'text-white' : 'text-[#166534]'}`} />
                     <span className="truncate">Periode Pendaftaran</span>
                   </div>
                   {activeTab === 'periods' ? (
@@ -2090,7 +2090,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onClick={() => setActiveTab('superadmin')}
                   className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                     activeTab === 'superadmin'
-                      ? 'bg-[#008744] text-white font-bold shadow-xs'
+                      ? 'bg-[#166534] text-white font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                   }`}
                 >
@@ -2121,7 +2121,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onClick={() => setActiveTab('courses')}
                   className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                     activeTab === 'courses'
-                      ? 'bg-[#008744] text-white font-bold shadow-xs'
+                      ? 'bg-[#166534] text-white font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                   }`}
                 >
@@ -2187,7 +2187,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setActiveTab('users')}
                     className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                       activeTab === 'users'
-                        ? 'bg-[#008744] text-white font-bold shadow-xs'
+                        ? 'bg-[#166534] text-white font-bold shadow-xs'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium'
                     }`}
                     title="Kelola Akun, Username & Password Pengelola (Khusus Superadmin - Terpisah dari Admin Fakultas)"
@@ -2272,7 +2272,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-[#008744] dark:bg-emerald-400 animate-pulse shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-[#166534] dark:bg-emerald-400 animate-pulse shrink-0" />
                     <span className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">
                       {currentUser.name}
                     </span>
@@ -2326,7 +2326,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   <span>Fakultas Pertanian INSTIPER</span>
                   <span>•</span>
-                  <span className="bg-emerald-50 dark:bg-emerald-950/60 text-[#008744] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold px-2 py-0.5 rounded-md text-[11px]">
+                  <span className="bg-emerald-50 dark:bg-emerald-950/60 text-[#166534] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold px-2 py-0.5 rounded-md text-[11px]">
                     T.A. 2026/2027
                   </span>
                 </div>
@@ -2358,7 +2358,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
                   !isRegistrationActive
                     ? 'bg-rose-600 text-white'
-                    : 'bg-[#008744] text-white'
+                    : 'bg-[#166534] text-white'
                 }`}>
                   {!isRegistrationActive ? (
                     <Lock className="w-5 h-5" />
@@ -2393,7 +2393,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onClick={() => handleToggleGlobalRegistration(!isRegistrationActive)}
                   className={`px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-2 cursor-pointer active:scale-95 ${
                     !isRegistrationActive
-                      ? 'bg-[#008744] hover:bg-[#00702F] text-white'
+                      ? 'bg-[#166534] hover:bg-[#14532D] text-white'
                       : 'bg-rose-600 hover:bg-red-700 text-white'
                   }`}
                   title={!isRegistrationActive ? 'Klik untuk membuka pendaftaran halaman depan' : 'Klik untuk menutup seluruh pendaftaran halaman depan'}
@@ -2471,7 +2471,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${
                           isSemOpen
                             ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-2xs'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                            : 'bg-[#166534] hover:bg-[#14532D] text-white shadow-2xs'
                         }`}
                         title={isSemOpen ? `Tutup pendaftaran Semester ${semKey}` : `Buka pendaftaran Semester ${semKey}`}
                       >
@@ -3145,7 +3145,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 </div>
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{course.name}</h4>
                               </div>
-                              <span className="font-extrabold text-xs text-[#009A44] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                              <span className="font-extrabold text-xs text-[#166534] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
                                 {course.sks} SKS
                               </span>
                             </div>
@@ -3337,7 +3337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white dark:from-emerald-950/30 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-emerald-400 dark:border-emerald-700 rounded-2xl p-5 sm:p-6 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <div className="w-10 h-10 rounded-xl bg-[#166534] text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
                     <CalendarClock className="w-5 h-5 text-yellow-300" />
                   </div>
                   <div>
@@ -3358,7 +3358,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('periods')}
-                  className="px-4 py-2.5 bg-[#008744] hover:bg-[#007038] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                  className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 shrink-0 self-start sm:self-auto"
                 >
                   <Calendar className="w-4 h-4" />
                   <span>Atur Jadwal di Periode Pendaftaran</span>
@@ -4456,7 +4456,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <button
                     type="button"
                     onClick={handleSaveSksSettings}
-                    className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                    className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
                   >
                     <Save className="w-4 h-4" />
                     <span>Simpan Pengaturan SKS</span>
@@ -4482,7 +4482,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       max={36}
                       value={defaultMaxSksDraft}
                       onChange={(e) => setDefaultMaxSksDraft(Number(e.target.value) || 24)}
-                      className="w-24 h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black text-slate-900 dark:text-white text-center focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                      className="w-24 h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black text-slate-900 dark:text-white text-center focus:ring-2 focus:ring-[#166534] focus:outline-none"
                     />
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-400">SKS</span>
                   </div>
@@ -4521,7 +4521,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           max={36}
                           value={val}
                           onChange={(e) => handleUpdateBatchSksValue(yr, Number(e.target.value) || 24)}
-                          className="w-16 h-8 px-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-black text-center text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#008744]"
+                          className="w-16 h-8 px-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-xs font-black text-center text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166534]"
                         />
                         <button
                           type="button"
@@ -4539,7 +4539,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {/* Form Tambah Batas Angkatan Baru */}
                 <form onSubmit={handleAddBatchSks} className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 flex flex-wrap items-center gap-3">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                    <PlusCircle className="w-3.5 h-3.5 text-[#008744]" />
+                    <PlusCircle className="w-3.5 h-3.5 text-[#166534]" />
                     Atur Batas Angkatan Lain:
                   </span>
                   <div className="flex items-center gap-2">
@@ -4682,7 +4682,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                       Rekapitulasi Pendaftaran Mahasiswa Mengulang
                     </h2>
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#008744]/15 text-[#008744] dark:text-emerald-400">
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#166534]/15 text-[#166534] dark:text-emerald-400">
                       LIVE DATA
                     </span>
                   </div>
@@ -4693,7 +4693,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-2xs">
-                    Total: <strong className="text-[#008744] dark:text-emerald-400 font-mono text-sm">{registrations.length}</strong> Mahasiswa
+                    Total: <strong className="text-[#166534] dark:text-emerald-400 font-mono text-sm">{registrations.length}</strong> Mahasiswa
                   </span>
                 </div>
               </div>
@@ -4706,7 +4706,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 onClick={() => setFilterRegSemester('all')}
                 className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all hover:shadow-md ${
                   filterRegSemester === 'all'
-                    ? 'border-[#008744] ring-2 ring-[#008744]/20'
+                    ? 'border-[#166534] ring-2 ring-[#166534]/20'
                     : 'border-slate-200/90 dark:border-slate-800'
                 }`}
               >
@@ -4719,7 +4719,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       SEMUA
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#008744] dark:text-emerald-400 flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#166534] dark:text-emerald-400 flex items-center justify-center font-bold">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
@@ -4744,7 +4744,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setFilterRegSemester(isFilterActive ? 'all' : stat.semester)}
                     className={`bg-white dark:bg-slate-900 rounded-2xl border p-5 shadow-xs flex flex-col justify-between cursor-pointer transition-all hover:shadow-md ${
                       isFilterActive
-                        ? `${stat.theme.border} ring-2 ring-[#008744]/30 shadow-sm`
+                        ? `${stat.theme.border} ring-2 ring-[#166534]/30 shadow-sm`
                         : `${stat.theme.border}`
                     }`}
                   >
@@ -4851,7 +4851,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     value={searchReg}
                     onChange={(e) => setSearchReg(e.target.value)}
                     placeholder="Cari data pendaftar (nama mahasiswa, NIM, angkatan, kelas)..."
-                    className="w-full h-11 pl-11 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#008744] bg-slate-50 dark:bg-slate-800/80 transition-all shadow-2xs"
+                    className="w-full h-11 pl-11 pr-10 rounded-xl border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#166534] bg-slate-50 dark:bg-slate-800/80 transition-all shadow-2xs"
                   />
                   {searchReg && (
                     <button
@@ -4883,7 +4883,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="button"
                     onClick={handleExportExcel}
                     title="Unduh data pendaftar format spreadsheet Excel (.xlsx) dengan 3 sheet lengkap"
-                    className="flex items-center gap-2 h-11 px-4 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
+                    className="flex items-center gap-2 h-11 px-4 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-yellow-300" />
                     <span>Export Excel (.xlsx)</span>
@@ -4925,7 +4925,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setFilterRegSemester('all')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       filterRegSemester === 'all'
-                        ? 'bg-[#008744] text-white shadow-xs'
+                        ? 'bg-[#166534] text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
@@ -4945,7 +4945,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onClick={() => setFilterRegSemester(sem)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           filterRegSemester === sem
-                            ? 'bg-[#008744] text-white shadow-xs'
+                            ? 'bg-[#166534] text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                       >
@@ -4972,7 +4972,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <select
                       value={filterRegClass}
                       onChange={(e) => setFilterRegClass(e.target.value)}
-                      className="text-xs font-bold text-[#008744] dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer"
+                      className="text-xs font-bold text-[#166534] dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer"
                     >
                       <option value="all">Semua Kelas</option>
                       {adminSettings.classOptions.map((cls) => (
@@ -4987,7 +4987,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <select
                       value={filterRegAcademicYear}
                       onChange={(e) => setFilterRegAcademicYear(e.target.value)}
-                      className="text-xs font-bold text-[#008744] dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer"
+                      className="text-xs font-bold text-[#166534] dark:text-emerald-400 bg-transparent focus:outline-none cursor-pointer"
                     >
                       <option value="all">Semua Tahun</option>
                       {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
@@ -5209,7 +5209,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </div>
 
                         <div className="text-right">
-                          <span className="text-sm font-black text-[#009A44] block">{r.totalSks} SKS</span>
+                          <span className="text-sm font-black text-[#166534] block">{r.totalSks} SKS</span>
                           <span className="text-[10px] text-slate-400 font-medium">Angkatan {r.angkatan}</span>
                         </div>
                       </div>
@@ -5260,7 +5260,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </button>
                           <button
                             onClick={() => onViewReceipt(r)}
-                            className="px-3 py-1.5 bg-[#009A44] text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                            className="px-3 py-1.5 bg-[#166534] text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                           >
                             <Printer className="w-3.5 h-3.5" />
                             <span>Cetak</span>
@@ -5300,7 +5300,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('registrations')}
-                className="px-6 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                className="px-6 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
                 Kembali ke Data Pendaftar
               </button>
@@ -5312,7 +5312,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#009A44]/15 text-[#009A44] flex items-center justify-center font-bold shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#166534]/15 text-[#166534] flex items-center justify-center font-bold shrink-0">
                       <KeyRound className="w-5 h-5" />
                     </div>
                     <div>
@@ -5339,7 +5339,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     setUserModalFeedback(null);
                     setIsAddUserModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2.5 bg-[#009A44] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Tambah Akun Pengelola Baru</span>
@@ -5348,7 +5348,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
               {/* Security Policy Reminder */}
               <div className="mt-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#009A44] shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-[#166534] shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
                   <strong>Keamanan Akun:</strong> Halaman login tidak lagi menyediakan tombol demo atau otomatis terisi. Seluruh staf wajib memasukkan username dan password resmi yang telah Anda daftarkan di bawah ini.
                 </p>
@@ -5406,7 +5406,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <tr key={u.id} className="hover:bg-slate-50/80">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-[#009A44]/10 text-[#009A44] flex items-center justify-center font-bold text-xs shrink-0">
+                              <div className="w-7 h-7 rounded-lg bg-[#166534]/10 text-[#166534] flex items-center justify-center font-bold text-xs shrink-0">
                                 {u.username.substring(0, 2).toUpperCase()}
                               </div>
                               <div>
@@ -5444,7 +5444,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleCopyCredentials(u)}
-                                    className="p-1.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-[#009A44] rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                                    className="p-1.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-[#166534] rounded-lg border border-slate-200 transition-colors cursor-pointer"
                                     title="Salin Username & Password"
                                   >
                                     {copiedUserId === u.id ? (
@@ -5486,7 +5486,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               }}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
                                 u.isActive
-                                  ? 'bg-green-100 text-[#009A44] border border-green-300 hover:bg-green-200'
+                                  ? 'bg-green-100 text-[#166534] border border-green-300 hover:bg-green-200'
                                   : 'bg-red-100 text-[#E4202A] border border-red-300 hover:bg-red-200'
                               } ${isSuper ? 'cursor-default opacity-90' : ''}`}
                               title={isSuper ? 'Akun Superadmin Utama selalu aktif' : 'Klik untuk ubah status keaktifan'}
@@ -5569,7 +5569,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <span className="block text-[10px] text-slate-400 mt-0.5">{u.title}</span>
                         </div>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          u.isActive ? 'bg-green-100 text-[#009A44]' : 'bg-red-100 text-[#E4202A]'
+                          u.isActive ? 'bg-green-100 text-[#166534]' : 'bg-red-100 text-[#E4202A]'
                         }`}>
                           {u.isActive ? 'Aktif' : 'Nonaktif'}
                         </span>
@@ -5662,7 +5662,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             {isAddUserModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
                 <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
-                  <div className="bg-[#009A44] text-white p-4 flex items-center justify-between">
+                  <div className="bg-[#166534] text-white p-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <UserPlus className="w-5 h-5 text-yellow-300" />
                       <h3 className="text-sm font-extrabold text-white">Tambah Akun Pengelola Baru</h3>
@@ -5703,7 +5703,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     {userModalFeedback && (
                       <div className={`p-3 rounded-xl font-semibold ${
-                        userModalFeedback.includes('berhasil') ? 'bg-green-50 text-[#009A44]' : 'bg-red-50 text-[#E4202A]'
+                        userModalFeedback.includes('berhasil') ? 'bg-green-50 text-[#166534]' : 'bg-red-50 text-[#E4202A]'
                       }`}>
                         {userModalFeedback}
                       </div>
@@ -5780,7 +5780,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-[#009A44] hover:bg-[#00702F] text-white rounded-xl font-bold cursor-pointer"
+                        className="px-5 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl font-bold cursor-pointer"
                       >
                         Simpan Akun
                       </button>
@@ -5828,7 +5828,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     {passwordModalFeedback && (
                       <div className={`p-3 rounded-xl font-semibold ${
-                        passwordModalFeedback.includes('berhasil') ? 'bg-green-50 text-[#009A44]' : 'bg-red-50 text-[#E4202A]'
+                        passwordModalFeedback.includes('berhasil') ? 'bg-green-50 text-[#166534]' : 'bg-red-50 text-[#E4202A]'
                       }`}>
                         {passwordModalFeedback}
                       </div>
@@ -5916,7 +5916,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     {editUserFeedback && (
                       <div className={`p-3 rounded-xl font-semibold ${
-                        editUserFeedback.includes('berhasil') ? 'bg-green-50 text-[#009A44]' : 'bg-red-50 text-[#E4202A]'
+                        editUserFeedback.includes('berhasil') ? 'bg-green-50 text-[#166534]' : 'bg-red-50 text-[#E4202A]'
                       }`}>
                         {editUserFeedback}
                       </div>
@@ -5969,7 +5969,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           checked={editUserActive}
                           disabled={targetUserForEdit.username === 'superadmin'}
                           onChange={(e) => setEditUserActive(e.target.checked)}
-                          className="w-4 h-4 rounded text-[#009A44] cursor-pointer"
+                          className="w-4 h-4 rounded text-[#166534] cursor-pointer"
                         />
                         <span className="font-bold text-slate-800">Akun Aktif (Dapat Login)</span>
                       </label>
@@ -6010,7 +6010,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
             {/* Header */}
-            <div className="bg-[#009A44] text-white p-4 flex items-center justify-between">
+            <div className="bg-[#166534] text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
                   <Edit3 className="w-4 h-4 text-yellow-300" />
@@ -6053,7 +6053,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#009A44] bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white"
                   placeholder="Contoh: Manajemen Agribisnis Terpadu"
                   required
                 />
@@ -6065,7 +6065,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <select
                     value={editSemester}
                     onChange={(e) => setEditSemester(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#009A44] bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
                       <option key={s} value={s}>Semester {s}</option>
@@ -6081,7 +6081,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     max={6}
                     value={editSks}
                     onChange={(e) => setEditSks(Math.max(1, Math.min(6, Number(e.target.value))))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-black text-center focus:outline-none focus:ring-2 focus:ring-[#009A44] bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-black text-center focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white"
                   />
                 </div>
               </div>
@@ -6091,7 +6091,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <select
                   value={editAcademicYear}
                   onChange={(e) => setEditAcademicYear(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#009A44] bg-white"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#166534] bg-white"
                 >
                   {(adminSettings.availableAcademicYears || ['2023/2024', '2024/2025', '2025/2026', '2026/2027']).map((yr) => (
                     <option key={yr} value={yr}>
@@ -6109,7 +6109,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setEditProdi('agroteknologi')}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       editProdi === 'agroteknologi'
-                        ? 'bg-[#009A44]/15 border-[#009A44] text-[#00702F] shadow-xs'
+                        ? 'bg-[#166534]/15 border-[#166534] text-[#14532D] shadow-xs'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -6120,7 +6120,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setEditProdi('agribisnis')}
                     className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       editProdi === 'agribisnis'
-                        ? 'bg-[#009A44]/15 border-[#009A44] text-[#00702F] shadow-xs'
+                        ? 'bg-[#166534]/15 border-[#166534] text-[#14532D] shadow-xs'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -6138,7 +6138,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditClasses(adminSettings.classOptions)}
-                      className="text-[11px] font-bold text-[#009A44] hover:underline cursor-pointer"
+                      className="text-[11px] font-bold text-[#166534] hover:underline cursor-pointer"
                     >
                       Pilih Semua
                     </button>
@@ -6174,7 +6174,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           isChosen
                             ? isRestricted
                               ? 'bg-rose-100 text-rose-800 border-rose-300 shadow-2xs'
-                              : 'bg-[#009A44] text-white border-[#009A44] shadow-2xs'
+                              : 'bg-[#166534] text-white border-[#166534] shadow-2xs'
                             : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
                         }`}
                       >
@@ -6230,7 +6230,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 }));
                               }
                             }}
-                            className="w-full text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 focus:border-[#009A44] focus:ring-1 focus:ring-[#009A44]"
+                            className="w-full text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 focus:border-[#166534] focus:ring-1 focus:ring-[#166534]"
                           />
                           <span className="text-[10px] text-slate-500 font-bold shrink-0">kursi</span>
                         </div>
@@ -6257,7 +6257,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <button
                 type="button"
                 onClick={handleSaveCourseFromModal}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#009A44] hover:bg-[#00702F] transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#166534] hover:bg-[#14532D] transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-green-900/20"
               >
                 <Save className="w-4 h-4" />
                 <span>Simpan Perubahan</span>
@@ -6795,7 +6795,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800">
             {/* Header */}
-            <div className="bg-[#008744] text-white p-4 flex items-center justify-between">
+            <div className="bg-[#166534] text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                   <ShieldCheck className="w-5 h-5 text-white" />
@@ -6961,7 +6961,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   }
                   setStatusModalReg(null);
                 }}
-                className="px-5 py-2 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
               >
                 <Save className="w-4 h-4" />
                 <span>Simpan Keputusan Status</span>
@@ -6978,7 +6978,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden">
             {/* Header */}
-            <div className="bg-[#008744] text-white p-4 sm:p-5 flex items-center justify-between shrink-0">
+            <div className="bg-[#166534] text-white p-4 sm:p-5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
                   <Edit3 className="w-5 h-5 text-white" />
@@ -7041,7 +7041,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 {/* Section 1: Biodata Mahasiswa */}
                 <div className="space-y-3">
                   <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 pb-1 border-b border-slate-200 dark:border-slate-800">
-                    <Users className="w-4 h-4 text-[#008744]" />
+                    <Users className="w-4 h-4 text-[#166534]" />
                     <span>Biodata &amp; Informasi Mahasiswa</span>
                   </h4>
 
@@ -7055,7 +7055,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         required
                         value={editRegNama}
                         onChange={(e) => setEditRegNama(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                         placeholder="Contoh: Budi Santoso"
                       />
                     </div>
@@ -7069,7 +7069,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         required
                         value={editRegNim}
                         onChange={(e) => setEditRegNim(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#166534] focus:outline-none"
                         placeholder="Contoh: 21/45678/SP/01234"
                       />
                     </div>
@@ -7081,7 +7081,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <select
                         value={editRegAngkatan}
                         onChange={(e) => setEditRegAngkatan(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                       >
                         {ANGKATAN_OPTIONS.map((angk) => (
                           <option key={angk} value={angk}>
@@ -7099,7 +7099,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="text"
                         value={editRegKelasAsal}
                         onChange={(e) => setEditRegKelasAsal(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                         placeholder="Contoh: Agroteknologi A / Agribisnis B"
                       />
                     </div>
@@ -7112,7 +7112,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="text"
                         value={editRegNoWa}
                         onChange={(e) => setEditRegNoWa(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-[#166534] focus:outline-none"
                         placeholder="08123456789"
                       />
                     </div>
@@ -7125,7 +7125,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="email"
                         value={editRegEmail}
                         onChange={(e) => setEditRegEmail(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                         placeholder="nama@instiperjogja.ac.id"
                       />
                     </div>
@@ -7137,7 +7137,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <select
                         value={editRegTargetSemester}
                         onChange={(e) => setEditRegTargetSemester(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                       >
                         {availableRegSemesters.map(sem => (
                           <option key={sem} value={`Semester ${sem}`}>Semester {sem}</option>
@@ -7158,7 +7158,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <select
                         value={editRegStatus}
                         onChange={(e) => setEditRegStatus(e.target.value as RegistrationStatus)}
-                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#166534] focus:outline-none"
                       >
                         <option value="approved">✅ Disetujui (Approved)</option>
                         <option value="pending">⏳ Menunggu Verifikasi (Pending)</option>
@@ -7172,7 +7172,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-1 border-b border-slate-200 dark:border-slate-800">
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-[#008744]" />
+                      <BookOpen className="w-4 h-4 text-[#166534]" />
                       <span>Mata Kuliah &amp; Kelas Tempat Mengulang</span>
                     </h4>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
@@ -7271,7 +7271,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <select
                         value={courseToAddInEdit}
                         onChange={(e) => setCourseToAddInEdit(e.target.value)}
-                        className="flex-1 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                        className="flex-1 p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                       >
                         <option value="">-- Pilih Mata Kuliah untuk Ditambahkan --</option>
                         {courses
@@ -7286,7 +7286,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="button"
                         onClick={handleAddCourseToRegistrationEdit}
                         disabled={!courseToAddInEdit}
-                        className="px-4 py-2.5 bg-[#008744] hover:bg-[#00702F] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shrink-0"
+                        className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shrink-0"
                       >
                         <PlusCircle className="w-4 h-4" />
                         <span>Tambah</span>
@@ -7348,7 +7348,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     value={editRegAdminNotes}
                     onChange={(e) => setEditRegAdminNotes(e.target.value)}
                     placeholder="Contoh: Pemindahan kelas A ke B atas permohonan mahasiswa karena jadwal bentrok dengan praktikum..."
-                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#008744] focus:outline-none"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#166534] focus:outline-none"
                   />
                   <p className="text-[10px] text-slate-500">
                     Jika status ditolak (rejected), catatan ini akan tampil sebagai alasan penolakan bagi mahasiswa saat cek status.
@@ -7367,7 +7367,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#008744] hover:bg-[#00702F] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
+                  className="px-6 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
                   <span>Simpan Perubahan Pendaftaran</span>

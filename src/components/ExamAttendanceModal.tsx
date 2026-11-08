@@ -556,7 +556,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="flex items-center gap-1.5 px-4 py-2 bg-[#008744] hover:bg-[#007038] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer hover:shadow-lg active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#166534] hover:bg-[#14532D] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer hover:shadow-lg active:scale-95"
               >
                 <Printer className="w-4 h-4" />
                 <span>Cetak A4</span>
@@ -641,7 +641,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                   onClick={() => setExamType('UTS')}
                   className={`py-1 rounded-md font-black text-center cursor-pointer transition-all ${
                     examType === 'UTS' 
-                      ? 'bg-white dark:bg-slate-700 text-[#008744] dark:text-emerald-400 shadow-xs' 
+                      ? 'bg-white dark:bg-slate-700 text-[#166534] dark:text-emerald-400 shadow-xs' 
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
@@ -652,7 +652,7 @@ export const ExamAttendanceModal: React.FC<ExamAttendanceModalProps> = ({
                   onClick={() => setExamType('UAS')}
                   className={`py-1 rounded-md font-black text-center cursor-pointer transition-all ${
                     examType === 'UAS' 
-                      ? 'bg-white dark:bg-slate-700 text-[#008744] dark:text-emerald-400 shadow-xs' 
+                      ? 'bg-white dark:bg-slate-700 text-[#166534] dark:text-emerald-400 shadow-xs' 
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >

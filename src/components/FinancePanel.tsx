@@ -387,7 +387,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   Panel Keuangan &amp; Kasir FP
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#009A44]/15 dark:bg-[#009A44]/30 text-[#009A44] dark:text-[#05B752] border border-[#009A44]/30">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#166534]/15 dark:bg-[#166534]/30 text-[#166534] dark:text-emerald-400 border border-[#166534]/30">
                   Akses Khusus Keuangan
                 </span>
               </div>
@@ -399,7 +399,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
 
           {/* User Info & Actions */}
           <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/80 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#166534] text-white flex items-center justify-center font-bold text-xs shrink-0">
               <User className="w-4 h-4" />
             </div>
             <div className="text-right sm:text-left pr-2 min-w-0">
@@ -495,13 +495,13 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 onClick={() => setOnlyPaidBatches(true)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 min-h-[38px] ${
                   onlyPaidBatches
-                    ? 'bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-600/30'
+                    ? 'bg-[#166534] text-white shadow-sm ring-2 ring-[#166534]/30'
                     : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <span>Hanya yang Dikenakan Biaya SKS</span>
                 <span className={`px-1.5 py-0.2 text-[10px] rounded-full ${
-                  onlyPaidBatches ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                  onlyPaidBatches ? 'bg-[#14532D] text-emerald-100' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                 }`}>
                   {chargedRegistrations.length}
                 </span>
@@ -526,7 +526,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
             {/* Export Excel Button */}
             <button
               onClick={handleExportExcelFinance}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-md hover:shadow transition-all cursor-pointer shrink-0 min-h-[38px]"
+              className="flex items-center gap-2 px-4 py-2 bg-[#166534] hover:bg-[#14532D] text-white rounded-lg text-xs font-bold shadow-md hover:shadow transition-all cursor-pointer shrink-0 min-h-[38px]"
               title="Unduh laporan keuangan berformat Excel (.xlsx) 2 sheet lengkap"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
@@ -786,7 +786,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                                         `Lunas diverifikasi Admin Keuangan pada ${now}`
                                       );
                                     }}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs min-h-[32px]"
+                                    className="px-2.5 py-1 bg-[#166534] hover:bg-[#14532D] text-white rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs min-h-[32px]"
                                     title="Tandai pembayaran telah LUNAS & terverifikasi"
                                   >
                                     <Check className="w-3.5 h-3.5" />
@@ -863,7 +863,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                     <div className="flex items-center justify-between pt-1">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         status === 'verified'
-                          ? 'bg-green-100 dark:bg-green-950/60 text-[#009A44] dark:text-[#05B752] border border-green-300 dark:border-green-800'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-[#166534] dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
                           : status === 'paid'
                           ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
                           : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
@@ -878,7 +878,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                               const now = new Date().toLocaleDateString('id-ID');
                               onUpdatePaymentStatus(reg.id, 'verified', `Lunas pada ${now}`);
                             }}
-                            className="px-3 py-1.5 bg-[#009A44] hover:bg-[#00702F] text-white rounded-lg text-xs font-bold min-h-[36px]"
+                            className="px-3 py-1.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-lg text-xs font-bold min-h-[36px]"
                           >
                             Tandai Lunas
                           </button>
@@ -929,7 +929,7 @@ export const FinancePanel: React.FC<FinancePanelProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveNote}
-                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer min-h-[40px]"
+                  className="px-4 py-2 rounded-xl bg-[#166534] hover:bg-[#14532D] text-white text-xs font-bold cursor-pointer min-h-[40px]"
                 >
                   Simpan Catatan
                 </button>

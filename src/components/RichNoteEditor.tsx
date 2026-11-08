@@ -278,7 +278,7 @@ export const RichNoteEditor: React.FC<RichNoteEditorProps> = ({
             onClick={() => setEditorTab('preview')}
             className={`px-3 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
               editorTab === 'preview'
-                ? 'bg-white dark:bg-slate-900 text-[#008744] dark:text-emerald-400 shadow-2xs'
+                ? 'bg-white dark:bg-slate-900 text-[#166534] dark:text-emerald-400 shadow-2xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >

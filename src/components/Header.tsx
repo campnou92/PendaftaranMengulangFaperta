@@ -25,8 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 print:hidden shadow-xs">
-      {/* Main Bar with Eye-Friendly Deep Academic Forest Slate */}
-      <div className="bg-[#0e2c1c]/95 dark:bg-[#07160e]/95 backdrop-blur-md text-white border-b border-emerald-900/40 dark:border-emerald-950/80 transition-colors duration-150">
+      {/* Main Bar with Official INSTIPER Dark Forest Green */}
+      <div className="bg-[#14532D]/95 dark:bg-[#07160e]/95 backdrop-blur-md text-white border-b border-[#166534]/40 dark:border-emerald-950/80 transition-colors duration-150">
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-17 gap-2 sm:gap-4">
             
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab('form')}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[44px] ${
                   activeTab === 'form'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold'
                     : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab('status')}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[44px] ${
                   activeTab === 'status'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold'
                     : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                 }`}
                 title="Cek Status Persetujuan & Cetak Ulang Lembar KRS"
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('admin')}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] ${
                     activeTab === 'admin'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                   }`}
                   title="Panel Operasional Akademik & Pendaftar Fakultas"
@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('admin')}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] ${
                     activeTab === 'admin'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                   }`}
                   title="Portal Pengelola Lengkap (Admin Fakultas & Superadmin Kredensial)"
@@ -147,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('admin')}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] ${
                     activeTab === 'admin'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                   }`}
                   title={`Portal Monitoring Kaprodi (${currentUser.title})`}
@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('finance')}
                   className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] ${
                     activeTab === 'finance'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/80 hover:text-white hover:bg-white/10'
                   }`}
                   title="Panel Khusus Admin Keuangan: Data Pendaftar Kena Biaya SKS"
@@ -233,14 +233,14 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Bar */}
         {currentUser ? (
-          <div className="lg:hidden bg-[#092215] dark:bg-[#050f09] border-t border-emerald-900/30 px-2 sm:px-4 py-1.5 transition-colors duration-150">
+          <div className="lg:hidden bg-[#0F3E22] dark:bg-[#050f09] border-t border-[#166534]/30 px-2 sm:px-4 py-1.5 transition-colors duration-150">
             <nav className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 touch-pan-x">
               <button
                 type="button"
                 onClick={() => setActiveTab('form')}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] active:scale-95 ${
                   activeTab === 'form'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold'
                     : 'text-emerald-100/85 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -253,7 +253,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab('status')}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] active:scale-95 ${
                   activeTab === 'status'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold'
                     : 'text-emerald-100/85 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -267,7 +267,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('admin')}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] active:scale-95 ${
                     activeTab === 'admin'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/85 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -287,7 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => setActiveTab('finance')}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 min-h-[40px] active:scale-95 ${
                     activeTab === 'finance'
-                      ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-amber-400/40'
+                      ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-amber-400/40'
                       : 'text-emerald-100/85 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -303,14 +303,14 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
           </div>
         ) : (
-          <div className="lg:hidden bg-[#092215] dark:bg-[#050f09] border-t border-emerald-900/30 px-3 py-2 transition-colors duration-150">
+          <div className="lg:hidden bg-[#0F3E22] dark:bg-[#050f09] border-t border-[#166534]/30 px-3 py-2 transition-colors duration-150">
             <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab('form')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[44px] active:scale-95 ${
                   activeTab === 'form'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-white/40'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-white/40'
                     : 'text-emerald-100/90 hover:text-white hover:bg-white/15'
                 }`}
               >
@@ -323,7 +323,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setActiveTab('status')}
                 className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[44px] active:scale-95 ${
                   activeTab === 'status'
-                    ? 'bg-white text-[#0e2c1c] shadow-sm font-extrabold ring-1 ring-white/40'
+                    ? 'bg-white text-[#166534] shadow-sm font-extrabold ring-1 ring-white/40'
                     : 'text-emerald-100/90 hover:text-white hover:bg-white/15'
                 }`}
               >
@@ -336,8 +336,8 @@ export const Header: React.FC<HeaderProps> = ({
 
       </div>
 
-      {/* Elegant Accent Border (Soft Amber Gold & Emerald Glow) */}
-      <div className="h-0.5 bg-gradient-to-r from-emerald-600 via-amber-400/70 to-emerald-600 w-full opacity-80" />
+      {/* Elegant Accent Border (Official INSTIPER Forest Green & Amber Gold) */}
+      <div className="h-0.5 bg-gradient-to-r from-[#166534] via-amber-400/80 to-[#166534] w-full opacity-90" />
     </header>
   );
 };

@@ -53,18 +53,23 @@ test.describe('Aplikasi Pendaftaran Mengulang FAPERTA - Formulir Pendaftaran', (
       await page.getByRole('combobox').nth(1).selectOption({ index: 1 });
     }
 
-    // 4. Centang salah satu matakuliah
-    const courseCheckbox = courseCard.locator('input[type="checkbox"]');
-    await courseCheckbox.check();
-    await expect(courseCheckbox).toBeChecked();
+    // 4. Centang salah satu matakuliah (jika link pendaftaran dibuka oleh admin)
+    const enabledCheckbox = page.locator('input[type="checkbox"]:not([disabled])').first();
+    if (await enabledCheckbox.count() > 0) {
+      await enabledCheckbox.check();
+      await expect(enabledCheckbox).toBeChecked();
 
-    // Verifikasi ringkasan 1 mata kuliah terpilih
-    await expect(page.locator('text=/1\\s+Mata Kuliah/i').first()).toBeVisible({ timeout: 5000 });
+      // Verifikasi ringkasan 1 mata kuliah terpilih
+      await expect(page.locator('text=/1\\s+Mata Kuliah/i').first()).toBeVisible({ timeout: 5000 });
 
-    // 5. Verifikasi tombol submit menjadi aktif
-    const submitBtn = page.getByRole('button', { name: /Kirim Pendaftaran|Daftar Sekarang/i });
-    await submitBtn.scrollIntoViewIfNeeded();
-    await expect(submitBtn).toBeEnabled({ timeout: 10000 });
+      // 5. Verifikasi tombol submit menjadi aktif
+      const submitBtn = page.getByRole('button', { name: /Kirim Pendaftaran|Daftar Sekarang/i });
+      await submitBtn.scrollIntoViewIfNeeded();
+      await expect(submitBtn).toBeEnabled({ timeout: 10000 });
+    } else {
+      // Jika seluruh periode pendaftaran sedang ditutup oleh Admin pada database live
+      await expect(page.locator('text=/Link.*Ditutup|Pendaftaran Ditutup/i').first()).toBeVisible();
+    }
   });
 
   test('opsi kelas mata kuliah menampilkan pilihan kelas yang aktif dan dapat dipilih', async ({ page }) => {
