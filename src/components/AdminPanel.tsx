@@ -51,6 +51,7 @@ import {
   FileUp,
   KeyRound,
   UserPlus,
+  UserX,
   ShieldCheck,
   Eye,
   EyeOff,
@@ -389,6 +390,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newBatchSksInput, setNewBatchSksInput] = useState<number>(24);
   const [sksSettingsSavedFeedback, setSksSettingsSavedFeedback] = useState<boolean>(false);
 
+  // Superadmin: Pengaturan Pembatasan Angkatan Mahasiswa Baru (Belum Boleh Mengulang)
+  const [disallowedBatchesDraft, setDisallowedBatchesDraft] = useState<string[]>(
+    adminSettings.disallowedBatches ?? (DEFAULT_ADMIN_SETTINGS.disallowedBatches || ['2024'])
+  );
+  const [disallowedBatchMessageDraft, setDisallowedBatchMessageDraft] = useState<string>(
+    adminSettings.disallowedBatchMessage ?? (DEFAULT_ADMIN_SETTINGS.disallowedBatchMessage || 'Mahasiswa Angkatan {angkatan} belum diperkenankan mendaftar mengulang karena masih menempuh paket perkuliahan semester awal sesuai peraturan akademik Fakultas Pertanian INSTIPER.')
+  );
+  const [disallowedBatchesSavedFeedback, setDisallowedBatchesSavedFeedback] = useState<boolean>(false);
+
   // Sync if adminSettings changes externally
   useEffect(() => {
     setFeeEnabled(adminSettings.feePerSksEnabled ?? true);
@@ -403,6 +413,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setAvailableYearsDraft(adminSettings.availableAcademicYears ?? ['2023/2024', '2024/2025', '2025/2026', '2026/2027']);
     setDefaultMaxSksDraft(adminSettings.defaultMaxSks ?? DEFAULT_ADMIN_SETTINGS.defaultMaxSks ?? 24);
     setBatchMaxSksDraft(adminSettings.batchMaxSks ?? (DEFAULT_ADMIN_SETTINGS.batchMaxSks || { '2020': 20, '2021': 22, '2022': 24 }));
+    setDisallowedBatchesDraft(adminSettings.disallowedBatches ?? (DEFAULT_ADMIN_SETTINGS.disallowedBatches || ['2024']));
+    setDisallowedBatchMessageDraft(adminSettings.disallowedBatchMessage ?? (DEFAULT_ADMIN_SETTINGS.disallowedBatchMessage || 'Mahasiswa Angkatan {angkatan} belum diperkenankan mendaftar mengulang karena masih menempuh paket perkuliahan semester awal sesuai peraturan akademik Fakultas Pertanian INSTIPER.'));
 
     const rf = adminSettings.registrationFlow ?? DEFAULT_REGISTRATION_FLOW;
     setFlowTitleDraft(rf.title);
@@ -1283,6 +1295,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ...prev,
       [yr]: val
     }));
+  };
+
+  // ==========================================
+  // HANDLERS: PEMBATASAN KELAYAKAN ANGKATAN (MAHASISWA BARU)
+  // ==========================================
+  const handleToggleDisallowedBatch = (batchYear: string) => {
+    setDisallowedBatchesDraft(prev => {
+      if (prev.includes(batchYear)) {
+        return prev.filter(b => b !== batchYear);
+      } else {
+        return [...prev, batchYear].sort();
+      }
+    });
+  };
+
+  const handleSaveDisallowedBatchesSettings = () => {
+    onUpdateSettings({
+      ...adminSettings,
+      disallowedBatches: disallowedBatchesDraft,
+      disallowedBatchMessage: disallowedBatchMessageDraft.trim()
+    });
+    setDisallowedBatchesSavedFeedback(true);
+    setTimeout(() => setDisallowedBatchesSavedFeedback(false), 2500);
   };
 
   // ==========================================
@@ -4587,6 +4622,108 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div className="text-blue-900 dark:text-blue-200 text-[11px] leading-relaxed">
                   <strong>Ketentuan Lintas Gabungan:</strong> Ketika mahasiswa memilih opsi portal <em>Semua Semester</em> atau mengambil kombinasi mata kuliah lintas semester (misal mahasiswa <strong>Angkatan 2022</strong> mengulang semester 3 dan 5), batas total SKS yang diizinkan untuk diambil ditentukan berdasarkan nilai pada konfigurasi angkatannya di atas (misal Angkatan 2022 diatur <strong>24 SKS</strong>, maka batas maksimal gabungannya adalah 24 SKS).
+                </div>
+              </div>
+            </div>
+
+            {/* FITUR: RESTRIKSI KELAYAKAN ANGKATAN (MAHASISWA BARU / BELUM BOLEH MENGULANG) */}
+            <div className="bg-gradient-to-br from-rose-50/70 via-red-50/30 to-white dark:from-rose-950/20 dark:via-slate-800/80 dark:to-slate-800/80 border-2 border-rose-400 dark:border-rose-800 rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-rose-200 dark:border-rose-900/60">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                    <UserX className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                        Pembatasan Kelayakan Angkatan (Mahasiswa Baru)
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                        Restriksi Global
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                      Tentukan angkatan mahasiswa mana saja yang <strong>belum diperkenankan mendaftar mengulang</strong> (misalnya mahasiswa baru yang masih menempuh paket perkuliahan semester awal). Sistem akan memblokir pemilihan mata kuliah dan menampilkan pesan notifikasi resmi.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  {disallowedBatchesSavedFeedback && (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-fade-in">
+                      <Check className="w-4 h-4" /> Pengaturan Tersimpan!
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSaveDisallowedBatchesSettings}
+                    className="px-4 py-2.5 bg-[#166534] hover:bg-[#14532D] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Restriksi Angkatan</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Selector Angkatan yang Dilarang Mendaftar */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-extrabold text-slate-900 dark:text-white block mb-1">
+                    Daftar Angkatan yang Belum Boleh Mendaftar Mengulang:
+                  </label>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+                    Klik pada chip angkatan untuk mengaktifkan/menonaktifkan larangan mendaftar (Warna merah = Dilarang Mengulang, Abu-abu = Diizinkan Mendaftar).
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {ANGKATAN_OPTIONS.map((yr) => {
+                      const isDisallowed = disallowedBatchesDraft.includes(yr);
+                      return (
+                        <button
+                          key={yr}
+                          type="button"
+                          onClick={() => handleToggleDisallowedBatch(yr)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 border ${
+                            isDisallowed
+                              ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {isDisallowed ? (
+                            <>
+                              <Ban className="w-3.5 h-3.5" />
+                              <span>Angkatan {yr} (Dilarang)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-[#166534] dark:text-emerald-400" />
+                              <span>Angkatan {yr}</span>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Textarea Pesan Notifikasi Akademik */}
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 dark:text-white">
+                      Pesan Notifikasi / Alasan Resmi Akademik untuk Mahasiswa:
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">Gunakan tag {'{angkatan}'} untuk tahun otomatis</span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={disallowedBatchMessageDraft}
+                    onChange={(e) => setDisallowedBatchMessageDraft(e.target.value)}
+                    placeholder="Contoh: Mahasiswa Angkatan {angkatan} belum diperkenankan mendaftar mengulang karena masih menempuh paket perkuliahan semester awal..."
+                    className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166534]"
+                  />
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Pesan ini akan langsung muncul sebagai peringatan resmi berwarna merah di formulir ketika mahasiswa memilih atau memasukkan NIM angkatan tersebut.
+                  </p>
                 </div>
               </div>
             </div>

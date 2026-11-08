@@ -154,6 +154,8 @@ export default function App() {
             paymentAccountInfo: parsed.paymentAccountInfo || DEFAULT_ADMIN_SETTINGS.paymentAccountInfo,
             defaultMaxSks: typeof parsed.defaultMaxSks === 'number' && parsed.defaultMaxSks > 0 ? parsed.defaultMaxSks : DEFAULT_ADMIN_SETTINGS.defaultMaxSks,
             batchMaxSks: parsed.batchMaxSks && typeof parsed.batchMaxSks === 'object' && !Array.isArray(parsed.batchMaxSks) ? parsed.batchMaxSks : (DEFAULT_ADMIN_SETTINGS.batchMaxSks || {}),
+            disallowedBatches: Array.isArray(parsed.disallowedBatches) ? parsed.disallowedBatches : (DEFAULT_ADMIN_SETTINGS.disallowedBatches || []),
+            disallowedBatchMessage: parsed.disallowedBatchMessage || DEFAULT_ADMIN_SETTINGS.disallowedBatchMessage,
             semesterSchedules: parsed.semesterSchedules && typeof parsed.semesterSchedules === 'object' && !Array.isArray(parsed.semesterSchedules) ? parsed.semesterSchedules : (DEFAULT_ADMIN_SETTINGS.semesterSchedules || {}),
             registrationPeriods: Array.isArray(parsed.registrationPeriods) ? parsed.registrationPeriods : (DEFAULT_ADMIN_SETTINGS.registrationPeriods || []),
             restrictedRepeatClasses: parsed.restrictedRepeatClasses && typeof parsed.restrictedRepeatClasses === 'object' && !Array.isArray(parsed.restrictedRepeatClasses) ? parsed.restrictedRepeatClasses : DEFAULT_ADMIN_SETTINGS.restrictedRepeatClasses,

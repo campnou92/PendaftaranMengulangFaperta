@@ -719,8 +719,28 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const isOverSksLimit = totalSks > currentMaxSks;
 
+  // Cek apakah angkatan mahasiswa saat ini dilarang mendaftar mengulang (Opsi B: Restriksi Global Kelayakan Mahasiswa Baru)
+  const isBatchDisallowed = useMemo(() => {
+    const disallowed = adminSettings.disallowedBatches || [];
+    return disallowed.includes(angkatan);
+  }, [adminSettings.disallowedBatches, angkatan]);
+
+  const disallowedBatchReason = useMemo(() => {
+    if (!isBatchDisallowed) return '';
+    const rawTemplate = adminSettings.disallowedBatchMessage || 'Mahasiswa Angkatan {angkatan} belum diperkenankan mendaftar mengulang karena masih menempuh paket perkuliahan semester awal sesuai peraturan akademik Fakultas Pertanian INSTIPER.';
+    return rawTemplate.replace(/\{angkatan\}/g, angkatan);
+  }, [isBatchDisallowed, adminSettings.disallowedBatchMessage, angkatan]);
+
   // Helper: Cek apakah suatu mata kuliah berada di semester yang pendaftarannya sedang ditutup
   const isCourseClosedCheck = (course: CourseItem): { isClosed: boolean; reason: string } => {
+    // 0. Cek jika Angkatan mahasiswa belum diizinkan mendaftar mengulang
+    if (isBatchDisallowed) {
+      return {
+        isClosed: true,
+        reason: disallowedBatchReason
+      };
+    }
+
     // 1. Cek langsung record periode dari mata kuliah ini jika ada
     const period = findPeriodForCourse(course);
     if (period) {
@@ -803,7 +823,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       });
       return changed ? next : prev;
     });
-  }, [adminSettings.semesterSchedules, adminSettings.registrationPeriods, selectedSemester, activeAcademicYear]);
+  }, [adminSettings.semesterSchedules, adminSettings.registrationPeriods, selectedSemester, activeAcademicYear, isBatchDisallowed, angkatan]);
 
   // Toggle single course selection (with support for explicit boolean target)
   const handleToggleCourse = (course: CourseItem, forceChecked?: boolean) => {
@@ -943,6 +963,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Validation before submission
   const canSubmit = useMemo(() => {
     if (!activePortalStatus.isOpen) return false;
+    if (isBatchDisallowed) return false;
     if (closedCourseSelected) return false;
     if (fullCourseSelected) return false;
     if (duplicateRegistration) return false;
@@ -950,11 +971,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (selectedList.length === 0) return false;
     if (totalSks > currentMaxSks) return false;
     return true;
-  }, [activePortalStatus, closedCourseSelected, fullCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks]);
+  }, [activePortalStatus, isBatchDisallowed, closedCourseSelected, fullCourseSelected, duplicateRegistration, email, nama, nim, noWa, kelasAsal, selectedList, totalSks, currentMaxSks]);
 
   const getSubmitDisabledReason = (): string | null => {
     if (!activePortalStatus.isOpen) {
       return activePortalStatus.message || `Pendaftaran untuk ${selectedSemester === 'all' ? 'seluruh semester' : `Semester ${selectedSemester}`} saat ini sedang ditutup oleh pihak Fakultas.`;
+    }
+    if (isBatchDisallowed) {
+      return disallowedBatchReason;
     }
     if (closedCourseSelected) {
       return `Mata kuliah "${closedCourseSelected.name}" berada di Semester ${closedCourseSelected.semester} yang saat ini pendaftarannya sedang ditutup.`;
@@ -1443,17 +1467,29 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     ))}
                   </select>
 
-                  {/* Single concise line for SKS limit & fee status */}
-                  <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                    <p className="font-semibold text-slate-800 dark:text-slate-200">
-                      Batas maksimal: <strong>{currentMaxSks} SKS</strong> (Angkatan {angkatan}{isCrossSemesterCombined ? ' — Lintas Gabungan' : ''})
-                    </p>
-                    <p className={`text-[11px] mt-0.5 ${isPaidBatch ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-[#166534] dark:text-emerald-400 font-medium'}`}>
-                      {isPaidBatch 
-                        ? `⚠️ Dikenakan biaya Rp ${costPerSks.toLocaleString('id-ID')} / SKS (wajib melampirkan bukti fisik pembayaran ke loket).` 
-                        : `✓ Angkatan ${angkatan} bebas biaya SKS mengulang (wajib melampirkan bukti pembayaran semester berjalan / SPP aktif).`}
-                    </p>
-                  </div>
+                  {/* Single concise line for SKS limit & fee status OR Disallowed Batch Alert */}
+                  {isBatchDisallowed ? (
+                    <div className="mt-2.5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200 animate-fade-in shadow-2xs">
+                      <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-300">
+                        <Ban className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>Angkatan {angkatan} Belum Boleh Mendaftar Mengulang</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-rose-700 dark:text-rose-300 mt-1">
+                        {disallowedBatchReason}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
+                        Batas maksimal: <strong>{currentMaxSks} SKS</strong> (Angkatan {angkatan}{isCrossSemesterCombined ? ' — Lintas Gabungan' : ''})
+                      </p>
+                      <p className={`text-[11px] mt-0.5 ${isPaidBatch ? 'text-amber-700 dark:text-amber-400 font-medium' : 'text-[#166534] dark:text-emerald-400 font-medium'}`}>
+                        {isPaidBatch 
+                          ? `⚠️ Dikenakan biaya Rp ${costPerSks.toLocaleString('id-ID')} / SKS (wajib melampirkan bukti fisik pembayaran ke loket).` 
+                          : `✓ Angkatan ${angkatan} bebas biaya SKS mengulang (wajib melampirkan bukti pembayaran semester berjalan / SPP aktif).`}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Kelas Asal - Disinkronkan dengan Data Opsi Kelas Admin */}
@@ -1807,6 +1843,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Banner Peringatan Jika Angkatan Dilarang Mendaftar Mengulang (Mahasiswa Baru) */}
+              {isBatchDisallowed && (
+                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border-2 border-rose-400 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200 flex items-start gap-3.5 shadow-sm animate-fade-in">
+                  <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                    <Ban className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <strong className="text-rose-900 dark:text-rose-100 font-extrabold text-sm block">
+                      Pendaftaran Mengulang Belum Diizinkan untuk Angkatan {angkatan}
+                    </strong>
+                    <p className="text-xs text-rose-800 dark:text-rose-300 mt-1 leading-relaxed">
+                      {disallowedBatchReason}
+                    </p>
+                    <span className="inline-block mt-2 text-[10px] font-black uppercase tracking-wider bg-rose-200 dark:bg-rose-900/80 text-rose-900 dark:text-rose-200 px-2 py-0.5 rounded-md">
+                      Pilihan Mata Kuliah Dikunci
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Panduan Khusus Layar HP / Mobile: Pilihan Kelas Otomatis */}
               <div className="sm:hidden p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border border-emerald-200/90 dark:border-emerald-800 text-xs shadow-2xs flex items-start gap-2.5">

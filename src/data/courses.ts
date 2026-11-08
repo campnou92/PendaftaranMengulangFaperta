@@ -158,6 +158,8 @@ Informasi Jadwal Kuliah: Silakan cek pengumuman resmi jadwal kuliah di papan pen
     '2025': 24, // Angkatan 2025 batas maksimal 24 SKS
     '2026': 24  // Angkatan 2026 batas maksimal 24 SKS
   },
+  disallowedBatches: ['2024'], // Mahasiswa baru (angkatan 2024) belum boleh mengulang karena masih menempuh paket semester awal
+  disallowedBatchMessage: 'Mahasiswa Angkatan {angkatan} belum diperkenankan mendaftar mengulang karena masih menempuh paket perkuliahan semester awal sesuai peraturan akademik Fakultas Pertanian INSTIPER.',
   registrationPeriods: [
     {
       id: 'period-2025-2026-sem-1',

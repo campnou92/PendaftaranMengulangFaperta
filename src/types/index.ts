@@ -121,6 +121,10 @@ export interface AdminSettings {
   // Pengaturan Kuota Default Mahasiswa Per Kelas (0 / undefined = tidak dibatasi)
   defaultClassQuota?: number;
 
+  // Pengaturan Pembatasan Angkatan yang Belum Boleh Mendaftar Mengulang (Mahasiswa Baru / Paket Awal)
+  disallowedBatches?: string[]; // Daftar angkatan yang dilarang mendaftar mengulang, misal ['2024', '2025', '2026']
+  disallowedBatchMessage?: string; // Pesan notifikasi alasan larangan mendaftar untuk angkatan tersebut
+
   // Pengaturan Buka / Tutup Pendaftaran Berdasarkan Semester & Jadwal Periode (Superadmin)
   semesterSchedules?: Record<string, SemesterSchedule>;
 
