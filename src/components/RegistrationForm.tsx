@@ -170,6 +170,18 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [angkatan, setAngkatan] = useState('2023');
   const [kelasAsal, setKelasAsal] = useState('');
 
+  // Handler input NIM: bersihkan angka dan auto-sinkronkan Angkatan dari awalan NIM jika cocok
+  const handleNimChange = (rawNim: string) => {
+    const cleanNim = rawNim.replace(/\D/g, '');
+    setNim(cleanNim);
+    if (cleanNim.length >= 2) {
+      const detectedYear = '20' + cleanNim.slice(0, 2);
+      if (ANGKATAN_OPTIONS.includes(detectedYear)) {
+        setAngkatan(detectedYear);
+      }
+    }
+  };
+
   // 3. Course Selection Dictionary: { [courseId]: { checked: boolean, selectedClass: string } }
   const [courseSelections, setCourseSelections] = useState<{
     [id: string]: { checked: boolean; selectedClass: string };
@@ -1392,7 +1404,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     pattern="[0-9]*"
                     required
                     value={nim}
-                    onChange={(e) => setNim(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => handleNimChange(e.target.value)}
                     placeholder="Contoh: 2112345"
                     className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
                   />
