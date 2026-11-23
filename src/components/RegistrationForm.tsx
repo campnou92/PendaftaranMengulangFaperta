@@ -1504,94 +1504,26 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   )}
                 </div>
 
-                {/* Kelas Asal - Disinkronkan dengan Data Opsi Kelas Admin */}
-                <div className="flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                        Kelas Asal Reguler <span className="text-red-500">*</span>
-                      </label>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                        {adminSettings.kelasAsalMode === 'select' ? 'Pilihan Data Admin' : 'Sesuai Data Kelas Admin'}
-                      </span>
-                    </div>
-
-                    {adminSettings.kelasAsalMode === 'select' ? (
-                      <select
-                        required
-                        value={kelasAsal}
-                        onChange={(e) => setKelasAsal(e.target.value)}
-                        className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs cursor-pointer"
-                      >
-                        <option value="">-- Pilih Kelas Asal ({globalClassOptions.length} Opsi Admin) --</option>
-                        {globalClassOptions.map((cls) => (
-                          <option key={cls} value={cls}>
-                            {cls}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div>
-                        <input
-                          type="text"
-                          required
-                          list="admin-kelas-asal-datalist"
-                          value={kelasAsal}
-                          onChange={(e) => setKelasAsal(e.target.value)}
-                          placeholder={kelasAsalPlaceholderText}
-                          className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs"
-                        />
-                        <datalist id="admin-kelas-asal-datalist">
-                          {globalClassOptions.map((cls) => (
-                            <option key={cls} value={cls} />
-                          ))}
-                        </datalist>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Opsi Pilihan Cepat Sesuai Data Kelas Admin */}
-                  {adminSettings.kelasAsalMode !== 'select' && globalClassOptions.length > 0 && (
-                    <div className="mt-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center justify-between gap-1 mb-1.5">
-                        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                          Pilihan Cepat Kelas Admin:
-                        </span>
-                        {kelasAsal && (
-                          <button
-                            type="button"
-                            onClick={() => setKelasAsal('')}
-                            className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
-                          >
-                            Hapus
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {globalClassOptions.map((cls) => {
-                          const isSelected = kelasAsal === cls;
-                          return (
-                            <button
-                              key={cls}
-                              type="button"
-                              onClick={() => setKelasAsal(cls)}
-                              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
-                                isSelected
-                                  ? 'bg-[#166534] text-white shadow-xs font-bold ring-2 ring-[#166534]/30'
-                                  : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-[#166534] dark:hover:border-emerald-500'
-                              }`}
-                            >
-                              {isSelected && <span className="text-white text-[10px] font-black">✓</span>}
-                              <span>{cls}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
-                        Tap nama kelas di atas untuk mengisi instan, atau ketik langsung jika ada variasi nama kelas.
-                      </p>
-                    </div>
-                  )}
+                {/* Kelas Asal */}
+                <div>
+                  <label htmlFor="select-kelas-asal" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Kelas Asal <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="select-kelas-asal"
+                    name="kelasAsal"
+                    required
+                    value={kelasAsal}
+                    onChange={(e) => setKelasAsal(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-base sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#166534] focus:border-transparent transition-all shadow-2xs cursor-pointer"
+                  >
+                    <option value="">-- Pilih Kelas Asal --</option>
+                    {globalClassOptions.map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
               </div>

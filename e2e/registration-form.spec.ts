@@ -45,16 +45,16 @@ test.describe('Aplikasi Pendaftaran Mengulang FAPERTA - Formulir Pendaftaran', (
     await page.getByPlaceholder(/Contoh: 2112345/i).fill(randomNim);
     await page.getByPlaceholder(/Contoh: 081234567890/i).fill('081298765432');
 
-    // 3. Isi kelas asal menggunakan selector spesifik datalist
-    const kelasInput = page.locator('input[list="admin-kelas-asal-datalist"]');
-    if (await kelasInput.isVisible()) {
-      await kelasInput.fill('SPKS A');
+    // 3. Isi kelas asal menggunakan dropdown select
+    const kelasSelect = page.locator('#select-kelas-asal');
+    if (await kelasSelect.isVisible()) {
+      await kelasSelect.selectOption({ index: 1 });
     } else {
-      await page.getByRole('combobox').nth(1).selectOption({ index: 1 });
+      await page.getByLabel(/Kelas Asal/i).selectOption({ index: 1 });
     }
 
-    // 4. Centang salah satu matakuliah (jika link pendaftaran dibuka oleh admin)
-    const enabledCheckbox = page.locator('input[type="checkbox"]:not([disabled])').first();
+    // 4. Centang salah satu matakuliah di tabel (jika link pendaftaran dibuka oleh admin)
+    const enabledCheckbox = page.locator('table input[type="checkbox"]:not([disabled])').first();
     if (await enabledCheckbox.count() > 0) {
       await enabledCheckbox.check();
       await expect(enabledCheckbox).toBeChecked();

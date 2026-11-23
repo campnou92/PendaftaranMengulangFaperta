@@ -134,8 +134,8 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettings = {
     'SPKS G', 'SPKS H', 'SPKS I', 'SPKS J', 'SPKS K', 'SMBP A',
     'SMBP B', 'SMBP C', 'SPA A', 'SPA B', 'SEA A', 'ANTAN A', 'ANTAN B'
   ],
-  kelasAsalMode: 'input_with_chips',
-  kelasAsalPlaceholder: 'Contoh: SPKS A, SPKS B (atau pilih opsi kelas di bawah)',
+  kelasAsalMode: 'select',
+  kelasAsalPlaceholder: 'Pilih Kelas Asal',
   kelasAsalCustomOptions: [],
   classNote: `1. Pendaftaran mengulang tersaji per semester: silakan pilih portal pendaftaran Semester 1, 3, atau 5 sesuai jadwal periode yang dibuka.
 2. Admin Fakultas dapat menentukan daftar matakuliah dan beban SKS untuk masing-masing semester (kelola di menu Panel Admin Fakultas).
